@@ -735,6 +735,8 @@ $string['gdnot'] = 'GD is not installed';
 $string['general'] = 'General';
 $string['gettheselogs'] = 'Get these logs';
 $string['go'] = 'Go';
+$string['gooffline'] = 'Go offline';
+$string['goonline'] = 'Go online';
 $string['gotoyourserver'] = '(Links back to your server)';
 $string['gpl'] = 'Copyright (C) 1999 onwards  Martin Dougiamas  (http://moodle.com)
 
@@ -1233,6 +1235,7 @@ $string['phpinfo'] = 'PHP info';
 $string['pleaseclose'] = 'Please close this window now.';
 $string['pleasesearchmore'] = 'Please search some more';
 $string['pleaseusesearch'] = 'Please use the search';
+$string['pleasewait'] = 'Please wait ... ';
 $string['plugincheck'] = 'Plugins check';
 $string['pluginchecknotice'] = 'The following tables show the modules, blocks and filters that have been detected in your current Moodle installation; 
 They indicate which plugins are standard, and which are not. All non-standard plugins should be checked and upgraded to their most recent versions 
