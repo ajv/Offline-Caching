@@ -1796,16 +1796,15 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
     }
 
     if ($result && $oldversion < 2009050607) {
-//TODO: remove, this field does not exist yet!
     /// Changing precision of field defaultregion on table block_instances to (16)
-/*        $table = new xmldb_table('block_instances');
-        $field = new xmldb_field('defaultregion', XMLDB_TYPE_CHAR, '16', null, XMLDB_NOTNULL, null, null, 'subpagepattern');
+        $table = new xmldb_table('block_instances');
+        $field = new xmldb_field('defaultregion', XMLDB_TYPE_CHAR, '16', null, XMLDB_NOTNULL, null, null, 'pagetype');
 
     /// Launch change of precision for field defaultregion
         $dbman->change_field_precision($table, $field);
 
     /// Main savepoint reached
-        upgrade_main_savepoint($result, 2009050607);*/
+        upgrade_main_savepoint($result, 2009050607);
     }
 
     if ($result && $oldversion < 2009050608) {
@@ -2176,6 +2175,20 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
 
     /// Main savepoint reached
         upgrade_main_savepoint($result, 2009061300);
+    }
+
+    /// Repeat 2009050607 upgrade step, which Petr commented out becuase of XMLDB
+    /// stupidity, so lots of peopel will have missed.
+    if ($result && $oldversion < 2009061600) {
+    /// Changing precision of field defaultregion on table block_instances to (16)
+        $table = new xmldb_table('block_instances');
+        $field = new xmldb_field('defaultregion', XMLDB_TYPE_CHAR, '16', null, XMLDB_NOTNULL, null, null, 'configdata');
+
+    /// Launch change of precision for field defaultregion
+        $dbman->change_field_precision($table, $field);
+
+    /// Main savepoint reached
+        upgrade_main_savepoint($result, 2009061600);
     }
 
     return $result;
