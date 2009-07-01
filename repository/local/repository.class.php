@@ -46,10 +46,34 @@ class repository_local extends repository {
      * @return mixed
      */
     public function get_listing($encodedpath = '', $page = '', $search = '') {
-        global $CFG, $USER;
+        global $CFG, $USER, $OUTPUT;
+        $OUTPUT->initialise_deprecated_cfg_pixpath();
         $ret = array();
         $ret['dynload'] = true;
+        $ret['nosearch'] = true;
         $list = array();
+
+        // list draft files
+        if ($encodedpath == 'draft') {
+            $fs = get_file_storage();
+            $context = get_context_instance(CONTEXT_USER, $USER->id);
+            $files = $fs->get_area_files($context->id, 'user_draft');
+            foreach ($files as $file) {
+                if ($file->get_filename()!='.') {
+                    $node = array(
+                        'title' => $file->get_filename(),
+                        'size' => 0,
+                        'date' => '',
+                        'source'=> $file->get_id(),
+                        'thumbnail' => $CFG->pixpath .'/f/text-32.png'
+                    );
+                    $list[] = $node;
+                }
+            }
+            $ret['list'] = $list;
+            return $ret;
+        }
+
         if (!empty($encodedpath)) {
             $params = unserialize(base64_decode($encodedpath));
             if (is_array($params)) {
@@ -67,35 +91,14 @@ class repository_local extends repository {
             $context  = get_system_context();
             // append draft files directory
             $node = array(
-                'title' => 'Current use files',
+                'title' => get_string('currentusefiles', 'repository_local'),
                 'size' => 0,
                 'date' => '',
                 'path' => 'draft',
                 'children'=>array(),
-                'thumbnail' => $CFG->wwwroot .'/pix/f/folder-32.png'
+                'thumbnail' => $CFG->pixpath .'/f/folder-32.png'
             );
             $list[] = $node;
-        }
-
-        // list draft files
-        if ($encodedpath == 'draft') {
-            $fs = get_file_storage();
-            $context = get_context_instance(CONTEXT_USER, $USER->id);
-            $files = $fs->get_area_files($context->id, 'user_draft');
-            foreach ($files as $file) {
-                if ($file->get_filename()!='.') {
-                    $node = array(
-                        'title' => $file->get_filename(),
-                        'size' => 0,
-                        'date' => '',
-                        'source'=> $file->get_id(),
-                        'thumbnail' => $CFG->wwwroot .'/pix/f/text-32.png'
-                    );
-                    $list[] = $node;
-                }
-            }
-            $ret['list'] = $list;
-            return $ret;
         }
 
         try {
@@ -122,7 +125,7 @@ class repository_local extends repository {
                             'date' => '',
                             'path' => $params,
                             'children'=>array(),
-                            'thumbnail' => $CFG->wwwroot .'/pix/f/folder-32.png'
+                            'thumbnail' => $CFG->pixpath .'/f/folder-32.png'
                         );
                         $list[] = $node;
                     } else {
@@ -132,7 +135,7 @@ class repository_local extends repository {
                             'size' => 0,
                             'date' => '',
                             'source'=> $params,
-                            'thumbnail' => $CFG->wwwroot .'/pix/f/text-32.png'
+                            'thumbnail' => $CFG->pixpath .'/f/text-32.png'
                         );
                         $list[] = $node;
                     }

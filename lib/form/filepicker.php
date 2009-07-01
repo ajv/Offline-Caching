@@ -18,6 +18,7 @@ class MoodleQuickForm_filepicker extends HTML_QuickForm_input {
 
     function MoodleQuickForm_filepicker($elementName=null, $elementLabel=null, $attributes=null, $options=null) {
         global $CFG;
+        require_once("$CFG->dirroot/repository/lib.php");
 
         $options = (array)$options;
         foreach ($options as $name=>$value) {
@@ -29,6 +30,8 @@ class MoodleQuickForm_filepicker extends HTML_QuickForm_input {
             $this->_options['maxbytes'] = get_max_upload_file_size($CFG->maxbytes, $options['maxbytes']);
         }
         parent::HTML_QuickForm_input($elementName, $elementLabel, $attributes);
+
+        repository_head_setup();
     }
 
     function setHelpButton($helpbuttonargs, $function='helpbutton') {
@@ -65,6 +68,8 @@ class MoodleQuickForm_filepicker extends HTML_QuickForm_input {
             return $this->getFrozenHtml();
         }
 
+        $strsaved = get_string('filesaved', 'repository');
+        $straddfile = get_string('openpicker', 'repository');
         $currentfile = '';
         $draftvalue  = '';
         if ($draftid = (int)$this->getValue()) {
@@ -76,22 +81,24 @@ class MoodleQuickForm_filepicker extends HTML_QuickForm_input {
                 $draftvalue = 'value="'.$draftid.'"';
             }
         }
-        $strsaved = get_string('filesaved', 'repository');
         if ($COURSE->id == SITEID) {
             $context = get_context_instance(CONTEXT_SYSTEM);
         } else {
             $context = get_context_instance(CONTEXT_COURSE, $COURSE->id);
         }
         $client_id = uniqid();
-        $repository_info = repository_get_client($context, $client_id, $this->_options['filetypes'], $this->_options['returnvalue']);
+        $repojs = repository_get_client($context, $client_id, $this->_options['filetypes'], $this->_options['returnvalue']);
 
         $id     = $this->_attributes['id'];
         $elname = $this->_attributes['name'];
 
         $str = $this->_getTabs();
         $str .= '<input type="hidden" name="'.$elname.'" id="'.$id.'" '.$draftvalue.' />';
+        $str .= $repojs;
 
         $str .= <<<EOD
+<a href="#nonjsfp" class="btnaddfile" onclick="return callpicker('$client_id', '$id', '$draftvalue')">$straddfile</a>
+<span id="repo_info_{$client_id}" class="notifysuccess">$currentfile</span>
 <script type="text/javascript">
 function updatefile(client_id, obj) {
     document.getElementById('repo_info_'+client_id).innerHTML = obj['file'];
@@ -104,15 +111,20 @@ function callpicker(client_id, id) {
     var el=document.getElementById(id);
     var params = {};
     params.env = 'filepicker';
+    params.itemid = itemid;
     params.maxbytes = $this->_options['maxbytes'];
     params.maxfiles = $this->_options['maxfiles'];
     params.target = el;
     params.callback = updatefile;
     open_filepicker(client_id, params);
+    return false;
 }
 </script>
+<noscript>
+<a name="nonjsfp"></a>
+<object type="text/html" data="{$CFG->httpswwwroot}/repository/filepicker.php?action=embedded&itemid={$draftitemid}&ctx_id=$context->id" height="300" width="800" style="border:1px solid #000">Error</object>
+</noscript>
 EOD;
-        $str .= '<input value="'.get_string('openpicker', 'repository').'" type="button" onclick="callpicker(\''.$client_id.'\', \''.$id.'\')" />'.'<span id="repo_info_'.$client_id.'" class="notifysuccess">'.$currentfile.'</span>'.$repository_info['css'].$repository_info['js'];
         return $str;
     }
 

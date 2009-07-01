@@ -94,11 +94,21 @@ global $PAGE;
 global $COURSE;
 
 /**
- * $THEME is a global that defines the site theme.
+ * $OUTPUT is an instance of moodle_core_renderer or one of its subclasses. Use
+ * it to generate HTML for output.
  *
- * Items found in the theme record:
- *  - $THEME->cellheading - Cell colors.
- *  - $THEME->cellheading2 - Alternate cell colors.
+ * $OUTPUT is initialised the first time it is used. See {@link bootstrap_renderer}
+ * for the magic that does that. After $OUTPUT has been initialised, any attempt
+ * to change something that affects the current theme ($PAGE->course, logged in use,
+ * httpsrequried ... will result in an exception.)
+ *
+ * @global object $OUTPUT
+ * @name $OUTPUT
+ */
+global $OUTPUT;
+
+/**
+ * $THEME is a global that defines the current theme.
  *
  * @global object $THEME
  * @name THEME
@@ -116,7 +126,7 @@ global $MCACHE;
  * A global to define if the page being displayed must run under HTTPS.
  *
  * Its primary goal is to allow 100% HTTPS pages when $CFG->loginhttps is enabled. Default to false.
- * Its enabled only by the httpsrequired() function and used in some pages to update some URLs
+ * Its enabled only by the $PAGE->https_required() function and used in some pages to update some URLs
  *
  * @global bool $HTTPSPAGEREQUIRED
  * @name $HTTPSPAGEREQUIRED
@@ -178,20 +188,32 @@ global $SCRIPT;
     }
 
 
-/// store settings from config.php in array in $CFG - we can use it later to detect problems and overrides
+/// Store settings from config.php in array in $CFG - we can use it later to detect problems and overrides
     $CFG->config_php_settings = (array)$CFG;
+
+/// Set up some paths.
+    $CFG->libdir   = $CFG->dirroot .'/lib';
+
+    if (!isset($CFG->themedir)) {
+        $CFG->themedir = $CFG->dirroot.'/theme';
+        $CFG->themewww = $CFG->wwwroot.'/theme';
+    }
 
 /// Set httpswwwroot default value (this variable will replace $CFG->wwwroot
 /// inside some URLs used in HTTPSPAGEREQUIRED pages.
     $CFG->httpswwwroot = $CFG->wwwroot;
-
-    $CFG->libdir   = $CFG->dirroot .'/lib';
+    $CFG->httpsthemewww = $CFG->themewww;
 
     require_once($CFG->libdir .'/setuplib.php');        // Functions that MUST be loaded first
 
 /// Time to start counting
     init_performance_info();
 
+/// Put $OUTPUT in place, so errors can be displayed.
+    $OUTPUT = new bootstrap_renderer();
+
+/// set handler for uncought exceptions - equivalent to print_error() call
+    set_exception_handler('default_exception_handler');
 
 /// If there are any errors in the standard libraries we want to know!
     error_reporting(E_ALL);
@@ -217,7 +239,8 @@ global $SCRIPT;
     require_once($CFG->libdir .'/textlib.class.php');   // Functions to handle multibyte strings
     require_once($CFG->libdir .'/filterlib.php');       // Functions for filtering test as it is output
     require_once($CFG->libdir .'/ajax/ajaxlib.php');    // Functions for managing our use of JavaScript and YUI
-    require_once($CFG->libdir .'/weblib.php');          // Functions for producing HTML
+    require_once($CFG->libdir .'/weblib.php');          // Functions relating to HTTP and content
+    require_once($CFG->libdir .'/outputlib.php');       // Functions for generating output
     require_once($CFG->libdir .'/dmllib.php');          // Database access
     require_once($CFG->libdir .'/datalib.php');         // Legacy lib with a big-mix of functions.
     require_once($CFG->libdir .'/accesslib.php');       // Access control functions
@@ -234,9 +257,6 @@ global $SCRIPT;
     ini_set('include_path', $CFG->libdir.'/pear' . PATH_SEPARATOR . ini_get('include_path'));
     //point zend include path to moodles lib/zend so that includes and requires will search there for files before anywhere else
     ini_set('include_path', $CFG->libdir.'/zend' . PATH_SEPARATOR . ini_get('include_path'));
-
-/// set handler for uncought exceptions - equivalent to print_error() call
-    set_exception_handler('default_exception_handler');
 
 /// make sure PHP is not severly misconfigured
     setup_validate_php_configuration();
@@ -332,7 +352,6 @@ global $SCRIPT;
     unset($originaldatabasedebug);
     error_reporting($CFG->debug);
 
-
 /// find out if PHP cofigured to display warnings
     if (ini_get_bool('display_errors')) {
         define('WARN_DISPLAY_ERRORS_ENABLED', true);
@@ -354,15 +373,6 @@ global $SCRIPT;
         @ini_set('display_errors', '0');
         @ini_set('log_errors', '1');
     }
-
-/// Create the $PAGE global.
-    if (!empty($CFG->moodlepageclass)) {
-        $classname = $CFG->moodlepageclass;
-    } else {
-        $classname = 'moodle_page';
-    }
-    $PAGE = new $classname();
-    unset($classname);
 
 /// detect unsupported upgrade jump as soon as possible - do not change anything, do not use system functions
     if (!empty($CFG->version) and $CFG->version < 2007101509) {
@@ -457,6 +467,15 @@ global $SCRIPT;
     $CFG->javascript  = $CFG->libdir .'/javascript.php';
     $CFG->moddata     = 'moddata';
 
+/// Create the $PAGE global.
+    if (!empty($CFG->moodlepageclass)) {
+        $classname = $CFG->moodlepageclass;
+    } else {
+        $classname = 'moodle_page';
+    }
+    $PAGE = new $classname();
+    unset($classname);
+
 /// A hack to get around magic_quotes_gpc being turned on
 /// It is strongly recommended to disable "magic_quotes_gpc"!
     if (ini_get_bool('magic_quotes_gpc')) {
@@ -507,24 +526,18 @@ global $SCRIPT;
     $SESSION = &$_SESSION['SESSION'];
     $USER    = &$_SESSION['USER'];
 
-/// Load up theme variables (colours etc)
-
-    if (!isset($CFG->themedir)) {
-        $CFG->themedir = $CFG->dirroot.'/theme';
-        $CFG->themewww = $CFG->wwwroot.'/theme';
-    }
-    $CFG->httpsthemewww = $CFG->themewww;
-
-    if (isset($_GET['theme'])) {
-        if ($CFG->allowthemechangeonurl || confirm_sesskey()) {
-            $themename = clean_param($_GET['theme'], PARAM_SAFEDIR);
-            if (($themename != '') and file_exists($CFG->themedir.'/'.$themename)) {
-                $SESSION->theme = $themename;
-            }
-            unset($themename);
+/// Process theme change in the URL.
+    if (!empty($CFG->allowthemechangeonurl) && ($urlthemename = optional_param('theme', '', PARAM_SAFEDIR)) && confirm_sesskey()) {
+        try {
+            theme_config::load($urlthemename); // Makes sure the theme can be loaded without errors.
+            $SESSION->theme = $urlthemename;
+        } catch (Exception $e) {
+            debugging('Failed to set the theme from the URL.', DEBUG_DEVELOPER, $e->getTrace());
         }
     }
+    unset($urlthemename);
 
+/// Ensure a valid theme is set.
     if (!isset($CFG->theme)) {
         $CFG->theme = 'standardwhite';
     }
@@ -534,18 +547,18 @@ global $SCRIPT;
 /// in the language file.  Otherwise, if the admin hasn't specified a locale
 /// then use the one from the default language.  Otherwise (and this is the
 /// majority of cases), use the stored locale specified by admin.
-    if (isset($_GET['lang']) && ($lang = clean_param($_GET['lang'], PARAM_SAFEDIR))) {
-        if (file_exists($CFG->dataroot .'/lang/'. $lang) or file_exists($CFG->dirroot .'/lang/'. $lang)) {
+    if (($lang = optional_param('lang', '', PARAM_SAFEDIR))) {
+        if (file_exists($CFG->dataroot .'/lang/'. $lang) or
+                file_exists($CFG->dirroot .'/lang/'. $lang)) {
             $SESSION->lang = $lang;
         } else if (file_exists($CFG->dataroot.'/lang/'.$lang.'_utf8') or
-                   file_exists($CFG->dirroot .'/lang/'.$lang.'_utf8')) {
+                file_exists($CFG->dirroot .'/lang/'.$lang.'_utf8')) {
             $SESSION->lang = $lang.'_utf8';
         }
     }
+    unset($lang);
 
     setup_lang_from_browser();
-
-    unset($lang);
 
     if (empty($CFG->lang)) {
         if (empty($SESSION->lang)) {

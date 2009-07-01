@@ -77,7 +77,7 @@ class upgrade_requires_exception extends moodle_exception {
         $a->pluginname     = $plugin;
         $a->pluginversion  = $pluginversion;
         $a->currentmoodle  = $currentmoodle;
-        $a->requiremoodle  = $currentmoodle;
+        $a->requiremoodle  = $requiremoodle;
         parent::__construct('pluginrequirementsnotmet', 'error', "$CFG->wwwroot/$CFG->admin/index.php", $a);
     }
 }
@@ -144,7 +144,7 @@ function upgrade_main_savepoint($result, $version, $allowabort=true) {
     global $CFG;
 
     if (!$result) {
-        throw new upgrade_exception('moodle core', $version);
+        throw new upgrade_exception(null, $version);
     }
 
     if ($CFG->version >= $version) {
@@ -180,7 +180,7 @@ function upgrade_mod_savepoint($result, $version, $modname, $allowabort=true) {
     global $DB;
 
     if (!$result) {
-        throw new upgrade_exception("mod/$modname", $version);
+        throw new upgrade_exception("mod_$modname", $version);
     }
 
     if (!$module = $DB->get_record('modules', array('name'=>$modname))) {
@@ -189,11 +189,11 @@ function upgrade_mod_savepoint($result, $version, $modname, $allowabort=true) {
 
     if ($module->version >= $version) {
         // something really wrong is going on in upgrade script
-        throw new downgrade_exception("mod/$modname", $module->version, $version);
+        throw new downgrade_exception("mod_$modname", $module->version, $version);
     }
     $module->version = $version;
     $DB->update_record('modules', $module);
-    upgrade_log(UPGRADE_LOG_NORMAL, "mod/$modname", 'Upgrade savepoint reached');
+    upgrade_log(UPGRADE_LOG_NORMAL, "mod_$modname", 'Upgrade savepoint reached');
 
     // reset upgrade timeout to default
     upgrade_set_timeout();
@@ -220,7 +220,7 @@ function upgrade_block_savepoint($result, $version, $blockname, $allowabort=true
     global $DB;
 
     if (!$result) {
-        throw new upgrade_exception("blocks/$blockname", $version);
+        throw new upgrade_exception("block_$blockname", $version);
     }
 
     if (!$block = $DB->get_record('block', array('name'=>$blockname))) {
@@ -229,11 +229,11 @@ function upgrade_block_savepoint($result, $version, $blockname, $allowabort=true
 
     if ($block->version >= $version) {
         // something really wrong is going on in upgrade script
-        throw new downgrade_exception("blocks/$blockname", $block->version, $version);
+        throw new downgrade_exception("block_$blockname", $block->version, $version);
     }
     $block->version = $version;
     $DB->update_record('block', $block);
-    upgrade_log(UPGRADE_LOG_NORMAL, "blocks/$blockname", 'Upgrade savepoint reached');
+    upgrade_log(UPGRADE_LOG_NORMAL, "block_$blockname", 'Upgrade savepoint reached');
 
     // reset upgrade timeout to default
     upgrade_set_timeout();
@@ -256,23 +256,19 @@ function upgrade_block_savepoint($result, $version, $blockname, $allowabort=true
  * @param bool $allowabort allow user to abort script execution here
  * @return void
  */
-function upgrade_plugin_savepoint($result, $version, $type, $dir, $allowabort=true) {
+function upgrade_plugin_savepoint($result, $version, $type, $plugin, $allowabort=true) {
+    $component = $type.'_'.$plugin;
+
     if (!$result) {
-        throw new upgrade_exception("$type/$dir", $version);
+        throw new upgrade_exception($component, $version);
     }
 
-    /// TODO: Check that $type is a correct type - based on get_plugin_types()
-    /// TODO: Check that $dir (that perhaps should be named $name) is an existing plugin
-
-    $fullname = $type.'_'.$dir;
-    $component = $type.'/'.$dir;
-
-    $installedversion = get_config($fullname, 'version');
+    $installedversion = get_config($component, 'version');
     if ($installedversion >= $version) {
         // Something really wrong is going on in the upgrade script
         throw new downgrade_exception($component, $installedversion, $version);
     }
-    set_config('version', $version, $fullname);
+    set_config('version', $version, $component);
     upgrade_log(UPGRADE_LOG_NORMAL, $component, 'Upgrade savepoint reached');
 
     // Reset upgrade timeout to default
@@ -287,14 +283,10 @@ function upgrade_plugin_savepoint($result, $version, $type, $dir, $allowabort=tr
 
 /**
  * Upgrade plugins
- *
- * @global object
- * @global object
  * @param string $type The type of plugins that should be updated (e.g. 'enrol', 'qtype')
- * @param string $dir  The directory where the plugins are located (e.g. 'question/questiontypes')
- * @param string $return The url to prompt the user to continue to
+ * return void
  */
-function upgrade_plugins($type, $dir, $startcallback, $endcallback, $verbose) {
+function upgrade_plugins($type, $startcallback, $endcallback, $verbose) {
     global $CFG, $DB;
 
 /// special cases
@@ -304,12 +296,10 @@ function upgrade_plugins($type, $dir, $startcallback, $endcallback, $verbose) {
         return upgrade_plugins_blocks($startcallback, $endcallback, $verbose);
     }
 
-    $plugs = get_list_of_plugins($dir);
+    $plugs = get_plugin_list($type);
 
-    foreach ($plugs as $plug) {
-
-        $fullplug  = $CFG->dirroot.'/'.$dir.'/'.$plug;
-        $component = $type.'/'.$plug; // standardised plugin name
+    foreach ($plugs as $plug=>$fullplug) {
+        $component = $type.'_'.$plug; // standardised plugin name
 
         if (!is_readable($fullplug.'/version.php')) {
             continue;
@@ -322,8 +312,8 @@ function upgrade_plugins($type, $dir, $startcallback, $endcallback, $verbose) {
             throw new plugin_defective_exception($component, 'Missing version value in version.php');
         }
 
-        $plugin->name     = $plug;   // The name MUST match the directory
-        $plugin->fullname = $type.'_'.$plug;   // The name MUST match the directory
+        $plugin->name     = $plug;
+        $plugin->fullname = $component;
 
 
         if (!empty($plugin->requires)) {
@@ -399,16 +389,15 @@ function upgrade_plugins($type, $dir, $startcallback, $endcallback, $verbose) {
 function upgrade_plugins_modules($startcallback, $endcallback, $verbose) {
     global $CFG, $DB;
 
-    $mods = get_list_of_plugins('mod');
+    $mods = get_plugin_list('mod');
 
-    foreach ($mods as $mod) {
+    foreach ($mods as $mod=>$fullmod) {
 
         if ($mod == 'NEWMODULE') {   // Someone has unzipped the template, ignore it
             continue;
         }
 
-        $fullmod   = $CFG->dirroot.'/mod/'.$mod;
-        $component = 'mod/'.$mod;
+        $component = 'mod_'.$mod;
 
         if (!is_readable($fullmod.'/version.php')) {
             throw new plugin_defective_exception($component, 'Missing version.php');
@@ -510,9 +499,9 @@ function upgrade_plugins_blocks($startcallback, $endcallback, $verbose) {
     //Is this a first install
     $first_install = null;
 
-    $blocks = get_list_of_plugins('blocks');
+    $blocks = get_plugin_list('block');
 
-    foreach ($blocks as $blockname) {
+    foreach ($blocks as $blockname=>$fullblock) {
 
         if (is_null($first_install)) {
             $first_install = ($DB->count_records('block') == 0);
@@ -522,8 +511,7 @@ function upgrade_plugins_blocks($startcallback, $endcallback, $verbose) {
             continue;
         }
 
-        $fullblock = $CFG->dirroot.'/blocks/'.$blockname;
-        $component = 'block/'.$blockname;
+        $component = 'block_'.$blockname;
 
         if (!is_readable($fullblock.'/block_'.$blockname.'.php')) {
             throw new plugin_defective_exception('block/'.$blockname, 'Missing main block class file.');
@@ -611,8 +599,8 @@ function upgrade_plugins_blocks($startcallback, $endcallback, $verbose) {
             }
 
             // Upgrade various componebts
-            events_update_definition($component);
             update_capabilities($component);
+            events_update_definition($component);
             message_update_providers($component);
 
             $endcallback($component, false, $verbose);
@@ -637,97 +625,10 @@ function upgrade_plugins_blocks($startcallback, $endcallback, $verbose) {
 }
 
 /**
- * This function checks to see whether local database customisations are up-to-date
- * by comparing $CFG->local_version to the variable $local_version defined in
- * local/version.php. If not, it looks for a function called 'xmldb_local_upgrade'
- * in a file called 'local/db/upgrade.php', and if it's there calls it with the
- * appropiate $oldversion parameter. Then it updates $CFG->local_version.
- *
- * @global object
- * @global object
- */
-function upgrade_local_db($startcallback, $endcallback) {
-    global $CFG, $DB;
-
-    // if we don't have code version, just return false
-    if (!file_exists($CFG->dirroot.'/local/version.php')) {
-        return;
-    }
-
-    $local_version = null;
-    require($CFG->dirroot.'/local/version.php');  // Get code versions
-
-    if (empty($CFG->local_version)) { // install
-        $startcallback('local', true);
-
-        if (file_exists($CFG->dirroot.'/local/db/install.php')) {
-            require_once($CFG->dirroot.'/local/db/install.php');
-            xmldb_local_install();
-        }
-        set_config('local_version', $local_version);
-
-        /// Install various components
-        events_update_definition('local');
-        update_capabilities('local');
-        message_update_providers('local');
-
-        $endcallback('local', true);
-
-    } else if ($local_version > $CFG->local_version) { // upgrade!
-        $startcallback('local', false);
-
-        if (file_exists($CFG->dirroot.'/local/db/upgrade.php')) {
-            require_once($CFG->dirroot.'/local/db/upgrade.php');
-            xmldb_local_upgrade($CFG->local_version);
-        }
-        set_config('local_version', $local_version);
-
-        /// Upgrade various components
-        events_update_definition('local');
-        update_capabilities('local');
-        message_update_providers('local');
-
-        $endcallback('local', false);
-
-    } else if ($local_version < $CFG->local_version) {
-        throw new downgrade_exception('local', $CFG->local_version, $local_version);
-    }
-}
-
-
-/**
  * upgrade logging functions
- *
- * @global object
  */
-
-function upgrade_handle_exception($ex, $plugin=null) {
-    global $CFG;
-
-    if ($ex instanceof moodle_exception) {
-        $details = get_string($ex->errorcode, $ex->module, $ex->a)."<br />debugging:".$ex->debuginfo;
-    } else {
-        $details = get_string('generalexceptionmessage', 'error', $ex->getMessage());
-    }
-    $info = "Exception: ".get_class($ex);
-    $backtrace = $ex->getTrace();
-    $place = array('file'=>$ex->getFile(), 'line'=>$ex->getLine(), 'exception'=>get_class($ex));
-    array_unshift($backtrace, $place);
-
-    /// first log upgrade error
-    upgrade_log(UPGRADE_LOG_ERROR, $plugin, $info, $details, $backtrace);
-
-    // always turn on debugging - admins need to know what is going on
-    $CFG->debug = DEBUG_DEVELOPER;
-
-    // now print the exception info as usually
-    if ($ex instanceof moodle_exception) {
-        _print_normal_error($ex->errorcode, $ex->module, $ex->a, $ex->link, $backtrace, $ex->debuginfo);
-    } else {
-        _print_normal_error('generalexceptionmessage', 'error', $ex->getMessage(), '', $backtrace);
-    }
-
-    die; // not reached
+function upgrade_handle_exception($ex, $plugin = null) {
+    default_exception_handler($ex, true, $plugin);
 }
 
 /**
@@ -748,7 +649,7 @@ function upgrade_log($type, $plugin, $info, $details=null, $backtrace=null) {
 
     $plugin = ($plugin==='moodle') ? null : $plugin;
 
-    $backtrace = print_backtrace($backtrace, true, true);
+    $backtrace = format_backtrace($backtrace, true);
 
     $version = null;
 
@@ -825,9 +726,10 @@ function upgrade_started($preinstall=false) {
         if (!CLI_SCRIPT and !$PAGE->headerprinted) {
             $strupgrade  = get_string('upgradingversion', 'admin');
 
+            upgrade_get_javascript();
             print_header($strupgrade.' - Moodle '.$CFG->target_release, $strupgrade,
                 build_navigation(array(array('name' => $strupgrade, 'link' => null, 'type' => 'misc'))), '',
-                upgrade_get_javascript(), false, '&nbsp;', '&nbsp;');
+                '', false, '&nbsp;', '&nbsp;');
         }
 
         ignore_user_abort(true);
@@ -969,8 +871,10 @@ function print_upgrade_part_end($plugin, $installation, $verbose) {
  * @global object
  */
 function upgrade_get_javascript() {
-    global $CFG;
-    return '<script type="text/javascript" src="'.$CFG->wwwroot.'/lib/scroll_to_page_end.js"></script>';
+    global $PAGE;
+    $PAGE->requires->js('lib/javascript-static.js')->at_top_of_body();
+    $PAGE->requires->js_function_call('repeatedly_scroll_to_end')->at_top_of_body();
+    $PAGE->requires->js_function_call('cancel_scroll_to_end')->after_delay(1);
 }
 
 
@@ -1040,7 +944,6 @@ function install_core($version, $verbose) {
         // Continue with the instalation
         events_update_definition('moodle');
         message_update_providers('moodle');
-        message_update_providers('message');
 
         // Write default settings unconditionlly
         admin_apply_default_settings(NULL, true);
@@ -1070,6 +973,17 @@ function upgrade_core($version, $verbose) {
 
         print_upgrade_part_start('moodle', false, $verbose);
 
+        // one time special local migration pre 2.0 upgrade script
+        if ($version < 2007101600) {
+            $pre20upgradefile = "$CFG->dirrot/local/upgrade_pre20.php";
+            if (file_exists($pre20upgradefile)) {
+                set_time_limit(0);
+                require($pre20upgradefile);
+                // reset upgrade timeout to default
+                upgrade_set_timeout();
+            }
+        }
+
         $result = xmldb_main_upgrade($CFG->version);
         if ($version > $CFG->version) {
             // store version if not already there
@@ -1080,7 +994,6 @@ function upgrade_core($version, $verbose) {
         update_capabilities('moodle');
         events_update_definition('moodle');
         message_update_providers('moodle');
-        message_update_providers('message');
 
         remove_dir($CFG->dataroot . '/cache', true); // flush cache
 
@@ -1102,7 +1015,7 @@ function upgrade_noncore($verbose) {
     try {
         $plugintypes = get_plugin_types();
         foreach ($plugintypes as $type=>$location) {
-            upgrade_plugins($type, $location, 'print_upgrade_part_start', 'print_upgrade_part_end', $verbose);
+            upgrade_plugins($type, 'print_upgrade_part_start', 'print_upgrade_part_end', $verbose);
         }
     } catch (Exception $ex) {
         upgrade_handle_exception($ex);
@@ -1118,14 +1031,6 @@ function upgrade_noncore($verbose) {
         } catch (Exception $ex) {
             upgrade_handle_exception($ex);
         }
-    }
-
-    // Check for local database customisations
-    try {
-        require_once("$CFG->dirroot/lib/locallib.php");
-        upgrade_local_db('print_upgrade_part_start', 'print_upgrade_part_end', $verbose);
-    } catch (Exception $ex) {
-        upgrade_handle_exception($ex);
     }
 }
 

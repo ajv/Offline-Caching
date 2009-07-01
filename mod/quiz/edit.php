@@ -76,7 +76,7 @@ function module_specific_buttons($cmid, $cmoptions) {
  * (which is called from showbank())
  */
 function module_specific_controls($totalnumber, $recurse, $category, $cmid, $cmoptions) {
-    global $THEME, $QTYPES;
+    global $QTYPES;
     $out = '';
     $catcontext = get_context_instance_by_id($category->contextid);
     if (has_capability('moodle/question:useall', $catcontext)) {
@@ -441,9 +441,7 @@ $strupdatemodule = has_capability('moodle/course:manageactivities',
         get_string('modulename', 'quiz')) :
         "";
 $navigation = build_navigation($pagetitle, $cm);
-$localcss = '<link rel="stylesheet" type="text/css" href="'.$CFG->wwwroot.
-        '/lib/yui/container/assets/container.css" />';
-print_header_simple($pagetitle, '', $navigation, "", $localcss, true,
+print_header_simple($pagetitle, '', $navigation, '', '', true,
         $questionbankmanagement.$strupdatemodule);
 //TODO: these skip links really need to be right after the opening of the body element,
 // and preferably implemented in an <ul> element. See MDL-17730.
@@ -475,15 +473,9 @@ if ($quiz_qbanktool) {
     $bankclass = 'collapsed';
     $quizcontentsclass = 'quizwhenbankcollapsed';
 }
-print_side_block_start(get_string('questionbankcontents', 'quiz') .
-        ' <a href="' . $thispageurl->out(false, array('qbanktool' => '1')) .
-       '" id="showbankcmd">[' . get_string('show').
-       ']</a>
-       <a href="' . $thispageurl->out(false, array('qbanktool' => '0')) .
-       '" id="hidebankcmd">[' . get_string('hide').
-       ']</a>
-       ', array('class' => 'questionbankwindow ' . $bankclass));
 
+// Nasty short-term hack, becuase I am getting rid of separate print_side_block_start/end functions.
+ob_start();
 echo '<span id="questionbank"></span>';
 echo '<div class="container">';
 echo '<div id="module" class="module">';
@@ -497,7 +489,17 @@ $questionbank->display('editq',
 echo '</div>';
 echo '</div>';
 echo '</div>';
-print_side_block_end();
+$qbhtml = ob_get_contents();
+ob_end_clean();
+
+print_side_block(get_string('questionbankcontents', 'quiz') .
+        ' <a href="' . $thispageurl->out(false, array('qbanktool' => '1')) .
+       '" id="showbankcmd">[' . get_string('show').
+       ']</a>
+       <a href="' . $thispageurl->out(false, array('qbanktool' => '0')) .
+       '" id="hidebankcmd">[' . get_string('hide').
+       ']</a>
+       ', $qbhtml, null, null, '', array('class' => 'questionbankwindow ' . $bankclass));
 
 echo '<div class="quizcontents ' . $quizcontentsclass . '" id="quizcontentsblock">';
 if ($quiz->shufflequestions) {

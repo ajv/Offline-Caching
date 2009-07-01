@@ -33,14 +33,14 @@ class ExHtmlReporter extends HtmlReporter {
 
     var $strseparator;
 
+    var $timestart;
+
     /**
      * Constructor.
      *
      * @param bool $showpasses Whether this reporter should output anything for passes.
      */
     function ExHtmlReporter($showpasses) {
-        global $CFG, $THEME;
-
         $this->HtmlReporter();
         $this->showpasses = $showpasses;
 
@@ -84,7 +84,7 @@ class ExHtmlReporter extends HtmlReporter {
     function _paintPassFail($passorfail, $message, $rawmessage=false) {
         global $FULLME, $CFG;
 
-        print_simple_box_start('', '100%', '', 5, $passorfail . ' generalbox');
+        print_box_start($passorfail . ' generalbox ');
         $url = $this->_htmlEntities($this->_stripParameterFromUrl($FULLME, 'path'));
         echo '<b class="', $passorfail, '">', $this->get_string($passorfail), '</b>: ';
         $breadcrumb = $this->getTestList();
@@ -100,7 +100,7 @@ class ExHtmlReporter extends HtmlReporter {
         echo "<a href=\"{$url}path=$folder$file\" title=\"$this->strrunonlyfile\">$file</a>";
         echo $this->strseparator, implode($this->strseparator, $breadcrumb);
         echo '<br />', ($rawmessage ? $message : $this->_htmlEntities($message)), "\n\n";
-        print_simple_box_end();
+        print_box_end();
         flush();
     }
 
@@ -163,6 +163,7 @@ class ExHtmlReporter extends HtmlReporter {
      * Output anything that should appear above all the test output.
      */
     function paintHeader($test_name) {
+        $this->timestart = time();
         // We do this the moodle way instead.
     }
 
@@ -187,7 +188,8 @@ class ExHtmlReporter extends HtmlReporter {
         echo '</div>';
 
         echo '<div class="performanceinfo">',
-                $this->get_string('runat', date('<b>d-m-Y H:i T</b>')),
+                $this->get_string('runat', userdate($this->timestart)), ' ',
+                $this->get_string('timetakes', format_time(time() - $this->timestart)), ' ',
                 $this->get_string('version', SimpleTestOptions::getVersion()),
                 '</div>';
     }

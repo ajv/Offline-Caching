@@ -38,8 +38,9 @@ class sqlite3_pdo_moodle_database extends pdo_moodle_database {
      * @return mixed true if ok, string if something
      */
     public function driver_installed() {
-        if (!extension_loaded('pdo_sqlite'))
+        if (!extension_loaded('pdo_sqlite') || !extension_loaded('pdo')){
             return get_string('sqliteextensionisnotpresentinphp', 'install');
+        }
         return true;
     }
 
@@ -354,5 +355,17 @@ class sqlite3_pdo_moodle_database extends pdo_moodle_database {
             array_splice($elements, $n, 0, $separator);
         }
         return implode('||', $elements);
+    }
+
+    /**
+     * Returns the SQL text to be used in order to perform one bitwise XOR operation
+     * between 2 integers.
+     *
+     * @param integer int1 first integer in the operation
+     * @param integer int2 second integer in the operation
+     * @return string the piece of SQL code to be used in your statement.
+     */
+    public function sql_bitxor($int1, $int2) {
+        return '( ~' . $this->sql_bitand($int1, $int2) . ' & ' . $this->sql_bitor($int1, $int2) . ')';
     }
 }

@@ -1062,7 +1062,8 @@ class MoodleQuickForm extends HTML_QuickForm_DHTMLRulesTableless {
      * @access   public
      */
     function MoodleQuickForm($formName, $method, $action, $target='', $attributes=null){
-        global $CFG;
+        global $CFG, $OUTPUT;
+        $OUTPUT->initialise_deprecated_cfg_pixpath();
 
         static $formcounter = 1;
 
@@ -2113,6 +2114,15 @@ class MoodleQuickForm_Renderer extends HTML_QuickForm_Renderer_Tableless{
     */
     function renderHeader(&$header) {
         global $PAGE;
+        static $advformcount;
+
+        // This ensures that if 2(+) advanced buttons are used
+        // that all show/hide buttons appear in the correct place
+        // Because of now using $PAGE->requires->js_function_call
+        if ($advformcount==null) {
+            $advformcount = 1;
+        }
+
         $name = $header->getName();
 
         $id = empty($name) ? '' : ' id="' . $name . '"';
@@ -2141,16 +2151,15 @@ class MoodleQuickForm_Renderer extends HTML_QuickForm_Renderer_Tableless{
             $PAGE->requires->yui_lib('event');
             // this is tricky - the first submit button on form is "clicked" if user presses enter
             // we do not want to "submit" using advanced button if javascript active
-            $button_nojs = '<input name="'.$elementName.'" value="'.$buttonlabel.'" type="submit" />';
+            $button_nojs = '<input name="'.$elementName.'" id="'.$elementName.(string)$advformcount.'" class="showadvancedbtn" value="'.$buttonlabel.'" type="submit" />';
 
             $buttonlabel = addslashes_js($buttonlabel);
-            $showtext = addslashes_js(get_string('showadvanced', 'form'));
-            $hidetext = addslashes_js(get_string('hideadvanced', 'form'));
-            $button = '<script id="' . $name . '_script" type="text/javascript">' . "
-showAdvancedInit('{$name}_script', '$elementName', '$buttonlabel', '$hidetext', '$showtext');
-" . '</script><noscript><div style="display:inline">'.$button_nojs.'</div></noscript>';  // the extra div should fix xhtml validation
-
-            $header_html = str_replace('{button}', $button, $header_html);
+            $PAGE->requires->string_for_js('showadvanced', 'form');
+            $PAGE->requires->string_for_js('hideadvanced', 'form');
+            $PAGE->requires->js_function_call('showAdvancedInit', Array($elementName.(string)$advformcount, $elementName, $buttonlabel));
+            
+            $advformcount++;
+            $header_html = str_replace('{button}', $button_nojs, $header_html);
         } else {
             $header_html = str_replace('{button}', '', $header_html);
         }

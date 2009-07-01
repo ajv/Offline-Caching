@@ -36,22 +36,22 @@ if ($hassiteconfig
     $ADMIN->add('authsettings', $temp);
 
 
-    if ($auths = get_list_of_plugins('auth')) {
+    if ($auths = get_plugin_list('auth')) {
         $authsenabled = get_enabled_auth_plugins();
         $authbyname = array();
 
-        foreach ($auths as $auth) {
+        foreach ($auths as $auth => $authdir) {
             $strauthname = auth_get_plugin_title($auth);
             $authbyname[$strauthname] = $auth;
         }
         ksort($authbyname);
 
         foreach ($authbyname as $strauthname=>$authname) {
-            if (file_exists($CFG->dirroot.'/auth/'.$authname.'/settings.php')) {
+            if (file_exists($authdir.'/settings.php')) {
                 // do not show disabled auths in tree, keep only settings link on manage page
                 $settings = new admin_settingpage('authsetting'.$authname, $strauthname, 'moodle/site:config', !in_array($authname, $authsenabled));
                 if ($ADMIN->fulltree) {
-                    include($CFG->dirroot.'/auth/'.$authname.'/settings.php');
+                    include($authdir.'/settings.php');
                 }
                 // TODO: finish implementation of common settings - locking, etc.
                 $ADMIN->add('authsettings', $settings);
@@ -82,7 +82,7 @@ if ($hassiteconfig
     // "userpolicies" settingpage
     $temp = new admin_settingpage('userpolicies', get_string('userpolicies', 'admin'));
     if ($ADMIN->fulltree) {
-        if (!empty($CFG->rolesactive)) {
+        if (!during_initial_install()) {
             $context = get_context_instance(CONTEXT_SYSTEM);
             if (!$guestrole = get_guest_role()) {
                 $guestrole->id = 0;
@@ -138,7 +138,7 @@ if ($hassiteconfig
 
         $temp->add(new admin_setting_configcheckbox('nodefaultuserrolelists', get_string('nodefaultuserrolelists', 'admin'), get_string('confignodefaultuserrolelists', 'admin'), 0));
 
-        if (!empty($CFG->rolesactive)) {
+        if (!during_initial_install()) {
             $temp->add(new admin_setting_configselect('defaultcourseroleid', get_string('defaultcourseroleid', 'admin'),
                           get_string('configdefaultcourseroleid', 'admin'), $studentrole->id, $allroles));
             $temp->add(new admin_setting_configselect('creatornewroleid', get_string('creatornewroleid', 'admin'),
@@ -147,7 +147,7 @@ if ($hassiteconfig
 
         $temp->add(new admin_setting_configcheckbox('autologinguests', get_string('autologinguests', 'admin'), get_string('configautologinguests', 'admin'), 0));
 
-        if (!empty($CFG->rolesactive)) {
+        if (!during_initial_install()) {
             $temp->add(new admin_setting_configmultiselect('nonmetacoursesyncroleids', get_string('nonmetacoursesyncroleids', 'admin'),
                       get_string('confignonmetacoursesyncroleids', 'admin'), array(), $allroles));
         }

@@ -133,17 +133,7 @@
         echo '<input type="hidden" name="courseitemfilter" value="'.$courseitemfilter.'" />';
         echo '<input type="hidden" name="courseitemfiltertyp" value="'.$courseitemfiltertyp.'" />';
         echo '<input type="hidden" name="courseid" value="'.$courseid.'" />';
-        echo '<script language="javascript" type="text/javascript">
-                <!--
-                function setcourseitemfilter(item, item_typ) {
-                    document.report.courseitemfilter.value = item;
-                    document.report.courseitemfiltertyp.value = item_typ;
-                    document.report.submit();
-                }
-                -->
-                </script>';
-
-
+        $PAGE->requires->js('mod/feedback/feedback.js')->asap();
         $sql = 'select c.id, c.shortname from {course} c, '.
                                               '{feedback_value} fv, {feedback_item} fi '.
                                               'where c.id = fv.course_id and fv.item = fi.id '.
@@ -176,7 +166,7 @@
                 $printnr = '';
             }
             $itemobj->print_analysed($item, $printnr, $mygroupid, $coursefilter);
-            if (eregi('rated$', $item->typ)) {
+            if (preg_match('/rated$/i', $item->typ)) {
                  echo '<tr><td colspan="2"><a href="#" onclick="setcourseitemfilter('.$item->id.',\''.$item->typ.'\'); return false;">'.
                     get_string('sort_by_course', 'feedback').'</a></td></tr>'; 
             }

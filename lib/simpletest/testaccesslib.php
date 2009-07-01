@@ -13,6 +13,9 @@ if (!defined('MOODLE_INTERNAL')) {
 }
 
 class accesslib_test extends UnitTestCaseUsingDatabase {
+
+    public static $includecoverage = array('lib/accesslib.php');
+
     function test_get_parent_contexts() {
         $context = get_context_instance(CONTEXT_SYSTEM);
         $this->assertEqual(get_parent_contexts($context), array());
@@ -72,8 +75,8 @@ class accesslib_test extends UnitTestCaseUsingDatabase {
         /// Now is the correct moment to install capabilities - after creation of legacy roles, but before assigning of roles
         assign_capability('moodle/site:doanything', CAP_ALLOW, $adminrole, $syscontext->id);
         update_capabilities('moodle');
-        update_capabilities('mod/forum');
-        update_capabilities('mod/quiz');
+        update_capabilities('mod_forum');
+        update_capabilities('mod_quiz');
 
         // Create some nested contexts. instanceid does not matter for this. Just
         // ensure we don't violate any unique keys by using an unlikely number.
@@ -171,7 +174,7 @@ class accesslib_test extends UnitTestCaseUsingDatabase {
                     array_map(create_function('$o', 'return $o->id;'),
                     get_users_by_capability($contexts[$conindex], array('mod/quiz:attempt', 'mod/quiz:reviewmyattempts'))));
         }
-        // System context, specifically checking doanythign.
+        // System context, specifically checking doanything.
         $this->assert(new ArraysHaveSameValuesExpectation(
                 array($users['a']->id)),
                 array_map(create_function('$o', 'return $o->id;'),

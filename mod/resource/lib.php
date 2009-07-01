@@ -661,8 +661,8 @@ function resource_get_types() {
     }
 
     /// Drop-in extra resource types
-    $resourcetypes = get_list_of_plugins('mod/resource/type');
-    foreach ($resourcetypes as $resourcetype) {
+    $resourcetypes = get_plugin_list('resource');
+    foreach ($resourcetypes as $resourcetype => $dir) {
         if (!empty($CFG->{'resource_hide_'.$resourcetype})) {  // Not wanted
             continue;
         }
@@ -858,7 +858,6 @@ class resource_portfolio_caller extends portfolio_module_caller_base {
         require_once($this->resourcefile);
         $this->resource= new $resourceclass($this->cm->id);
         if (!is_callable(array($this->resource, 'portfolio_prepare_package')) || !is_callable(array($this->resource, 'portfolio_get_sha1'))) {
-            debug_print_backtrace();
             throw new portfolio_exception('portfolionotimplemented', 'resource', null, $this->cm->type);
         }
         $this->supportedformats = array(self::type_to_format($this->cm->type));
@@ -986,6 +985,7 @@ function resource_supports($feature) {
         case FEATURE_COMPLETION_TRACKS_VIEWS: return true;
         case FEATURE_GRADE_HAS_GRADE:         return false;
         case FEATURE_GRADE_OUTCOMES:          return false;
+        case FEATURE_MOD_SUBPLUGINS:          return array('resource'=>'mod/resource/type'); // to be removed in 2.0
 
         default: return null;
     }
@@ -1006,5 +1006,3 @@ function resource_get_name($type) {
     }
     return $name;
 }
-
-?>

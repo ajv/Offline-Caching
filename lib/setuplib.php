@@ -26,6 +26,18 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+/// Debug levels ///
+/** no warnings at all */
+define ('DEBUG_NONE', 0);
+/** E_ERROR | E_PARSE */
+define ('DEBUG_MINIMAL', 5);
+/** E_ERROR | E_PARSE | E_WARNING | E_NOTICE */
+define ('DEBUG_NORMAL', 15);
+/** E_ALL without E_STRICT for now, do show recoverable fatal errors */
+define ('DEBUG_ALL', 6143);
+/** DEBUG_ALL with extra Moodle debug messages - (DEBUG_ALL | 32768) */
+define ('DEBUG_DEVELOPER', 38911);
+
 /**
  * Simple class
  *
@@ -37,6 +49,9 @@ class object {};
 
 /**
  * Base Moodle Exception class
+ *
+ * Although this class is defined here, you cannot throw a moodle_exception until
+ * after moodlelib.php has been included (which will happen very soon).
  *
  * @package   moodlecore
  * @copyright 1999 onwards Martin Dougiamas  {@link http://moodle.com}
@@ -117,13 +132,18 @@ class invalid_state_exception extends moodle_exception {
 
 /**
  * Default exception handler, uncought exceptions are equivalent to using print_error()
+ *
+ * @param Exception $ex 
+ * @param boolean $isupgrade 
+ * @param string $plugin 
+ * Does not return. Terminates execution.
  */
-function default_exception_handler($ex) {
-    global $CFG, $DB, $SCRIPT;
+function default_exception_handler($ex, $isupgrade = false, $plugin = null) {
+    global $CFG, $DB, $OUTPUT, $SCRIPT;
 
     // detect active db transactions, rollback and log as error
-    if ($DB->is_transaction_started()) {
-        error_log('Database transaction aborted by exception in '.$CFG->dirroot.$SCRIPT);
+    if ($DB && $DB->is_transaction_started()) {
+        error_log('Database transaction aborted by exception in ' . $CFG->dirroot . $SCRIPT);
         try {
             // note: transaction blocks should never change current $_SESSION
             $DB->rollback_sql();
@@ -134,14 +154,6 @@ function default_exception_handler($ex) {
     $backtrace = $ex->getTrace();
     $place = array('file'=>$ex->getFile(), 'line'=>$ex->getLine(), 'exception'=>get_class($ex));
     array_unshift($backtrace, $place);
-
-    $earlyerror = !isset($CFG->theme) || !isset($CFG->stylesheets);
-    foreach ($backtrace as $stackframe) {
-        if (isset($stackframe['function']) && $stackframe['function'] == 'print_header') {
-            $earlyerror = true;
-            break;
-        }
-    }
 
     if ($ex instanceof moodle_exception) {
         $errorcode = $ex->errorcode;
@@ -157,11 +169,185 @@ function default_exception_handler($ex) {
         $debuginfo = null;
     }
 
-    if ($earlyerror) {
-        _print_early_error($errorcode, $module, $a, $backtrace, $debuginfo);
-    } else {
-        _print_normal_error($errorcode, $module, $a, $link, $backtrace, $debuginfo);
+    list($message, $moreinfourl, $link) = prepare_error_message($errorcode, $module, $link, $a);
+
+    if ($isupgrade) {
+        // First log upgrade error
+        upgrade_log(UPGRADE_LOG_ERROR, $plugin, 'Exception: ' . get_class($ex), $message, $backtrace);
+
+        // Always turn on debugging - admins need to know what is going on
+        $CFG->debug = DEBUG_DEVELOPER;
     }
+
+    if (is_stacktrace_during_output_init($backtrace)) {
+        echo bootstrap_renderer::early_error($message, $moreinfourl, $link, $backtrace);
+    } else {
+        echo $OUTPUT->fatal_error($message, $moreinfourl, $link, $backtrace, $debuginfo);
+    }
+
+    exit(1); // General error code
+}
+
+/**
+ * This function encapsulates the tests for whether an exception was thrown in the middle
+ * of initialising the $OUTPUT variable and starting output.
+ *
+ * If another exception is thrown then, and if we do not take special measures,
+ * we would just get a very cryptic message "Exception thrown without a stack
+ * frame in Unknown on line 0". That makes debugging very hard, so we do take
+ * special measures in default_exception_handler, with the help of this function.
+ *
+ * @param array $backtrace the stack trace to analyse.
+ * @return boolean whether the stack trace is somewhere in output initialisation.
+ */
+function is_stacktrace_during_output_init($backtrace) {
+    $dangerouscode = array(
+        array('function' => 'header', 'type' => '->'),
+        array('class' => 'bootstrap_renderer'),
+    );
+    foreach ($backtrace as $stackframe) {
+        foreach ($dangerouscode as $pattern) {
+            $matches = true;
+            foreach ($pattern as $property => $value) {
+                if (!isset($stackframe[$property]) || $stackframe[$property] != $value) {
+                    $matches = false;
+                }
+            }
+            if ($matches) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/**
+ * Abort execution, displaying an error message.
+ *
+ * @param string $errorcode The name of the language string containing the error message.
+ *      Normally this should be in the error.php lang file.
+ * @param string $module The language file to get the error message from.
+ * @param string $link The url where the user will be prompted to continue.
+ *      If no url is provided the user will be directed to the site index page.
+ * @param object $a Extra words and phrases that might be required in the error string
+ * @return void terminates script, does not return!
+ */
+function print_error($errorcode, $module = 'error', $link = '', $a = null) {
+    global $OUTPUT, $UNITTEST;
+
+    // Errors in unit test become exceptions, so you can unit test code that might call print_error().
+    if (!empty($UNITTEST->running)) {
+        throw new moodle_exception($errorcode, $module, $link, $a);
+    }
+
+    list($message, $moreinfourl, $link) = prepare_error_message($errorcode, $module, $link, $a);
+    echo $OUTPUT->fatal_error($message, $moreinfourl, $link, debug_backtrace());
+
+    exit(1); // General error code
+}
+
+/**
+ * Private method used by print_error and default_exception_handler.
+ * @param $errorcode
+ * @param $module
+ * @param $link
+ * @param $a
+ * @return array
+ */
+function prepare_error_message($errorcode, $module, $link, $a) {
+    global $CFG, $DB, $SESSION;
+
+    if ($DB) {
+        // If you enable db debugging and exception is thrown, the print footer prints a lot of rubbish
+        $DB->set_debug(0);
+    }
+
+    // Be careful, no guarantee moodlelib.php is loaded.
+    if (empty($module) || $module == 'moodle' || $module == 'core') {
+        $module = 'error';
+    }
+    if (function_exists('get_string')) {
+        $message = get_string($errorcode, $module, $a);
+        if ($module === 'error' and strpos($message, '[[') === 0) {
+            // Search in moodle file if error specified - needed for backwards compatibility
+            $message = get_string($errorcode, 'moodle', $a);
+        }
+    } else {
+        $message = $module . '/' . $errorcode;
+    }
+
+    // Be careful, no guarantee weblib.php is loaded.
+    if (function_exists('clean_text')) {
+        $message = clean_text($message);
+    } else {
+        $message = htmlspecialchars($message);
+    }
+
+    if (!empty($CFG->errordocroot)) {
+        $errordocroot = $CFG->errordocroot;
+    } else if (!empty($CFG->docroot)) {
+        $errordocroot = $CFG->docroot;
+    } else {
+        $errordocroot = 'http://docs.moodle.org';
+    }
+    if ($module === 'error') {
+        $modulelink = 'moodle';
+    } else {
+        $modulelink = $module;
+    }
+    $moreinfourl = $errordocroot . '/en/error/' . $modulelink . '/' . $errorcode;
+
+    if (empty($link) && !defined('ADMIN_EXT_HEADER_PRINTED')) {
+        if (!empty($SESSION->fromurl)) {
+            $link = $SESSION->fromurl;
+            unset($SESSION->fromurl);
+        } else {
+            $link = $CFG->wwwroot .'/';
+        }
+    }
+
+    return array($message, $moreinfourl, $link);
+}
+
+/**
+ * Formats a backtrace ready for output.
+ *
+ * @param array $callers backtrace array, as returned by debug_backtrace().
+ * @param boolean $plaintext if false, generates HTML, if true generates plain text.
+ * @return string formatted backtrace, ready for output.
+ */
+function format_backtrace($callers, $plaintext = false) {
+    // do not use $CFG->dirroot because it might not be available in desctructors
+    $dirroot = dirname(dirname(__FILE__));
+ 
+    if (empty($callers)) {
+        return '';
+    }
+
+    $from = $plaintext ? '' : '<ul style="text-align: left">';
+    foreach ($callers as $caller) {
+        if (!isset($caller['line'])) {
+            $caller['line'] = '?'; // probably call_user_func()
+        }
+        if (!isset($caller['file'])) {
+            $caller['file'] = 'unknownfile'; // probably call_user_func()
+        }
+        $from .= $plaintext ? '* ' : '<li>';
+        $from .= 'line ' . $caller['line'] . ' of ' . str_replace($dirroot, '', $caller['file']);
+        if (isset($caller['function'])) {
+            $from .= ': call to ';
+            if (isset($caller['class'])) {
+                $from .= $caller['class'] . $caller['type'];
+            }
+            $from .= $caller['function'] . '()';
+        } else if (isset($caller['exception'])) {
+            $from .= ': '.$caller['exception'].' thrown';
+        }
+        $from .= $plaintext ? "\n" : '</li>';
+    }
+    $from .= $plaintext ? '' : '</ul>';
+
+    return $from;
 }
 
 /**
@@ -334,7 +520,7 @@ function init_performance_info() {
     $PERF->logwrites = 0;
     if (function_exists('microtime')) {
         $PERF->starttime = microtime();
-        }
+    }
     if (function_exists('memory_get_usage')) {
         $PERF->startmemory = memory_get_usage();
     }
@@ -350,6 +536,21 @@ function init_performance_info() {
             $PERF->profiling = true;
         }
     }
+}
+
+/**
+ * Indicates whether we are in the middle of the initial Moodle install.
+ *
+ * Very occasionally it is necessary avoid running certain bits of code before the
+ * Moodle installation has completed. The installed flag is set in admin/index.php
+ * after Moodle core and all the plugins have been installed, but just before
+ * the person doing the initial install is asked to choose the admin password.
+ *
+ * @return boolean true if the initial install is not complete.
+ */
+function during_initial_install() {
+    global $CFG;
+    return empty($CFG->rolesactive);
 }
 
 /**
@@ -532,5 +733,136 @@ function init_eaccelerator() {
 }
 
 
+/**
+ * This class solves the problem of how to initialise $OUTPUT.
+ *
+ * The problem is caused be two factors
+ * <ol>
+ * <li>On the one hand, we cannot be sure when output will start. In particular,
+ * an error, which needs to be displayed, could br thrown at any time.</li>
+ * <li>On the other hand, we cannot be sure when we will have all the information
+ * necessary to correctly initialise $OUTPUT. $OUTPUT depends on the theme, which
+ * (potentially) depends on the current course, course categories, and logged in user.
+ * It also depends on whether the current page requires HTTPS.</li>
+ * </ol>
+ *
+ * So, it is hard to find a single natural place during Moodle script execution,
+ * which we can guarantee is the right time to initialise $OUTPUT. Instead we
+ * adopt the following strategy
+ * <ol>
+ * <li>We will initialise $OUTPUT the first time it is used.</li>
+ * <li>If, after $OUTPUT has been initialised, the script tries to change something
+ * that $OUPTUT depends on, we throw an exception making it clear that the script
+ * did something wrong.
+ * </ol>
+ *
+ * The only problem with that is, how do we initialise $OUTPUT on first use if,
+ * it is going to be used like $OUTPUT->somthing(...)? Well that is where this
+ * class comes in. Initially, we set up $OUTPUT = new bootstrap_renderer(). Then,
+ * when any method is called on that object, we initialise $OUTPUT, and pass the call on.
+ *
+ * Note that this class is used before lib/outputlib.php has been loaded, so we
+ * must be careful referring to classes/funtions from there, they may not be
+ * defined yet, and we must avoid fatal errors.
+ *
+ * @copyright 2009 Tim Hunt
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since     Moodle 2.0
+ */
+class bootstrap_renderer {
+    /**
+     * Handles re-entrancy. Without this, errors or debugging output that occur
+     * during the initialisation of $OUTPUT, cause infinite recursion.
+     * @var boolean
+     */
+    protected $initialising = false;
 
-?>
+    /**
+     * Have we started output yet?
+     * @return boolean true if the header has been printed.
+     */
+    public function has_started() {
+        return false;
+    }
+
+    public function __call($method, $arguments) {
+        global $OUTPUT, $PAGE;
+
+        // If lib/outputlib.php has been loaded, call it.
+        if (!empty($PAGE)) {
+            $PAGE->initialise_theme_and_output();
+            return call_user_func_array(array($OUTPUT, $method), $arguments);
+        }
+
+        $this->initialising = true;
+        // Too soon to initialise $OUTPUT, provide a couple of key methods.
+        $earlymethods = array(
+            'fatal_error' => 'early_error',
+            'notification' => 'early_notification',
+        );
+        if (array_key_exists($method, $earlymethods)) {
+            return call_user_func_array(array('bootstrap_renderer', $earlymethods[$method]), $arguments);
+        }
+
+        throw new coding_exception('Attempt to start output before enough information is known to initialise the theme.');
+    }
+
+    /**
+     * This function should only be called by this class, or by 
+     * @return unknown_type
+     */
+    public static function early_error($message, $moreinfourl, $link, $backtrace,
+                $debuginfo = null, $showerrordebugwarning = false) {
+        global $CFG;
+
+        // In the name of protocol correctness, monitoring and performance
+        // profiling, set the appropriate error headers for machine comsumption
+        if (isset($_SERVER['SERVER_PROTOCOL'])) {
+            // Avoid it with cron.php. Note that we assume it's HTTP/1.x
+            @header($_SERVER['SERVER_PROTOCOL'] . ' 503 Service Unavailable');
+        }
+
+        // better disable any caching
+        @header('Content-Type: text/html; charset=utf-8');
+        @header('Cache-Control: no-store, no-cache, must-revalidate');
+        @header('Cache-Control: post-check=0, pre-check=0', false);
+        @header('Pragma: no-cache');
+        @header('Expires: Mon, 20 Aug 1969 09:23:00 GMT');
+        @header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
+
+        if (function_exists('get_string') && function_exists('get_html_lang')) {
+            $htmllang = get_html_lang();
+            $strerror = get_string('error');
+        } else {
+            $htmllang = '';
+            $strerror = 'Error';
+        }
+
+        $output = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" ' . $htmllang . '>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>' . $strerror . '</title>
+</head><body>
+<div style="margin-top: 6em; margin-left:auto; margin-right:auto; color:#990000; text-align:center; font-size:large; border-width:1px;
+    border-color:black; background-color:#ffffee; border-style:solid; border-radius: 20px; border-collapse: collapse;
+    width: 80%; -moz-border-radius: 20px; padding: 15px">
+' . $message . '
+</div>';
+        if (!empty($CFG->debug) && $CFG->debug >= DEBUG_DEVELOPER) {
+            if (!empty($debuginfo)) {
+                $output .= '<div class="notifytiny">' . $debuginfo . '</div>';
+            }
+            if (!empty($backtrace)) {
+                $output .= '<div class="notifytiny">Stack trace: ' . format_backtrace($backtrace, false) . '</div>';
+            }
+        }
+    
+        $output .= '</body></html>';
+        return $output;
+    }
+
+    public static function early_notification($message, $classes = 'notifyproblem') {
+        return '<div class="' . $classes . '">' . $message . '</div>';
+    }
+}

@@ -453,7 +453,7 @@ function get_guest_role() {
 function has_capability($capability, $context, $userid=NULL, $doanything=true) {
     global $USER, $CFG, $DB, $SCRIPT, $ACCESSLIB_PRIVATE;
 
-    if (empty($CFG->rolesactive)) {
+    if (during_initial_install()) {
         if ($SCRIPT === "/$CFG->admin/index.php" or $SCRIPT === "/$CFG->admin/cliupgrade.php") {
             // we are in an installer - roles can not work yet
             return true;
@@ -480,6 +480,10 @@ function has_capability($capability, $context, $userid=NULL, $doanything=true) {
     }
 
     if (empty($userid)) { // we must accept null, 0, '0', '' etc. in $userid
+        if (empty($USER->id)) {
+            // Session not set up yet.
+            return false;
+        }
         $userid = $USER->id;
     }
 
@@ -1768,7 +1772,7 @@ function load_all_capabilities() {
     global $USER, $CFG, $ACCESSLIB_PRIVATE;
 
     // roles not installed yet - we are in the middle of installation
-    if (empty($CFG->rolesactive)) {
+    if (during_initial_install()) {
         return;
     }
 
@@ -3025,13 +3029,12 @@ function role_assign($roleid, $userid, $groupid, $contextid, $timestart=0, $time
     }
 
 /// Ask all the modules if anything needs to be done for this user
-    if ($mods = get_list_of_plugins('mod')) {
-        foreach ($mods as $mod) {
-            include_once($CFG->dirroot.'/mod/'.$mod.'/lib.php');
-            $functionname = $mod.'_role_assign';
-            if (function_exists($functionname)) {
-                $functionname($userid, $context, $roleid);
-            }
+    $mods = get_plugin_list('mod');
+    foreach ($mods as $mod => $moddir) {
+        include_once($moddir.'/lib.php');
+        $functionname = $mod.'_role_assign';
+        if (function_exists($functionname)) {
+            $functionname($userid, $context, $roleid);
         }
     }
 
@@ -3087,7 +3090,7 @@ function role_unassign($roleid=0, $userid=0, $groupid=0, $contextid=0, $enrol=NU
 
     if ($select) {
         if ($ras = $DB->get_records_select('role_assignments', implode(' AND ', $select), $params)) {
-            $mods = get_list_of_plugins('mod');
+            $mods = get_plugin_list('mod');
             foreach($ras as $ra) {
                 $fireevent = false;
                 /// infinite loop protection when deleting recursively
@@ -3117,8 +3120,8 @@ function role_unassign($roleid=0, $userid=0, $groupid=0, $contextid=0, $enrol=NU
                 }
 
                 /// Ask all the modules if anything needs to be done for this user
-                foreach ($mods as $mod) {
-                    include_once($CFG->dirroot.'/mod/'.$mod.'/lib.php');
+                foreach ($mods as $mod=>$moddir) {
+                    include_once($moddir.'/lib.php');
                     $functionname = $mod.'_role_unassign';
                     if (function_exists($functionname)) {
                         $functionname($ra->userid, $context); // watch out, $context might be NULL if something goes wrong
@@ -3208,101 +3211,34 @@ function enrol_into_course($course, $user, $enrol) {
  * capabilities are defined for the component, we simply return an empty array.
  *
  * @global object
- * @param string $component examples: 'moodle', 'mod/forum', 'block/quiz_results'
+ * @param string $component full plugin name, examples: 'moodle', 'mod_forum'
  * @return array array of capabilities
  */
 function load_capability_def($component) {
-    global $CFG;
+    $defpath = get_component_directory($component).'/db/access.php';
 
-    if ($component == 'moodle') {
-        $defpath = $CFG->libdir.'/db/access.php';
-        $varprefix = 'moodle';
-    } else {
-        $compparts = explode('/', $component);
-
-        if ($compparts[0] == 'report') {
-            $defpath = $CFG->dirroot.'/'.$CFG->admin.'/report/'.$compparts[1].'/db/access.php';
-            $varprefix = $compparts[0].'_'.$compparts[1];
-
-        } else if ($compparts[0] == 'block') {
-            // Blocks are an exception. Blocks directory is 'blocks', and not
-            // 'block'. So we need to jump through hoops.
-            $defpath = $CFG->dirroot.'/'.$compparts[0].
-                                's/'.$compparts[1].'/db/access.php';
-            $varprefix = $compparts[0].'_'.$compparts[1];
-
-        } else if ($compparts[0] == 'format') {
-            // Similar to the above, course formats are 'format' while they
-            // are stored in 'course/format'.
-            $defpath = $CFG->dirroot.'/course/'.$component.'/db/access.php';
-            $varprefix = $compparts[0].'_'.$compparts[1];
-
-        } else if ($compparts[0] == 'editor') {
-            $defpath = $CFG->dirroot.'/lib/editor/'.$compparts[1].'/db/access.php';
-            $varprefix = $compparts[0].'_'.$compparts[1];
-
-        } else if ($compparts[0] == 'gradeimport') {
-            $defpath = $CFG->dirroot.'/grade/import/'.$compparts[1].'/db/access.php';
-            $varprefix = $compparts[0].'_'.$compparts[1];
-
-        } else if ($compparts[0] == 'gradeexport') {
-            $defpath = $CFG->dirroot.'/grade/export/'.$compparts[1].'/db/access.php';
-            $varprefix = $compparts[0].'_'.$compparts[1];
-
-        } else if ($compparts[0] == 'gradereport') {
-            $defpath = $CFG->dirroot.'/grade/report/'.$compparts[1].'/db/access.php';
-            $varprefix = $compparts[0].'_'.$compparts[1];
-
-        } else if ($compparts[0] == 'quizreport') {
-            $defpath = $CFG->dirroot.'/mod/quiz/report/'.$compparts[1].'/db/access.php';
-            $varprefix = $compparts[0].'_'.$compparts[1];
-
-        } else if ($compparts[0] == 'coursereport') {
-            $defpath = $CFG->dirroot.'/course/report/'.$compparts[1].'/db/access.php';
-            $varprefix = $compparts[0].'_'.$compparts[1];
-
-        } else {
-            $defpath = $CFG->dirroot.'/'.$component.'/db/access.php';
-            $varprefix = str_replace('/', '_', $component);
-        }
-    }
     $capabilities = array();
-
     if (file_exists($defpath)) {
         require($defpath);
-        $capabilities = ${$varprefix.'_capabilities'};
+        $capabilities = ${$component.'_capabilities'};
     }
+
     return $capabilities;
 }
 
 
 /**
  * Gets the capabilities that have been cached in the database for this component.
- *
- * @global object
- * @param string $component - examples: 'moodle', 'mod/forum', 'block/quiz_results'
+ * @param string $component - examples: 'moodle', 'mod_forum'
  * @return array array of capabilities
  */
 function get_cached_capabilities($component='moodle') {
     global $DB;
-
-    if ($component == 'moodle') {
-        $storedcaps = $DB->get_records_select('capabilities', "name LIKE ?", array('moodle/%:%'));
-
-    } else if ($component == 'local') {
-        $storedcaps = $DB->get_records_select('capabilities', "name LIKE ?", array('moodle/local:%'));
-
-    } else {
-        $storedcaps = $DB->get_records_select('capabilities', "name LIKE ?", array("$component:%"));
-    }
-
-    return $storedcaps;
+    return $DB->get_records('capabilities', array('component'=>$component));
 }
 
 /**
  * Returns default capabilities for given legacy role type.
- *
- * @global object
  * @param string $legacyrole legacy role name
  * @return array
  */
@@ -3336,8 +3272,6 @@ function get_default_capabilities($legacyrole) {
  * Reset role capabilitites to default according to selected legacy capability.
  * If several legacy caps selected, use the first from get_default_capabilities.
  * If no legacy selected, removes all capabilities.
- *
- * @global object
  * @param int @roleid
  */
 function reset_role_capabilities($roleid) {
@@ -6277,7 +6211,7 @@ function get_dirty_contexts($time) {
 function mark_context_dirty($path) {
     global $CFG, $ACCESSLIB_PRIVATE;
 
-    if (empty($CFG->rolesactive)) {
+    if (during_initial_install()) {
         return;
     }
 

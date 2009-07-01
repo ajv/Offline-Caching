@@ -105,10 +105,34 @@ function get_texteditor($editorname) {
  */
 function get_available_editors() {
     $editors = array();
-    foreach (get_list_of_plugins('lib/editor') as $editorname) {
+    foreach (get_plugin_list('editor') as $editorname => $dir) {
         $editors[$editorname] = get_string('modulename', 'editor_'.$editorname);
     }
     return $editors;
+}
+
+/**
+ * Setup all JS and CSS needed for editors.
+ * @return void
+ */
+function editors_head_setup() {
+    global $CFG;
+
+    if (empty($CFG->texteditors)) {
+        $CFG->texteditors = 'tinymce,textarea';
+    }
+    $active = explode(',', $CFG->texteditors);
+
+    foreach ($active as $editorname) {
+        if (!$editor = get_texteditor($editorname)) {
+            continue;
+        }
+        if (!$editor->supported_by_browser()) {
+            // bad luck, this editor is not compatible
+            continue;
+        }
+        $editor->head_setup();
+    }
 }
 
 /**
@@ -144,22 +168,19 @@ abstract class texteditor {
     public abstract function supports_repositories();
 
     /**
-     * Returns textarea class in formslib editor element
-     * @return string
-     */
-    public abstract function get_editor_element_class();
-
-    /**
-     * Returns textarea class for legacy text editor
-     * @return string
-     */
-    public abstract function get_legacy_textarea_class();
-
-    /**
      * Add required JS needed for editor
+     * @param string $elementid id of text area to be converted to editor
+     * @param array $options
      * @return void
      */
-    public abstract function use_editor($elementid=null);
+    public abstract function use_editor($elementid, array $options=null);
+
+    /**
+     * Setup all JS and CSS needed for editor.
+     * @return void
+     */
+    public function head_setup() {
+    }
 }
 
 

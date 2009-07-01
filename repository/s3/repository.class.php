@@ -12,7 +12,8 @@ class repository_s3 extends repository {
         $this->s = new S3($this->access_key, $this->secret_key);
     }
     public function get_listing($path = '', $page = '') {
-        global $CFG;
+        global $CFG, $OUTPUT;
+        $OUTPUT->initialise_deprecated_cfg_pixpath();
         $list = array();
         $list['list'] = array();
         // the management interface url
@@ -31,7 +32,7 @@ class repository_s3 extends repository {
                 $folder = array(
                     'title' => $bucket,
                     'children' => array(),
-                    'thumbnail'=>$CFG->httpswwwroot.'/pix/f/folder-32.png',
+                    'thumbnail'=>$CFG->pixpath.'/f/folder-32.png',
                     'path'=>$bucket
                     );
                 $tree[] = $folder;
@@ -45,7 +46,7 @@ class repository_s3 extends repository {
                     'size'=>$file['size'],
                     'date'=>userdate($file['time']),
                     'source'=>$path.'/'.$file['name'],
-                    'thumbnail'=>$CFG->httpswwwroot.'/pix/f/'.mimeinfo('icon32', $file['name'])
+                    'thumbnail'=>$CFG->pixpath.'/f/'.mimeinfo('icon32', $file['name'])
                     );
             }
         }

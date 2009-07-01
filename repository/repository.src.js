@@ -1,4 +1,3 @@
-// $Id$
 ///////////////////////////////////////////////////////////////////////////
 //                                                                       //
 //       Don't modify this file unless you know how it works             //
@@ -9,8 +8,10 @@
  * methods you can call it directly without creating an instance.
  * If you are going to create a file picker, you need create an instance
  * repo = new repository_client();
- 
  */
+
+var id2clientid = {};
+var id2itemid   = {};
 
 var repository_listing = {};
 var cached_client_id = {};
@@ -248,6 +249,7 @@ repository_client.req = function(client_id, id, path, page) {
     params['ctx_id']=fp_config.contextid;
     params['client_id'] = client_id;
     params['repo_id']=id;
+    params['itemid'] = repository_client.fp[client_id].itemid;
     if (!!page) { // convert page to boolean value
         params['page']=page;
     }
@@ -262,15 +264,13 @@ repository_client.req_cb = {
          repo.viewbar.set('disabled', false);
          var panel = new YAHOO.util.Element('panel-'+data.client_id);
          if(data && data.e) {
-             panel.get('element').innerHTML = data.e;
+             panel.get('element').innerHTML = '<div class="fp-error">'+data.e+'</div>';
              return;
          }
          // save data
          repo.fs = data;
          if(!data) {
              return;
-         }else if(data.msg){
-             repository_client.print_msg(data.msg);
          }else if(data.iframe) {
              repository_client.view_iframe(data.client_id);
          }else if(data.login) {
@@ -283,7 +283,14 @@ repository_client.req_cb = {
                  repository_client.view_as_icons(data.client_id, data.list);
              }
          }
+         if (data.msg) {
+             repository_client.print_msg(data.msg, data.client_id);
+         }
      }
+}
+repository_client.print_msg = function(msg, client_id) {
+     var panel = new YAHOO.util.Element('panel-'+client_id);
+     panel.get('element').innerHTML = '<div class="fp-msg">'+msg+'</div>'+panel.get('element').innerHTML;
 }
 repository_client.view_iframe = function(client_id) {
     var fs = repository_client.fp[client_id].fs;
@@ -338,7 +345,7 @@ repository_client.print_login = function(id, data) {
                 field_id = ' id="'+login[k].id+'"';
             }
             if (login[k].label) {
-                str += '<td align="right"><label'+label_id+'>'+login[k].label+'</label> </td>';
+                str += '<td align="right" valign="top"><label'+label_id+'>'+login[k].label+'</label> </td>';
             } else {
                 str += '<td></td>';
             }
@@ -571,7 +578,8 @@ repository_client.select_file = function(oldname, url, icon, client_id, repo_id)
     if (repository_client.files[client_id] == undefined) {
         repository_client.files[client_id] = 0;
     }
-    if (repository_client.files[client_id] >= repository_client.fp[client_id].maxfiles)
+    if (repository_client.files[client_id] >= repository_client.fp[client_id].maxfiles && 
+            repository_client.fp[client_id].maxfiles != -1)
     {
         alert('Only '+repository_client.fp[client_id].maxfiles+' files are allowed!');
         return false;
@@ -774,6 +782,33 @@ repository_client.view_as_icons = function(client_id, data) {
         link.appendChild(img);
         frame.appendChild(link);
         el.appendChild(frame);
+        if (fp.fs.draftfiles && !list[k].children) {
+            var delbtn = document.createElement('A');
+            delbtn.href = '###';
+            delbtn.innerHTML = "[X]";
+            delbtn.id = 'del-id-'+String(count);
+            el.appendChild(delbtn);
+            delbtn.itemid=fp.itemid; 
+            delbtn.client_id=client_id;
+            delbtn.title=list[k].title;
+            delbtn.repo_id=fp.fs.repo_id;
+            delbtn.onclick = function() {
+                if (confirm('Sure?')) {
+                    var params = [];
+                    params['client_id'] = this.client_id;
+                    params['itemid'] = this.itemid;
+                    params['title'] = this.title;
+                    var trans = YAHOO.util.Connect.asyncRequest('POST',
+                        moodle_cfg.wwwroot+'/repository/ws.php?action=delete',
+                        this,
+                        repository_client.postdata(params)
+                        );
+                }
+            }
+            delbtn.success = function(o) {
+                repository_client.req(o.responseText, this.repo_id);
+            }
+        }
         el.appendChild(title);
         panel.appendChild(el);
         if(list[k].children) {
@@ -832,11 +867,11 @@ repository_client.view_as_icons = function(client_id, data) {
         }
         count++;
     }
+    if (list.length == 0 && !fp.fs.upload) {
+        panel.innerHTML = '<div class="fp-error">'+fp_lang.emptylist+'</div>';
+    }
     container.appendChild(panel);
     repository_client.print_footer(client_id);
-}
-repository_client.check_maxfiles = function(num) {
-
 }
 repository_client.print_footer = function(client_id) {
     var fs = this.fp[client_id].fs;
@@ -1097,23 +1132,23 @@ success: function(o) {
      var fp = repository_client.fp[data.client_id];
      if(el) {
          el.innerHTML = '';
-     } else {
-         var el = document.createElement('DIV');
-         el.id = 'fp-search-dlg';
+         el.parentNode.removeChild(el);
      }
-     var div1 = document.createElement('DIV');
-     div1.className = 'hd';
-     div1.innerHTML = fp_lang.searching+"\"" + repository_listing[data.client_id][fp.fs.repo_id].name + '"';
-     var div2 = document.createElement('DIV');
-     div2.className = 'bd';
+     var el = document.createElement('DIV');
+     el.id = 'fp-search-dlg';
+     var dlg_title = document.createElement('DIV');
+     dlg_title.className = 'hd';
+     dlg_title.innerHTML = fp_lang.searching+"\"" + repository_listing[data.client_id][fp.fs.repo_id].name + '"';
+     var dlg_body = document.createElement('DIV');
+     dlg_body.className = 'bd';
      var sform = document.createElement('FORM');
      sform.method = 'POST';
      sform.id = "fp-search-form";
      sform.action = moodle_cfg.wwwroot+'/repository/ws.php?action=search';
      sform.innerHTML = data['form'];
-     div2.appendChild(sform);
-     el.appendChild(div1);
-     el.appendChild(div2);
+     dlg_body.appendChild(sform);
+     el.appendChild(dlg_title);
+     el.appendChild(dlg_body);
      document.body.appendChild(el);
      var dlg_handler = function() {
          var client_id=dlg_handler.client_id;
@@ -1142,7 +1177,7 @@ success: function(o) {
             handler: dlg_handler,
             isDefault:true
         },
-        {text:fp_lang.cancel,handler:function(){this.cancel()}}
+        {text:fp_lang.cancel,handler:function(){this.destroy()}}
         ]
     });
     dlg.render();

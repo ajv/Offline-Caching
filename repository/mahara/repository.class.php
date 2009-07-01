@@ -128,7 +128,8 @@ class repository_mahara extends repository {
      * @return <type>
      */
     public function get_listing($path = null, $page = 1, $search = '') {
-        global $CFG, $DB, $USER;
+        global $CFG, $DB, $USER, $OUTPUT;
+        $OUTPUT->initialise_deprecated_cfg_pixpath();
 
         ///check that Mahara has a good version
         ///We also check that the "get file list" method has been activated (if it is not
@@ -206,7 +207,7 @@ class repository_mahara extends repository {
         $list = array();
          if (!empty($filesandfolders['folders'])) {
             foreach ($filesandfolders['folders'] as $folder) {
-                $list[] =  array('path'=>$folder['id'], 'title'=>$folder['title'], 'date'=>$folder['mtime'], 'size'=>'0', 'children'=>array(), 'thumbnail' => $CFG->httpswwwroot .'/pix/f/folder.gif');
+                $list[] =  array('path'=>$folder['id'], 'title'=>$folder['title'], 'date'=>$folder['mtime'], 'size'=>'0', 'children'=>array(), 'thumbnail' => $CFG->pixpath .'/f/folder.gif');
             }
         }
         if (!empty($filesandfolders['files'])) {
@@ -214,7 +215,7 @@ class repository_mahara extends repository {
                 if ($file['artefacttype'] == 'image') {
                     $thumbnail = $host->wwwroot."/artefact/file/download.php?file=".$file['id']."&size=70x55";
                 } else {
-                    $thumbnail = $CFG->httpswwwroot .'/pix/f/'. mimeinfo('icon32', $file['title']);
+                    $thumbnail = $CFG->pixpath .'/f/'. mimeinfo('icon32', $file['title']);
                 }
                 $list[] = array( 'title'=>$file['title'], 'date'=>$file['mtime'], 'source'=>$file['id'], 'thumbnail' => $thumbnail);
             }

@@ -38,9 +38,11 @@ define('FEEDBACK_RESETFORM_RESET', 'feedback_reset_data_');
 define('FEEDBACK_RESETFORM_DROP', 'feedback_drop_feedback_');
 define('FEEDBACK_MAX_PIX_LENGTH', '400'); //max. Breite des grafischen Balkens in der Auswertung
 
+global $feedback_names; // not nice 
 $feedback_names = feedback_load_feedback_items('mod/feedback/item');
 
-//initialize the feedback-Session
+//initialize the feedback-Session - not nice at all!!
+global $SESSION;
 if(!isset($SESSION->feedback) OR !is_object($SESSION->feedback)) {
     $SESSION->feedback = new object();
 }
@@ -1611,7 +1613,7 @@ function feedback_create_values($data, $usrid, $timemodified, $tmp = false, $gue
     $errcount = 0;
     foreach($keys as $key){
         //ensure the keys are what we want
-        if(eregi('([a-z0-9]{1,})_([0-9]{1,})',$key)){
+        if(preg_match('/([a-z0-9]{1,})_([0-9]{1,})/i',$key)){
             $value = new object();
             $itemnr = explode('_', $key);
             $value->item = intval($itemnr[1]);
@@ -1657,7 +1659,7 @@ function feedback_update_values($data, $completed, $tmp = false) {
     $keys = array_keys($data);
     foreach($keys as $key){
         //ensure the keys are what we want
-        if(eregi('([a-z0-9]{1,})_([0-9]{1,})',$key)){
+        if(preg_match('/([a-z0-9]{1,})_([0-9]{1,})/i',$key)){
             //build the new value to update([id], item, completed, value)
             $itemnr = explode('_', $key);
             $newvalue = new object();
@@ -2312,4 +2314,3 @@ function feedback_encode_target_url($url) {
         return $url;
     }
 }
-?>

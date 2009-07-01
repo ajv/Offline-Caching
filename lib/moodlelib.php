@@ -249,18 +249,6 @@ define('PARAM_PERMISSION',   0x80000);
  */
 define('PAGE_COURSE_VIEW', 'course-view');
 
-/// Debug levels ///
-/** no warnings at all */
-define ('DEBUG_NONE', 0);
-/** E_ERROR | E_PARSE */
-define ('DEBUG_MINIMAL', 5);
-/** E_ERROR | E_PARSE | E_WARNING | E_NOTICE */
-define ('DEBUG_NORMAL', 15);
-/** E_ALL without E_STRICT for now, do show recoverable fatal errors */
-define ('DEBUG_ALL', 6143);
-/** DEBUG_ALL with extra Moodle debug messages - (DEBUG_ALL | 32768) */
-define ('DEBUG_DEVELOPER', 38911);
-
 /** Get remote addr constant */
 define('GETREMOTEADDR_SKIP_HTTP_CLIENT_IP', '1');
 /** Get remote addr constant */
@@ -314,6 +302,8 @@ define('FEATURE_GROUPMEMBERSONLY', 'groupmembersonly');
 
 /** True if module supports intro editor */
 define('FEATURE_MOD_INTRO', 'mod_intro');
+/** True if module supports subplugins */
+define('FEATURE_MOD_SUBPLUGINS', 'mod_subplugins');
 /** True if module has default completion */
 define('FEATURE_MODEDIT_DEFAULT_COMPLETION', 'modedit_default_completion');
 
@@ -446,19 +436,19 @@ function clean_param($param, $type) {
             return (float)$param;  // Convert to float
 
         case PARAM_ALPHA:        // Remove everything not a-z
-            return eregi_replace('[^a-zA-Z]', '', $param);
+            return preg_replace('/[^a-zA-Z]/i', '', $param);
 
         case PARAM_ALPHAEXT:     // Remove everything not a-zA-Z_- (originally allowed "/" too)
-            return eregi_replace('[^a-zA-Z_-]', '', $param);
+            return preg_replace('/[^a-zA-Z_-]/i', '', $param);
 
         case PARAM_ALPHANUM:     // Remove everything not a-zA-Z0-9
-            return eregi_replace('[^A-Za-z0-9]', '', $param);
+            return preg_replace('/[^A-Za-z0-9]/i', '', $param);
 
         case PARAM_ALPHANUMEXT:     // Remove everything not a-zA-Z0-9_-
-            return eregi_replace('[^A-Za-z0-9_-]', '', $param);
+            return preg_replace('/[^A-Za-z0-9_-]/i', '', $param);
 
         case PARAM_SEQUENCE:     // Remove everything not 0-9,
-            return eregi_replace('[^0-9,]', '', $param);
+            return preg_replace('/[^0-9,]/i', '', $param);
 
         case PARAM_BOOL:         // Convert to 1 or 0
             $tempstr = strtolower($param);
@@ -478,14 +468,14 @@ function clean_param($param, $type) {
             return clean_param(strip_tags($param, '<lang><span>'), PARAM_CLEAN);
 
         case PARAM_SAFEDIR:      // Remove everything not a-zA-Z0-9_-
-            return eregi_replace('[^a-zA-Z0-9_-]', '', $param);
+            return preg_replace('/[^a-zA-Z0-9_-]/i', '', $param);
 
         case PARAM_SAFEPATH:     // Remove everything not a-zA-Z0-9/_-
-            return eregi_replace('[^a-zA-Z0-9/_-]', '', $param);
+            return preg_replace('/[^a-zA-Z0-9\/_-]/i', '', $param); 
 
         case PARAM_FILE:         // Strip all suspicious characters from filename
-            $param = ereg_replace('[[:cntrl:]]|[&<>"`\|\':\\/]', '', $param);
-            $param = ereg_replace('\.\.+', '', $param);
+            $param = preg_replace('~[[:cntrl:]]|[&<>"`\|\':\\/]~', '', $param);
+            $param = preg_replace('~\.\.+~', '', $param);
             if ($param === '.') {
                 $param = '';
             }
@@ -493,10 +483,10 @@ function clean_param($param, $type) {
 
         case PARAM_PATH:         // Strip all suspicious characters from file path
             $param = str_replace('\\', '/', $param);
-            $param = ereg_replace('[[:cntrl:]]|[&<>"`\|\':]', '', $param);
-            $param = ereg_replace('\.\.+', '', $param);
-            $param = ereg_replace('//+', '/', $param);
-            return ereg_replace('/(\./)+', '/', $param);
+            $param = preg_replace('~[[:cntrl:]]|[&<>"`\|\':]~', '', $param);
+            $param = preg_replace('~\.\.+~', '', $param);
+            $param = preg_replace('~//+~', '/', $param);
+            return preg_replace('~/(\./)+~', '/', $param);
 
         case PARAM_HOST:         // allow FQDN or IPv4 dotted quad
             $param = preg_replace('/[^\.\d\w-]/','', $param ); // only allowed chars
@@ -602,7 +592,7 @@ function clean_param($param, $type) {
             //problem, so remove *all* backslash.
             //$param = str_replace('\\', '', $param);
             //remove some nasties
-            $param = ereg_replace('[[:cntrl:]]|[<>`]', '', $param);
+            $param = preg_replace('~[[:cntrl:]]|[<>`]~', '', $param);
             //convert many whitespace chars into one
             $param = preg_replace('/\s+/', ' ', $param);
             $textlib = textlib_get_instance();
@@ -3882,10 +3872,10 @@ function remove_course_contents($courseid, $showfeedback=true) {
     $strdeleted = get_string('deleted');
 
 /// Clean up course formats (iterate through all formats in the even the course format was ever changed)
-    $formats = get_list_of_plugins('course/format');
-    foreach ($formats as $format) {
+    $formats = get_plugin_list('format');
+    foreach ($formats as $format=>$formatdir) {
         $formatdelete = $format.'_course_format_delete_course';
-        $formatlib    = "$CFG->dirroot/course/format/$format/lib.php";
+        $formatlib    = "$formatdir/lib.php";
         if (file_exists($formatlib)) {
             include_once($formatlib);
             if (function_exists($formatdelete)) {
@@ -3945,10 +3935,6 @@ function remove_course_contents($courseid, $showfeedback=true) {
     } else {
         print_error('nomodules', 'debug');
     }
-
-/// Give local code a chance to delete its references to this course.
-    require_once($CFG->libdir.'/locallib.php');
-    notify_local_delete_course($courseid, $showfeedback);
 
 /// Delete course blocks
     blocks_delete_all_for_context($context->id);
@@ -4542,7 +4528,7 @@ function email_to_user($user, $from, $subject, $messagetext, $messagehtml='', $a
     }
 
     if ($attachment && $attachname) {
-        if (ereg( "\\.\\." ,$attachment )) {    // Security check for ".." in dir path
+        if (preg_match( "~\\.\\.~" ,$attachment )) {    // Security check for ".." in dir path
             $mail->AddAddress($supportuser->email, fullname($supportuser, true) );
             $mail->AddStringAttachment('Error in attachment.  User attempted to attach a filename with a unsafe name.', 'error.txt', '8bit', 'text/plain');
         } else {
@@ -5026,30 +5012,6 @@ function get_file_packer($mimetype='application/zip') {
 }
 
 /**
- * Makes an upload directory for a particular module.
- *
- * @global object
- * @param int $courseid The id of the course in question - maps to id field of 'course' table.
- * @return string|false Returns full path to directory if successful, false if not
- */
-function make_mod_upload_directory($courseid) {
-    global $CFG;
-
-    if (! $moddata = make_upload_directory($courseid .'/'. $CFG->moddata)) {
-        return false;
-    }
-
-    $strreadme = get_string('readme');
-
-    if (file_exists($CFG->dirroot .'/lang/'. $CFG->lang .'/docs/module_files.txt')) {
-        copy($CFG->dirroot .'/lang/'. $CFG->lang .'/docs/module_files.txt', $moddata .'/'. $strreadme .'.txt');
-    } else {
-        copy($CFG->dirroot .'/lang/en_utf8/docs/module_files.txt', $moddata .'/'. $strreadme .'.txt');
-    }
-    return $moddata;
-}
-
-/**
  * Makes a directory for a particular user.
  *
  * @global object
@@ -5060,7 +5022,7 @@ function make_mod_upload_directory($courseid) {
 function make_user_directory($userid, $test=false) {
     global $CFG;
 
-    if (is_bool($userid) || $userid < 0 || !ereg('^[0-9]{1,10}$', $userid) || $userid > 2147483647) {
+    if (is_bool($userid) || $userid < 0 || !preg_match('/^[0-9]{1,10}$/', $userid) || $userid > 2147483647) {
         if (!$test) {
             notify("Given userid was not a valid integer! (" . gettype($userid) . " $userid)");
         }
@@ -5518,10 +5480,6 @@ function clean_filename($string) {
 /**
  * Returns the code for the current language
  *
- * @global object
- * @global object
- * @global object
- * @global object
  * @return string
  */
 function current_language() {
@@ -5613,17 +5571,23 @@ function print_string($identifier, $module='', $a=NULL) {
 /**
  * Singleton class for managing the search for language strings.
  *
- * Not that performance of this class is important. If you decide to change
- * this class, please use the lib/simpletest/getstringperformancetester.php
- * script to make sure your changes do not cause a performance problem.
+ * Most code should not use this class directly. Instead you should use the
+ * {@link get_string()} function.
+ *
+ * Notes for develpers
+ * ===================
+ * Performance of this class is important. If you decide to change this class,
+ * please use the lib/simpletest/getstringperformancetester.php script to make
+ * sure your changes do not cause a performance problem.
+ *
+ * In some cases (for example bootstrap_renderer::early_error) get_string gets
+ * called very early on during Moodle's self-initialisation. Think very carefully
+ * before relying on the normal Moodle libraries here.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @package moodlecore
  */
 class string_manager {
-    /**
-    * @var array
-    */
     private $parentlangs = array('en_utf8' => NULL);
     private $searchpathsformodule = array();
     private $strings = array();
@@ -5638,26 +5602,12 @@ class string_manager {
                 'thischarset' => 1, 'thisdirection' => 1, 'thislanguage' => 1,
                 'strftimedatetimeshort' => 1, 'thousandssep' => 1);
     private $searchplacesbyplugintype;
-    /**
-    * @var string
-    */
     private $dirroot;
-    /**
-    * @var array
-    */
     private $corelocations;
     private $installstrings = NULL;
-    /**
-    * @var string
-    */
     private $parentlangfile = 'langconfig.php';
-    /**
-    * @var bool
-    */
     private $logtofile = false;
-    /**
-    * @var object
-    */
+    private $showstringsource = false;
     private static $singletoninstance = NULL;
 
     /**
@@ -5669,7 +5619,8 @@ class string_manager {
     public static function instance() {
         if (is_null(self::$singletoninstance)) {
             global $CFG;
-            self::$singletoninstance = new self($CFG->dirroot, $CFG->dataroot, $CFG->admin, isset($CFG->running_installer));
+            self::$singletoninstance = new self($CFG->dirroot, $CFG->dataroot,
+                    isset($CFG->running_installer), !empty($CFG->debugstringids));
             // Uncomment the followign line to log every call to get_string
             // to a file in $CFG->dataroot/temp/getstringlog/...
             // self::$singletoninstance->start_logging();
@@ -5681,87 +5632,31 @@ class string_manager {
     /**
     * string_manager construct method to instatiate this instance
     * 
-    * @param string $dirroot root directory path
-    * @param string $dataroot Path to the data root
-    * @param string $admin path to the admin directory
-    * @param bool $runninginstaller
+    * @param string $dirroot root directory path.
+    * @param string $dataroot Path to the data root.
+    * @param string $admin path to the admin directory.
+    * @param boolean $runninginstaller Set to true if we are in the installer.
+    * @param boolean $showstringsource add debug info to each string before it is
+    *       returned, to say where it came from.
     */
-    protected function __construct($dirroot, $dataroot, $admin, $runninginstaller) {
+    protected function __construct($dirroot, $dataroot, $runninginstaller, $showstringsource = false) {
         $this->dirroot = $dirroot;
         $this->corelocations = array(
             $dirroot . '/lang/' => '',
             $dataroot . '/lang/' => '',
         );
-        $this->searchplacesbyplugintype = array(
-            'assignment_' => array('mod/assignment/type'),
-            'auth_' => array('auth'),
-            'block_' => array('blocks'),
-            'datafield_' => array('mod/data/field'),
-            'datapreset_' => array('mod/data/preset'),
-            'enrol_' => array('enrol'),
-            'filter_' => array('filter'),
-            'format_' => array('course/format'),
-            'editor_' => array('lib/editor'),
-            'quiz_' => array('mod/quiz/report'),
-            'qtype_' => array('question/type'),
-            'qformat_' => array('question/format'),
-            'report_' => array($admin.'/report', 'course/report'),
-            'repository_'=>array('repository'),
-            'resource_' => array('mod/resource/type'),
-            'gradereport_' => array('grade/report'),
-            'gradeimport_' => array('grade/import'),
-            'gradeexport_' => array('grade/export'),
-            'profilefield_' => array('user/profile/field'),
-            'portfolio_' => array('portfolio/type'),
-            '' => array('mod')
-        );
-        $this->restore_extra_locations_from_session();
+        $this->searchplacesbyplugintype = array(''=>array('mod'));
+        $plugintypes = get_plugin_types(false);
+        foreach ($plugintypes as $plugintype => $dir) {
+            $this->searchplacesbyplugintype[$plugintype.'_'] = array($dir);
+        }
+        unset($this->searchplacesbyplugintype['mod_']);
         if ($runninginstaller) {
             $stringnames = file($dirroot . '/install/stringnames.txt');
             $this->installstrings = array_map('trim', $stringnames);
             $this->parentlangfile = 'installer.php';
         }
-    }
-
-    /**
-     * Load extra language locations if set in $SESSION
-     *
-     * @global object
-     */
-    protected function restore_extra_locations_from_session() {
-        global $SESSION;
-        if (!empty($SESSION->extralangsearchlocations)) {
-            foreach ($SESSION->extralangsearchlocations as $plugintype => $path) {
-                $this->register_plugin_type($plugintype, $path);
-            }
-        }
-    }
-
-    /**
-     * Register a new type of plugin with the string_manager class. 
-     *
-     * A typical usage might be
-     * string_manager::instance()->register_plugin_type('mymodreport', 'mod/mymod/report');
-     * This should never be needed for standard plugin types. It is intended for third-party
-     * plugins that in turn want to register a sub-plugin type.
-     *
-     * @global object
-     * @param string $plugintype a new type of plugin
-     * @param string $path the path where plugins of this type live.
-     */
-    public function register_plugin_type($plugintype, $path) {
-        global $SESSION;
-        $key = $plugintype . '_';
-        if (isset($this->searchplacesbyplugintype[$key]) && $path == reset($this->searchplacesbyplugintype[$key])) {
-            // Nothing to do.
-            return;
-        }
-        $this->searchplacesbyplugintype[$key] = array($path);
-        // We store all registered extra plugin types in the session in order to
-        // allow links to help files to work. I cannot think of a better way to
-        // make this information available to help.php. Putting it in the URL
-        // would be insecure.
-        $SESSION->extralangsearchlocations[$plugintype] = $path;
+        $this->showstringsource = $showstringsource;
     }
 
     /**
@@ -5822,14 +5717,10 @@ class string_manager {
             foreach ($locations as $location => $ignored) {
                 $locations[$location] = $module . '/';
             }
-            if ($module == 'local') {
-                $locations[$this->dirroot . '/local/lang/'] = 'local/';
-            } else {
-                list($type, $plugin) = $this->parse_module_name($module);
-                if (isset($this->searchplacesbyplugintype[$type])) {
-                    foreach ($this->searchplacesbyplugintype[$type] as $location) {
-                        $locations[$this->dirroot . "/$location/$plugin/lang/"] = $plugin . '/';
-                    }
+            list($type, $plugin) = $this->parse_module_name($module);
+            if (isset($this->searchplacesbyplugintype[$type])) {
+                foreach ($this->searchplacesbyplugintype[$type] as $location) {
+                    $locations[$this->dirroot . "/$location/$plugin/lang/"] = $plugin . '/';
                 }
             }
         }
@@ -6076,6 +5967,9 @@ class string_manager {
                     $file = $location . $lang . $suffix . '/' . $module . '.php';
                     $result = $this->get_string_from_file($identifier, $file, $a);
                     if ($result !== false) {
+                        if ($this->showstringsource) {
+                            $result = $this->add_source_info($result, $module, $identifier, $file);
+                        }
                         return $result;
                     }
                 }
@@ -6083,6 +5977,18 @@ class string_manager {
         }
 
         return '[[' . $identifier . ']]'; // Last resort.
+    }
+
+    /**
+     * Add debug information about where this string came from.
+     */
+    protected function add_source_info($string, $module, $identifier, $file) {
+        // This should not start with '[' or we will confuse code that checks for
+        // missing language strings.
+        // It is a good idea to bracked the entire string. Sometimes on string
+        // is put inside another (For example, Default: No on the admin strings.
+        // The bracketing makes that clear.
+        return '{' . $string . ' ' . $module . '/' . $identifier . '}';
     }
 }
 
@@ -6371,7 +6277,7 @@ function get_list_of_themes() {
     if (!empty($CFG->themelist)) {       // use admin's list of themes
         $themelist = explode(',', $CFG->themelist);
     } else {
-        $themelist = get_list_of_plugins("theme");
+        $themelist = array_keys(get_plugin_list("theme"));
     }
 
     foreach ($themelist as $key => $theme) {
@@ -6759,33 +6665,196 @@ function show_event($event) {
 /// ENVIRONMENT CHECKING  ////////////////////////////////////////////////////////////
 
 /**
- * Lists plugin directories within some directory
+ * Return exact path to plugin directory
+ * @param string $plugintype type of plugin
+ * @param string $name name of the plugin
+ * @param bool $fullpaths false means relative paths from dirroot
+ * @return directory path, full or relative to dirroot
+ */
+function get_plugin_directory($plugintype, $name, $fullpaths=true) {
+    if ($plugintype === '') {
+        $plugintype = 'mod';
+    }
+
+    $types = get_plugin_types($fullpaths);
+    if (!array_key_exists($plugintype, $types)) {
+        return null;
+    }
+    $name = clean_param($name, PARAM_SAFEDIR); // just in case ;-)
+
+    return $types[$plugintype].'/'.$name;
+}
+
+/**
+ * Return exact path to plugin directory,
+ * this method support "simpletest_" prefix designed for unit testing.
+ * @param string $component name such as 'moodle', 'mod_forum' or special simpletest value
+ * @param bool $fullpaths false means relative paths from dirroot
+ * @return directory path, full or relative to dirroot
+ */
+function get_component_directory($component, $fullpaths=true) {
+    global $CFG;
+
+    $simpletest = false;
+    if (strpos($component, 'simpletest_') === 0) {
+        $subdir = substr($component, strlen('simpletest_'));
+        return $subdir;
+    }
+    if ($component == 'moodle') {
+        $path = ($fullpaths ? $CFG->libdir : 'lib');
+    } else {
+        list($type, $plugin) = explode('_', $component, 2);
+        $path = get_plugin_directory($type, $plugin, $fullpaths);
+    }        
+
+    return $path;
+}
+
+/**
+ * Lists all plugin types
+ * @param bool $fullpaths false means relative paths from dirroot
+ * @return array Array of strings - name=>location
+ */
+function get_plugin_types($fullpaths=true) {
+    global $CFG;
+
+    static $info     = null;
+    static $fullinfo = null;
+
+    if (!$info) {
+        $info = array('mod'           => 'mod',
+                      'auth'          => 'auth',
+                      'enrol'         => 'enrol',
+                      'message'       => 'message/output',
+                      'block'         => 'blocks',
+                      'filter'        => 'filter',
+                      'editor'        => 'lib/editor',
+                      'format'        => 'course/format',
+                      'import'        => 'course/import',
+                      'profilefield'  => 'user/profile/field',
+                      'report'        => $CFG->admin.'/report',
+                      'coursereport'  => 'course/report', // must be after system reports
+                      'gradeexport'   => 'grade/export',
+                      'gradeimport'   => 'grade/import',
+                      'gradereport'   => 'grade/report',
+                      'repository'    => 'repository',
+                      'portfolio'     => 'portfolio/type',
+                      'qtype'         => 'question/type',
+                      'qformat'       => 'question/format');
+/*
+        $mods = get_plugin_list('mod');
+        foreach ($mods as $mod => $moddir) {
+            if (!$subplugins = plugin_supports('mod', $mod, FEATURE_MOD_SUBPLUGINS, false)) {
+                continue;
+            }
+            foreach ($subplugins as $subtype=>$dir) {
+                $info[$subtype] = $dir;
+            }
+        }
+*/
+        // do not include themes if in non-standard location
+        if ($CFG->themedir === $CFG->dirroot.'/theme') {
+            $info['theme'] = 'theme';
+        }
+
+        // local is always last
+        $info['local'] = 'local';
+
+        $fullinfo = array();
+        foreach ($info as $type => $dir) {
+            $fullinfo[$type] = $CFG->dirroot.'/'.$dir;
+        }
+        $fullinfo['theme'] = $CFG->themedir;
+    }
+
+    return ($fullpaths ? $fullinfo : $info);
+}
+
+/**
+ * Simplified version of get_list_of_plugins()
+ * @param string $plugintype type of plugin
+ * @param bool $fullpaths false means relative paths from dirroot
+ * @return array name=>fulllocation pairs of plugins of given type
+ */
+function get_plugin_list($plugintype, $fullpaths=true) {
+    global $CFG;
+
+    $ignored = array('CVS', '_vti_cnf', 'simpletest', 'db');
+
+    if ($plugintype === '') {
+        $plugintype = 'mod';
+    }
+
+    if ($plugintype === 'mod') {
+        // mod is eán exception because we have to call this function from get_plugin_types()
+        $fulldir = $CFG->dirroot.'/mod';
+        $dir = $fullpaths ? $fulldir : 'mod';
+
+    } else {
+        $fulltypes = get_plugin_types(true);
+        $types     = get_plugin_types($fullpaths);
+        if (!array_key_exists($plugintype, $types)) {
+            return array();
+        }
+        $fulldir = $fulltypes[$plugintype];
+        $dir     = $types[$plugintype];
+        if (!file_exists($fulldir)) {
+            return array();
+        }
+    }
+
+    $result = array();
+
+    $items = new DirectoryIterator($fulldir);
+    foreach ($items as $item) {
+        if ($item->isDot() or !$item->isDir()) {
+            continue;
+        }
+        $pluginname = $item->getFilename();
+        if (in_array($pluginname, $ignored)) {
+            continue;
+        }
+        if ($pluginname !== clean_param($pluginname, PARAM_SAFEDIR)) {
+            // better ignore plugins with problematic names here
+            continue;
+        }
+        $result[$pluginname] = $dir.'/'.$pluginname;
+    }
+
+    ksort($result);
+    return $result;
+}
+
+/**
+ * Lists plugin-like directories within specified directory
  *
- * @global object
- * @param string $plugin dir under we'll look for plugins (defaults to 'mod')
+ * This function was originally used for standar Moodle plugins, please use
+ * new get_plugin_list() now.
+ *
+ * This function is used for general directory listing and backwards compability. 
+ *
+ * @param string $directory relatice directory from root
  * @param string $exclude dir name to exclude from the list (defaults to none)
  * @param string $basedir full path to the base dir where $plugin resides (defaults to $CFG->dirroot)
- * @return array Array of plugins found under the requested parameters
+ * @return array Sorted array of directory names found under the requested parameters
  */
-function get_list_of_plugins($plugin='mod', $exclude='', $basedir='') {
+function get_list_of_plugins($directory='mod', $exclude='', $basedir='') {
     global $CFG;
 
     $plugins = array();
 
     if (empty($basedir)) {
-
-        # This switch allows us to use the appropiate theme directory - and potentialy alternatives for other plugins
-        switch ($plugin) {
-        case "theme":
-            $basedir = $CFG->themedir;
-            break;
-
-        default:
-            $basedir = $CFG->dirroot .'/'. $plugin;
+        // This switch allows us to use the appropiate theme directory - and potentialy alternatives for other plugins
+        switch ($directory) {
+            case "theme":
+                $basedir = $CFG->themedir;
+                break;
+            default:
+                $basedir = $CFG->dirroot .'/'. $directory;
         }
 
     } else {
-        $basedir = $basedir .'/'. $plugin;
+        $basedir = $basedir .'/'. $directory;
     }
 
     if (file_exists($basedir) && filetype($basedir) == 'dir') {
@@ -7121,19 +7190,17 @@ function moodle_needs_upgrading() {
         if ($version > $CFG->version) {
             return true;
         }
-        if ($mods = get_list_of_plugins('mod')) {
-            foreach ($mods as $mod) {
-                $fullmod = $CFG->dirroot .'/mod/'. $mod;
-                $module = new object();
-                if (!is_readable($fullmod .'/version.php')) {
-                    notify('Module "'. $mod .'" is not readable - check permissions');
-                    continue;
-                }
-                include_once($fullmod .'/version.php');  # defines $module with version etc
-                if ($currmodule = $DB->get_record('modules', array('name'=>$mod))) {
-                    if ($module->version > $currmodule->version) {
-                        return true;
-                    }
+        $mods = get_plugin_list('mod');
+        foreach ($mods as $mod => $fullmod) {
+            $module = new object();
+            if (!is_readable($fullmod .'/version.php')) {
+                notify('Module "'. $mod .'" is not readable - check permissions');
+                continue;
+            }
+            include_once($fullmod .'/version.php');  # defines $module with version etc
+            if ($currmodule = $DB->get_record('modules', array('name'=>$mod))) {
+                if ($module->version > $currmodule->version) {
+                    return true;
                 }
             }
         }
@@ -7412,7 +7479,7 @@ function count_letters($string) {
     $textlib = textlib_get_instance();
 
     $string = strip_tags($string); // Tags are out now
-    $string = ereg_replace('[[:space:]]*','',$string); //Whitespace are out now
+    $string = preg_replace('/[[:space:]]*/','',$string); //Whitespace are out now
 
     return $textlib->strlen($string);
 }
@@ -8141,26 +8208,10 @@ function address_in_subnet($addr, $subnetstr) {
  *
  * By using this function properly, we can ensure 100% https-ized pages
  * at our entire discretion (login, forgot_password, change_password)
- *
- * @global object
- * @global bool
  */
 function httpsrequired() {
-
-    global $CFG, $HTTPSPAGEREQUIRED;
-
-    if (!empty($CFG->loginhttps)) {
-        $HTTPSPAGEREQUIRED = true;
-        $CFG->httpswwwroot = str_replace('http:', 'https:', $CFG->wwwroot);
-        $CFG->httpsthemewww = str_replace('http:', 'https:', $CFG->themewww);
-
-        // change theme URLs to https
-        theme_setup();
-
-    } else {
-        $CFG->httpswwwroot = $CFG->wwwroot;
-        $CFG->httpsthemewww = $CFG->themewww;
-    }
+    global $PAGE;
+    $PAGE->https_required();
 }
 
 /**
@@ -8423,36 +8474,62 @@ function moodle_request_shutdown() {
 }
 
 /**
- * If new messages are waiting for the current user, then return
- * Javascript code to create a popup window
- *
- * @global object
- * @global object
- * @return string Javascript code
+ * This function is called when output is started. This is a chance for Moodle core
+ * to check things like whether the messages popup should be shown.
+ */
+function output_starting_hook() {
+    global $CFG, $PAGE;
+
+    // If maintenance mode is on, change the page header.
+    if (!empty($CFG->maintenance_enabled)) {
+        $PAGE->set_button('<a href="' . $CFG->wwwroot . '/' . $CFG->admin .
+                '/settings.php?section=maintenancemode">' . get_string('maintenancemode', 'admin') .
+                '</a> ' . $PAGE->button);
+
+        $title = $PAGE->title;
+        if ($title) {
+            $title .= ' - ';
+        }
+        $PAGE->set_title($title . get_string('maintenancemode', 'admin'));
+    }
+
+    // Show the messaging popup, if there are messages.
+    message_popup_window();
+}
+
+/**
+ * If new messages are waiting for the current user, then load the
+ * JavaScript required to pop up the messaging window.
  */
 function message_popup_window() {
     global $USER, $DB, $PAGE;
 
-    $popuplimit = 30;     // Minimum seconds between popups
-
-    if (!defined('MESSAGE_WINDOW')) {
-        if (isset($USER->id) and !isguestuser()) {
-            if (!isset($USER->message_lastpopup)) {
-                $USER->message_lastpopup = 0;
-            }
-            if ((time() - $USER->message_lastpopup) > $popuplimit) {  /// It's been long enough
-                if (get_user_preferences('message_showmessagewindow', 1) == 1) {
-                    if ($DB->count_records_select('message', 'useridto = ? AND timecreated > ?', array($USER->id, $USER->message_lastpopup))) {
-                        $USER->message_lastpopup = time();
-                        $PAGE->requires->js_function_call('openpopup', array('/message/index.php', 'message',
-                                'menubar=0,location=0,scrollbars,status,resizable,width=400,height=500', 0));
-                    }
-                }
-            }
-        }
+    if (defined('MESSAGE_WINDOW') || empty($CFG->messaging)) {
+        return;
     }
 
-    return '';
+    if (!isset($USER->id) || isguestuser()) {
+        return;
+    }
+
+    if (!isset($USER->message_lastpopup)) {
+        $USER->message_lastpopup = 0;
+    }
+
+    $popuplimit = 30;     // Minimum seconds between popups
+    if ((time() - $USER->message_lastpopup) <= $popuplimit) {  /// It's been long enough
+        return;
+    }
+
+    if (!get_user_preferences('message_showmessagewindow', 1)) {
+        return;
+    }
+
+    if ($DB->count_records_select('message', 'useridto = ? AND timecreated > ?', array($USER->id, $USER->message_lastpopup))) {
+        $USER->message_lastpopup = time();
+        $PAGE->requires->js_function_call('openpopup', array('/message/index.php', 'message',
+                'menubar=0,location=0,scrollbars,status,resizable,width=400,height=500', 0));
+    }
 }
 
 /**

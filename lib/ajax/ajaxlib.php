@@ -119,7 +119,8 @@ class page_requirements_manager {
     public function js($jsfile, $fullurl = false) {
         global $CFG;
         if (!$fullurl) {
-            if (!file_exists($CFG->dirroot . '/' . $jsfile)) {
+            // strtok is used to trim off any GET string arguments before looking for the file
+            if (!file_exists($CFG->dirroot . '/' . strtok($jsfile, '?'))) {
                 throw new coding_exception('Attept to require a JavaScript file that does not exist.', $jsfile);
             }
             $url = $CFG->httpswwwroot . '/' . $jsfile;
@@ -305,7 +306,7 @@ class page_requirements_manager {
      *      This allows you to control when the link to the script is output by
      *      calling methods like {@link required_data_for_js::asap()},
      *      {@link required_data_for_js::in_head()} or
-     *      {@link required_data_for_js::at_top_of_body() methods.
+     *      {@link required_data_for_js::at_top_of_body()} methods.
      */
     public function data_for_js($variable, $data) {
         if (isset($this->variablesinitialised[$variable])) {
@@ -572,9 +573,9 @@ class required_js extends linked_requirement {
             $this->in_head();
             return '';
         }
-        $ouput = $this->get_html();
+        $output = $this->get_html();
         $this->mark_done();
-        return $ouput;
+        return $output;
     }
 
     /**
@@ -657,7 +658,9 @@ class required_yui_lib extends linked_requirement {
             $this->jss[] = $manager->js($jsurl, true);
         }
         foreach ($cssurls as $cssurl) {
-            //$manager->css($cssurl, true);
+            // this might be a bit problematic because it requires yui to be
+            // requested before print_header() - this was not required in 1.9.x
+            $manager->css($cssurl, true);
         }
     }
 
@@ -687,12 +690,12 @@ class required_yui_lib extends linked_requirement {
             return '';
         }
 
-        $ouput = '';
+        $output = '';
         foreach ($this->jss as $requiredjs) {
-            $ouput .= $requiredjs->asap();
+            $output .= $requiredjs->asap();
         }
         $this->mark_done();
-        return $ouput;
+        return $output;
     }
 
     /**
@@ -731,7 +734,7 @@ class required_yui_lib extends linked_requirement {
 
         $this->when = page_requirements_manager::WHEN_TOP_OF_BODY;
         foreach ($this->jss as $requiredjs) {
-            $ouput .= $requiredjs->at_top_of_body();
+            $output .= $requiredjs->at_top_of_body();
         }
     }
 }
@@ -1157,7 +1160,7 @@ function ajax_resolve_yui_lib($libname) {
                 $jsurls[] = $libpath . 'dom/dom' . $suffix;
                 $jsurls[] = $libpath . 'event/event' . $suffix;
             } else {
-                $jsurls[] = $jsurls[] = $libpath . $js . '/' . $js . '.js';
+                $jsurls[] = $libpath . $js . '/' . $js . '.js';
             }
         } else {
             $jsurls[] = $libpath . $js . '/' . $js . $suffix;

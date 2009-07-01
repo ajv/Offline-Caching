@@ -246,16 +246,13 @@
  * @todo Document this function
  */
 function forum_print_big_search_form($course) {
-    global $CFG, $DB, $words, $subject, $phrase, $user, $userid, $fullwords, $notwords, $datefrom, $dateto;
+    global $CFG, $DB, $words, $subject, $phrase, $user, $userid, $fullwords, $notwords, $datefrom, $dateto, $PAGE;
 
     print_simple_box(get_string('searchforumintro', 'forum'), 'center', '', '', 'searchbox', 'intro');
 
     print_simple_box_start("center");
 
-    echo "<script type=\"text/javascript\">\n";
-    echo "var timefromitems = ['fromday','frommonth','fromyear','fromhour', 'fromminute'];\n";
-    echo "var timetoitems = ['today','tomonth','toyear','tohour','tominute'];\n";
-    echo "</script>\n";
+    echo $PAGE->requires->js('mod/forum/forum.js')->asap();
 
     echo '<form id="searchform" action="search.php" method="get">';
     echo '<table cellpadding="10" class="searchbox" id="form">';
@@ -276,7 +273,7 @@ function forum_print_big_search_form($course) {
     echo '<td class="c1"><input type="text" size="35" name="notwords" id="notwords" value="'.s($notwords, true).'" alt="" /></td>';
     echo '</tr>';
 
-    if ($DB->get_db_family() == 'mysql' || $DB->get_db_family() == 'postgres') {
+    if ($DB->get_dbfamily() == 'mysql' || $DB->get_dbfamily() == 'postgres') {
         echo '<tr>';
         echo '<td class="c0"><label for="fullwords">'.get_string('searchfullwords', 'forum').'</label></td>';
         echo '<td class="c1"><input type="text" size="35" name="fullwords" id="fullwords" value="'.s($fullwords, true).'" alt="" /></td>';
@@ -354,10 +351,8 @@ function forum_print_big_search_form($course) {
     echo '</table>';
     echo '</form>';
 
-    echo "<script type=\"text/javascript\">";
-    echo "lockoptions('searchform','timefromrestrict', timefromitems);";
-    echo "lockoptions('searchform','timetorestrict', timetoitems);";
-    echo "</script>\n";
+    echo $PAGE->requires->js_function_call('lockoptions_timetoitems')->asap();
+    echo $PAGE->requires->js_function_call('lockoptions_timefromitems')->asap();
 
     print_simple_box_end();
 }

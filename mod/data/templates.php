@@ -78,24 +78,10 @@
     $bodytag .= 'currTextarea = document.getElementById(\'tempform\').template;';
     $bodytag .= '" ';
 
-    // Javascript to insert the field tags into the textarea.
-    $meta = '<script type="text/javascript">'."\n";
-    $meta .= '//<![CDATA['."\n";
-    $meta .= 'function insert_field_tags(selectlist) {';
-    $meta .= '  if (typeof(currEditor) != \'undefined\' && currEditor._editMode == \'wysiwyg\') {';
-        // HTMLArea-specific
-    $meta .= '     currEditor.insertHTML(selectlist.options[selectlist.selectedIndex].value); '; 
-    $meta .= '  } else {';
-        // For inserting when in HTMLArea code view or for normal textareas
-    $meta .= '     insertAtCursor(currTextarea, selectlist.options[selectlist.selectedIndex].value);';   
-    $meta .= '  }'."\n";
-    $meta .= '}'."\n";
-    $meta .= '//]]>'."\n";
-    $meta .= '</script>'."\n";
-    
+    $PAGE->requires->js('mod/data/data.js');
     $navigation = build_navigation('', $cm);
     print_header_simple($data->name, '', $navigation,
-                        '', $meta, true, update_module_button($cm->id, $course->id, get_string('modulename', 'data')),
+                        '', '', true, update_module_button($cm->id, $course->id, get_string('modulename', 'data')),
                         navmenu($course, $cm), '', $bodytag);
 
     print_heading(format_string($data->name));
@@ -112,17 +98,11 @@
 /// Processing submitted data, i.e updating form.
     $resettemplate = false;
 
-/// html editor is by default disabled
-    $editor = isset($SESSION->data_use_editor) ? $SESSION->data_use_editor : (can_use_html_editor() ? 1 : 0);
-
     if (($mytemplate = data_submitted()) && confirm_sesskey()) {
         $newtemplate->id = $data->id;
         $newtemplate->{$mode} = $mytemplate->template;
 
-        if (!empty($mytemplate->switcheditor)) {
-            $editor = $editor ? 0 : 1;
-            $SESSION->data_use_editor = $editor;
-        } else if (!empty($mytemplate->defaultform)) {
+        if (!empty($mytemplate->defaultform)) {
             // Reset the template to default, but don't save yet.
             $resettemplate = true;
             $data->{$mode} = data_generate_default_template($data, $mode, 0, false, false);

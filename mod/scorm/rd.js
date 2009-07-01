@@ -1,4 +1,17 @@
 <!--
+function attach_resize_event() {
+    YAHOO.util.Event.addListener(window, 'resize', scorm_resize);
+}
+
+var prev='';
+var next='';
+function scorm_set_prev(url) {
+    prev = url;
+}
+function scorm_set_next(url) {
+    next = url;
+}
+
 function scorm_get_element_style(obj, prop, cssProp) {
     var ret = '';
     
@@ -13,8 +26,9 @@ function scorm_get_element_style(obj, prop, cssProp) {
     return ret;
 }
 
-function scorm_resize (cwidth, cheight) {
-
+function scorm_resize () {
+    var cwidth = scormplayerdata.cwidth;
+    var cheight = scormplayerdata.cheight;
     var winwidth = 0, winheight = 0;
     if( typeof( window.innerWidth ) == 'number' ) {
         //Non-IE

@@ -593,6 +593,40 @@ function xmldb_main_upgrade($oldversion) {
         $dbman->change_field_type($table, $field);
         upgrade_main_savepoint($result, 2008081500);
     }
+    if ($result && $oldversion < 2008081300) {
+    /// Define table blog_association to be created
+        $table = new xmldb_table('blog_association');
+
+    /// Adding fields to table blog_association
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null, null, null);
+        $table->add_field('contextid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null, null, null);
+        $table->add_field('blogid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null, null, null);
+    /// Adding keys to table blog_association
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
+        $table->add_key('contextid', XMLDB_KEY_FOREIGN, array('contextid'), 'context', array('id'));
+        $table->add_key('blogid', XMLDB_KEY_FOREIGN, array('blogid'), 'post', array('id'));
+ 
+        if (!$dbman->table_exists($table)) {
+        /// Launch create table for blog_association
+            $dbman->create_table($table);
+        }
+
+
+    /// Main savepoint reached
+        upgrade_main_savepoint($result, 2008081300);
+    }   
+    if ($result && $oldversion < 2008081301) {
+
+    /// Changing list of values (enum) of field publishstate on table post to 'draft', 'site', 'public', 'group', 'course'
+        $table = new xmldb_table('post');
+        $field = new xmldb_field('publishstate', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, XMLDB_ENUM, array('draft', 'site', 'public', 'group', 'course'), 'draft', 'attachment');
+
+    /// Launch change of list of values for field publishstate
+        $dbman->change_field_enum($table, $field);
+
+    /// Main savepoint reached
+        upgrade_main_savepoint($result, 2008081301);
+    }
 
     if ($result && $oldversion < 2008081501) {
         $table = new xmldb_table('question');
@@ -2189,6 +2223,90 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
 
     /// Main savepoint reached
         upgrade_main_savepoint($result, 2009061600);
+    }
+
+    if ($result && $oldversion < 2009061702) {
+        // standardizing plugin names
+        if ($configs = $DB->get_records_select('config_plugins', "plugin LIKE 'quizreport_%'")) {
+            foreach ($configs as $config) {
+                $config->plugin = str_replace('quizreport_', 'quiz_', $config->plugin);
+                $DB->update_record('config_plugins', $config);
+            }
+        }
+        unset($configs);
+        upgrade_main_savepoint($result, 2009061702);
+    }
+
+    if ($result && $oldversion < 2009061703) {
+        // standardizing plugin names
+        if ($configs = $DB->get_records_select('config_plugins', "plugin LIKE 'assignment_type_%'")) {
+            foreach ($configs as $config) {
+                $config->plugin = str_replace('assignment_type_', 'assignment_', $config->plugin);
+                $DB->update_record('config_plugins', $config);
+            }
+        }
+        unset($configs);
+        upgrade_main_savepoint($result, 2009061703);
+    }
+
+    if ($result && $oldversion < 2009061704) {
+        // change component string in capability records to new "_" format 
+        if ($caps = $DB->get_records('capabilities')) {
+            foreach ($caps as $cap) {
+                $cap->component = str_replace('/', '_', $cap->component);
+                $DB->update_record('capabilities', $cap);
+            }
+        }
+        unset($caps);
+        upgrade_main_savepoint($result, 2009061704);
+    }
+
+    if ($result && $oldversion < 2009061705) {
+        // change component string in events_handlers records to new "_" format 
+        if ($handlers = $DB->get_records('events_handlers')) {
+            foreach ($handlers as $handler) {
+                $handler->handlermodule = str_replace('/', '_', $handler->handlermodule);
+                $DB->update_record('events_handlers', $handler);
+            }
+        }
+        unset($handlers);
+        upgrade_main_savepoint($result, 2009061705);
+    }
+
+    if ($result && $oldversion < 2009061706) {
+        // change component string in message_providers records to new "_" format 
+        if ($mps = $DB->get_records('message_providers')) {
+            foreach ($mps as $mp) {
+                $mp->component = str_replace('/', '_', $mp->component);
+                $DB->update_record('message_providers', $cap);
+            }
+        }
+        unset($caps);
+        upgrade_main_savepoint($result, 2009061706);
+    }
+    
+    if ($result && $oldversion < 2009063000) {
+        // upgrade format of _with_advanced settings - quiz only
+        // note: this can be removed later, not needed for upgrades from 1.9.x
+        $quiz = get_config('quiz');
+        foreach ($quiz as $name=>$value) {
+            if (strpos($name, 'fix_') !== 0) {
+                continue;
+            }
+            $newname = substr($name,4).'_adv';
+            set_config($newname, $value, 'quiz');
+            unset_config($name, 'quiz');
+        } 
+        upgrade_main_savepoint($result, 2009063000);
+    }
+    
+    if ($result && $oldversion < 2009070100) {
+        // MDL-19677 Change $CFG->bloglevel to BLOG_SITE_LEVEL if BLOG_COURSE_LEVEL or BLOG_GROUP_LEVEL
+        $current_bloglevel = get_config(null, 'bloglevel');
+
+        if ($current_bloglevel == BLOG_GROUP_LEVEL || $current_bloglevel == BLOG_COURSE_LEVEL) {
+            set_config('bloglevel', BLOG_SITE_LEVEL);
+        }
     }
 
     return $result;

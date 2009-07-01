@@ -1,7 +1,7 @@
 <?php
 
-// This file is part of Moodle - http://moodle.org/ 
-// 
+// This file is part of Moodle - http://moodle.org/
+//
 // Moodle is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
@@ -11,17 +11,14 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * adminlib.php - Contains functions that only administrators will ever need to use
+ * Functions and classes used during installation, upgrades and for admin settings.
  *
- * Administration tree classes and functions
- * n.b. documentation is still in progress for this code
- *
- *  INTRODUCTION
+ *  ADMIN SETTINGS TREE INTRODUCTION
  *
  *  This file performs the following tasks:
  *   -it defines the necessary objects and interfaces to build the Moodle
@@ -66,7 +63,7 @@
  *         // functionality like processing form submissions goes here
  *         admin_externalpage_print_header();
  *         // your HTML goes here
- *         admin_externalpage_print_footer();
+ *         print_footer();
  * </code>
  *
  *  The admin_externalpage_setup() function call ensures the user is logged in,
@@ -106,7 +103,8 @@
  *  admin_tree) must be unique on the respective admin_settingpage where it is
  *  used.
  *
- * Key Author: Vincenzo K. Marcovecchio
+ * Original author: Vincenzo K. Marcovecchio
+ * Maintainer:      Petr Skoda
  *
  * @package   moodlecore
  * @copyright 1999 onwards Martin Dougiamas  http://dougiamas.com
@@ -114,25 +112,20 @@
  */
 
 /// Add libraries
-/**
- * Include the essential files
- */
 require_once($CFG->libdir.'/ddllib.php');
 require_once($CFG->libdir.'/xmlize.php');
 require_once($CFG->libdir.'/messagelib.php');      // Messagelib functions
 
 define('INSECURE_DATAROOT_WARNING', 1);
 define('INSECURE_DATAROOT_ERROR', 2);
- 
+
 /**
  * Delete all plugin tables
  *
- * @global object
- * @global object
  * @param string $name Name of plugin, used as table prefix
  * @param string $file Path to install.xml file
  * @param bool $feedback defaults to true
- * @return boolean Always returns true
+ * @return bool Always returns true
  */
 function drop_plugin_tables($name, $file, $feedback=true) {
     global $CFG, $DB;
@@ -199,41 +192,7 @@ function get_used_table_names() {
 }
 
 /**
- * Lists all plugin types
- *
- * @global object
- * @return array Array of strings - name=>location
- */
-function get_plugin_types() {
-    global $CFG;
-
-    return array('mod'           => 'mod',
-                 'qtype'         => 'question/type',
-                 'block'         => 'blocks',
-                 'auth'          => 'auth',
-                 'enrol'         => 'enrol',
-                 'format'        => 'course/format',
-                 'editor'        => 'lib/editor',
-                 'gradeexport'   => 'grade/export',
-                 'gradeimport'   => 'grade/import',
-                 'gradereport'   => 'grade/report',
-                 'message'       => 'message/output',
-                 'coursereport'  => 'course/report',
-                 'report'        => $CFG->admin.'/report',
-                 'portfolio'     => 'portfolio/type',
-                 'repository'    => 'repository',
-
-        // following types a very ugly hacks - we should not make exceptions like this - all plugins should be equal;
-        // these plugins may cause problems such as when wanting to uninstall them
-                 'quizreport'      => 'mod/quiz/report',
-                 'assignment_type' => 'mod/assignment/type',
-                );
-}
-
-/**
  * Returns list of all directories where we expect install.xml files
- *
- * @global object
  * @return array Array of paths
  */
 function get_db_directories() {
@@ -245,19 +204,13 @@ function get_db_directories() {
     $dbdirs[] = $CFG->libdir.'/db';
 
 /// Then, all the ones defined by get_plugin_types()
-    if ($plugintypes = get_plugin_types()) {
-        foreach ($plugintypes as $plugintype => $pluginbasedir) {
-            if ($plugins = get_list_of_plugins($pluginbasedir, 'db')) {
-                foreach ($plugins as $plugin) {
-                    $dbdirs[] = $CFG->dirroot . '/' . $pluginbasedir . '/' . $plugin . '/db';
-                }
+    $plugintypes = get_plugin_types();
+    foreach ($plugintypes as $plugintype => $pluginbasedir) {
+        if ($plugins = get_plugin_list($plugintype)) {
+            foreach ($plugins as $plugin => $plugindir) {
+                $dbdirs[] = $plugindir.'/db';
             }
         }
-    }
-
-/// Local database changes, if the local folder exists.
-    if (file_exists($CFG->dirroot . '/local')) {
-        $dbdirs[] = $CFG->dirroot.'/local/db';
     }
 
     return $dbdirs;
@@ -265,8 +218,6 @@ function get_db_directories() {
 
 /**
  * Try to obtain or release the cron lock.
- *
- * @global object
  * @param string  $name  name of lock
  * @param int  $until timestamp when this lock considered stale, null means remove lock unconditionaly
  * @param bool $ignorecurrent ignore current lock state, usually entend previous lock, defaults to false
@@ -301,8 +252,6 @@ function set_cron_lock($name, $until, $ignorecurrent=false) {
 
 /**
  * Test if and critical warnings are present
- *
- * @global object
  * @return bool
  */
 function admin_critical_warnings_present() {
@@ -343,8 +292,7 @@ function is_float_problem() {
  * Try to verify that dataroot is not accessible from web.
  * It is not 100% correct but might help to reduce number of vulnerable sites.
  * Protection from httpd.conf and .htaccess is not detected properly.
- * 
- * @global object
+ *
  * @uses INSECURE_DATAROOT_WARNING
  * @uses INSECURE_DATAROOT_ERROR
  * @param bool $fetchtest try to test public access by fetching file, default false
@@ -460,7 +408,6 @@ function is_dataroot_insecure($fetchtest=false) {
  * and methods for finding something in the admin tree.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 interface part_of_admin_tree {
 
@@ -527,7 +474,6 @@ interface part_of_admin_tree {
  * include an add method for adding other part_of_admin_tree objects as children.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 interface parentable_part_of_admin_tree extends part_of_admin_tree {
 
@@ -553,35 +499,20 @@ interface parentable_part_of_admin_tree extends part_of_admin_tree {
  * Each admin_category object contains a number of part_of_admin_tree objects.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_category implements parentable_part_of_admin_tree {
 
-    /**
-     * @var mixed An array of part_of_admin_tree objects that are this object's children
-     */
+    /** @var mixed An array of part_of_admin_tree objects that are this object's children */
     public $children;
-
-    /**
-     * @var string An internal name for this category. Must be unique amongst ALL part_of_admin_tree objects
-     */
+    /** @var string An internal name for this category. Must be unique amongst ALL part_of_admin_tree objects */
     public $name;
-
-    /**
-     * @var string The displayed name for this category. Usually obtained through get_string()
-     */
+    /** @var string The displayed name for this category. Usually obtained through get_string() */
     public $visiblename;
-
-    /**
-     * @var bool Should this category be hidden in admin tree block?
-     */
+    /** @var bool Should this category be hidden in admin tree block? */
     public $hidden;
-
-    /**
-     * paths
-     * @var mixed Either a string or an array or strings
-     */
+    /** @var mixed Either a string or an array or strings */
     public $path;
+    /** @var mixed Either a string or an array or strings */
     public $visiblepath;
 
     /**
@@ -603,7 +534,7 @@ class admin_category implements parentable_part_of_admin_tree {
      *
      * @param string $name The internal name of the object we want.
      * @param bool $findpath initialize path and visiblepath arrays
-     * @return mixed A reference to the object with internal name $name if found, otherwise a reference to NULL. 
+     * @return mixed A reference to the object with internal name $name if found, otherwise a reference to NULL.
      *                  defaults to false
      */
     public function locate($name, $findpath=false) {
@@ -728,41 +659,24 @@ class admin_category implements parentable_part_of_admin_tree {
 }
 
 /**
- *  
+ * Root of admin settings tree, does not have any parent.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_root extends admin_category {
-    /** 
-     * @var array List of errors
-     */
+    /** @var array List of errors */
     public $errors;
-
-    /** 
-     * @var string search query 
-     */ 
+    /** @var string search query */
     public $search;
-
-    /** 
-     * @var bool full tree flag - true means all settings required, 
-     *                            false onlypages required 
-     */
+    /** @var bool full tree flag - true means all settings required, false onlypages required */
     public $fulltree;
-
-    /** 
-     * @var bool flag indicating loaded tree 
-     */
+    /** @var bool flag indicating loaded tree */
     public $loaded;
-
-    /** 
-     * @var mixed site custom defaults overriding defaults in setings files 
-     */
+    /** @var mixed site custom defaults overriding defaults in setings files*/
     public $custom_defaults;
 
     /**
-     * @global object
-     * @param bool $fulltree true means all settings required, 
+     * @param bool $fulltree true means all settings required,
      *                            false only pages required
      */
     public function __construct($fulltree) {
@@ -804,43 +718,28 @@ class admin_root extends admin_category {
  * See detailed usage example at the top of this document (adminlib.php)
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_externalpage implements part_of_admin_tree {
 
-    /**
-     * @var string An internal name for this external page. Must be unique amongst ALL part_of_admin_tree objects
-     */
+    /** @var string An internal name for this external page. Must be unique amongst ALL part_of_admin_tree objects */
     public $name;
 
-    /**
-     * @var string The displayed name for this external page. Usually obtained through get_string().
-     */
+    /** @var string The displayed name for this external page. Usually obtained through get_string(). */
     public $visiblename;
 
-    /**
-     * @var string The external URL that we should link to when someone requests this external page.
-     */
+    /** @var string The external URL that we should link to when someone requests this external page. */
     public $url;
 
-    /**
-     * @var string The role capability/permission a user must have to access this external page.
-     */
+    /** @var string The role capability/permission a user must have to access this external page. */
     public $req_capability;
 
-    /**
-     * @var object The context in which capability/permission should be checked, default is site context.
-     */
+    /** @var object The context in which capability/permission should be checked, default is site context. */
     public $context;
 
-    /**
-     * @var bool hidden in admin tree block.
-     */
+    /** @var bool hidden in admin tree block. */
     public $hidden;
 
-    /**
-     * @var mixed either string or array of string
-     */
+    /** @var mixed either string or array of string */
     public $path;
     public $visiblepath;
 
@@ -926,7 +825,6 @@ class admin_externalpage implements part_of_admin_tree {
     /**
      * Determines if the current user has access to this external page based on $this->req_capability.
      *
-     * @global object
      * @return bool True if user has access, false otherwise.
      */
     public function check_access() {
@@ -943,8 +841,6 @@ class admin_externalpage implements part_of_admin_tree {
     /**
      * Is this external page hidden in admin tree block?
      *
-     * Returns the 'hidden' property 
-     *
      * @return bool True if hidden
      */
     public function is_hidden() {
@@ -957,48 +853,34 @@ class admin_externalpage implements part_of_admin_tree {
  * Used to group a number of admin_setting objects into a page and add them to the admin tree.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_settingpage implements part_of_admin_tree {
 
-    /**
-     * @var string An internal name for this external page. Must be unique amongst ALL part_of_admin_tree objects
-     */
+    /** @var string An internal name for this external page. Must be unique amongst ALL part_of_admin_tree objects */
     public $name;
 
-    /**
-     * @var string The displayed name for this external page. Usually obtained through get_string().
-     */
+    /** @var string The displayed name for this external page. Usually obtained through get_string(). */
     public $visiblename;
-    /**
-     * @var mixed An array of admin_setting objects that are part of this setting page.
-     */
+
+    /** @var mixed An array of admin_setting objects that are part of this setting page. */
     public $settings;
 
-    /**
-     * @var string The role capability/permission a user must have to access this external page.
-     */
+    /** @var string The role capability/permission a user must have to access this external page. */
     public $req_capability;
 
-    /**
-     * @var object The context in which capability/permission should be checked, default is site context.
-     */
+    /** @var object The context in which capability/permission should be checked, default is site context. */
     public $context;
 
-    /**
-     * @var bool hidden in admin tree block.
-     */
+    /** @var bool hidden in admin tree block. */
     public $hidden;
 
-    /**
-     * @var mixed string of paths or array of strings of paths
-     */
+    /** @var mixed string of paths or array of strings of paths */
     public $path;
     public $visiblepath;
 
     /**
      * see admin_settingpage for details of this function
-     * 
+     *
      * @param string $name The internal name for this external page. Must be unique amongst ALL part_of_admin_tree objects.
      * @param string $visiblename The displayed name for this external page. Usually obtained through get_string().
      * @param mixed $req_capability The role capability/permission a user must have to access this external page. Defaults to 'moodle/site:config'.
@@ -1019,7 +901,7 @@ class admin_settingpage implements part_of_admin_tree {
         $this->context     = $context;
     }
 
-    /** 
+    /**
      * see admin_category
      *
      * @param string $name
@@ -1039,7 +921,9 @@ class admin_settingpage implements part_of_admin_tree {
         }
     }
 
-    /*
+    /**
+     * Search string in settings page.
+     *
      * @param string $query
      * @return array
      */
@@ -1160,38 +1044,24 @@ class admin_settingpage implements part_of_admin_tree {
  * Read & write happens at this level; no authentication.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 abstract class admin_setting {
-    /**
-     * @var string unique ascii name, either 'mysetting' for settings that in config, 
-     *             or 'myplugin/mysetting' for ones in config_plugins.
-     */
+    /** @var string unique ascii name, either 'mysetting' for settings that in config, or 'myplugin/mysetting' for ones in config_plugins. */
     public $name;
-    /**
-     * @var string localised name
-     */
+    /** @var string localised name */
     public $visiblename;
-    /**
-     * @var string localised long description
-     */
+    /** @var string localised long description */
     public $description;
-    /**
-     * @var mixed Can be string or array of string 
-     */
+    /** @var mixed Can be string or array of string */
     public $defaultsetting;
-    /**
-     * @var string 
-     */
+    /** @var string */
     public $updatedcallback;
-    /**
-     * @var mixed can be String or Null.  Null means main config table
-     */
+    /** @var mixed can be String or Null.  Null means main config table */
     public $plugin; // null means main config table
 
     /**
      * Constructor
-     * @param string $name unique ascii name, either 'mysetting' for settings that in config, 
+     * @param string $name unique ascii name, either 'mysetting' for settings that in config,
      *                     or 'myplugin/mysetting' for ones in config_plugins.
      * @param string $visiblename localised name
      * @param string $description localised long description
@@ -1252,7 +1122,6 @@ abstract class admin_setting {
     /**
      * Returns the config if possible
      *
-     * @global object
      * @return mixed returns config if successfull else null
      */
     public function config_read($name) {
@@ -1273,9 +1142,6 @@ abstract class admin_setting {
     /**
      * Used to set a config pair and log change
      *
-     * @global object
-     * @global object
-     * @global object
      * @param string $name
      * @param mixed $value Gets converted to string if not null
      * @return bool Write setting to confix table
@@ -1295,10 +1161,9 @@ abstract class admin_setting {
         // store change
         set_config($name, $value, $this->plugin);
 
-
         // log change
         $log = new object();
-        $log->userid       = empty($CFG->rolesactive) ? 0 :$USER->id; // 0 as user id during install
+        $log->userid       = during_initial_install() ? 0 :$USER->id; // 0 as user id during install
         $log->timemodified = time();
         $log->plugin       = $this->plugin;
         $log->name         = $name;
@@ -1401,7 +1266,6 @@ abstract class admin_setting {
  * No setting - just heading and text.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_heading extends admin_setting {
     /**
@@ -1438,7 +1302,7 @@ class admin_setting_heading extends admin_setting {
         // do not write any setting
         return '';
     }
-    
+
     /**
      * Returns an HTML string
      * @return string Returns an HTML string
@@ -1459,17 +1323,12 @@ class admin_setting_heading extends admin_setting {
  * The most flexibly setting, user is typing text
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_configtext extends admin_setting {
 
-    /** 
-     * @var mixed int means PARAM_XXX type, string is a allowed format in regex
-     */
+    /** @var mixed int means PARAM_XXX type, string is a allowed format in regex */
     public $paramtype;
-    /**
-     * @var int default field size
-     */
+    /** @var int default field size */
     public $size;
 
     /**
@@ -1557,7 +1416,6 @@ class admin_setting_configtext extends admin_setting {
  * General text area without html editor.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_configtextarea extends admin_setting_configtext {
     private $rows;
@@ -1604,7 +1462,7 @@ class admin_setting_configtextarea extends admin_setting_configtext {
 class admin_setting_confightmleditor extends admin_setting_configtext {
     private $rows;
     private $cols;
-    
+
     /**
      * @param string $name
      * @param string $visiblename
@@ -1616,6 +1474,7 @@ class admin_setting_confightmleditor extends admin_setting_configtext {
         $this->rows = $rows;
         $this->cols = $cols;
         parent::__construct($name, $visiblename, $description, $defaultsetting, $paramtype);
+        editors_head_setup();
     }
     /**
      * Returns an XHTML string for the editor
@@ -1633,11 +1492,10 @@ class admin_setting_confightmleditor extends admin_setting_configtext {
         }
 
         $editor = get_preferred_texteditor(FORMAT_HTML);
-        $editorclass = $editor->get_legacy_textarea_class();
-        $editor->use_editor($this->get_id());
+        $editor->use_editor($this->get_id(), array('noclean'=>true));
 
         return format_admin_setting($this, $this->visiblename,
-                '<div class="form-textarea"><textarea class="'.$editorclass.'" rows="'. $this->rows .'" cols="'. $this->cols .'" id="'. $this->get_id() .'" name="'. $this->get_full_name() .'">'. s($data) .'</textarea></div>',
+                '<div class="form-textarea"><textarea rows="'. $this->rows .'" cols="'. $this->cols .'" id="'. $this->get_id() .'" name="'. $this->get_full_name() .'">'. s($data) .'</textarea></div>',
                 $this->description, true, '', $defaultinfo, $query);
     }
 }
@@ -1646,7 +1504,6 @@ class admin_setting_confightmleditor extends admin_setting_configtext {
  * Password field, allows unmasking of password
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_configpasswordunmask extends admin_setting_configtext {
     /**
@@ -1659,7 +1516,7 @@ class admin_setting_configpasswordunmask extends admin_setting_configtext {
     public function __construct($name, $visiblename, $description, $defaultsetting) {
         parent::__construct($name, $visiblename, $description, $defaultsetting, PARAM_RAW, 30);
     }
-    
+
     /**
      * Returns XHTML for the field
      * Writes Javascript into the HTML below right before the last div
@@ -1712,7 +1569,6 @@ if (is_ie) {
  * Path to directory
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_configfile extends admin_setting_configtext {
     /**
@@ -1728,7 +1584,7 @@ class admin_setting_configfile extends admin_setting_configtext {
 
     /**
      * Returns XHTML for the field
-     * 
+     *
      * Returns XHTML for the field and also checks whether the file
      * specified in $data exists using file_exists()
      *
@@ -1759,7 +1615,6 @@ class admin_setting_configfile extends admin_setting_configtext {
  * Path to executable file
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_configexecutable extends admin_setting_configfile {
 
@@ -1793,7 +1648,6 @@ class admin_setting_configexecutable extends admin_setting_configfile {
  * Path to directory
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_configdirectory extends admin_setting_configfile {
 
@@ -1827,16 +1681,11 @@ class admin_setting_configdirectory extends admin_setting_configfile {
  * Checkbox
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_configcheckbox extends admin_setting {
-    /**
-     * @var string Value used when checked
-     */
+    /** @var string Value used when checked */
     public $yes;
-    /**
-     * @var string Value used when not checked
-     */
+    /** @var string Value used when not checked */
     public $no;
 
     /**
@@ -1918,12 +1767,9 @@ class admin_setting_configcheckbox extends admin_setting {
  * Multiple checkboxes, each represents different value, stored in csv format
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_configmulticheckbox extends admin_setting {
-    /**
-     * @var array Array of choices value=>label
-     */
+    /** @var array Array of choices value=>label */
     public $choices;
 
     /**
@@ -2023,7 +1869,7 @@ class admin_setting_configmulticheckbox extends admin_setting {
         }
         return $this->config_write($this->name, implode(',', $result)) ? '' : get_string('errorsetting', 'admin');
     }
-    
+
     /**
      * Returns XHTML field(s) as required by choices
      *
@@ -2092,7 +1938,6 @@ class admin_setting_configmulticheckbox extends admin_setting {
  * Multiple checkboxes 2, value stored as string 00101011
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_configmulticheckbox2 extends admin_setting_configmulticheckbox {
 
@@ -2150,12 +1995,9 @@ class admin_setting_configmulticheckbox2 extends admin_setting_configmulticheckb
  * Select one value from list
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_configselect extends admin_setting {
-    /**
-     * @var array
-     */
+    /** @var array Array of choices value=>label */
     public $choices;
 
     /**
@@ -2174,7 +2016,9 @@ class admin_setting_configselect extends admin_setting {
     /**
      * This function may be used in ancestors for lazy loading of choices
      *
-     * @todo Check if this function is still required content commented out only returns true
+     * Override this method if loading of choices is expensive, such
+     * as when it requires multiple db requests.
+     *
      * @return bool true if loaded, false if error
      */
     public function load_choices() {
@@ -2214,7 +2058,7 @@ class admin_setting_configselect extends admin_setting {
 
     /**
      * Return the setting
-     * 
+     *
      * @return mixed returns config if successfull else null
      */
     public function get_setting() {
@@ -2280,7 +2124,7 @@ class admin_setting_configselect extends admin_setting {
      * Returns XHTML select field and wrapping div(s)
      *
      * @see output_select_html()
-     * 
+     *
      * @param string $data the option to show as selected
      * @param string $query
      * @return string XHTML field and wrapping div
@@ -2310,7 +2154,6 @@ class admin_setting_configselect extends admin_setting {
  * Select multiple items from list
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_configmultiselect extends admin_setting_configselect {
     /**
@@ -2452,12 +2295,9 @@ class admin_setting_configmultiselect extends admin_setting_configselect {
  * them as an array named after $name (so we only use $name2 internally for the setting)
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_configtime extends admin_setting {
-    /**
-     * @var string Used for setting second select (minutes)
-     */
+    /** @var string Used for setting second select (minutes) */
     public $name2;
 
     /**
@@ -2475,7 +2315,7 @@ class admin_setting_configtime extends admin_setting {
 
     /**
      * Get the selected time
-     * 
+     *
      * @return mixed An array containing 'h'=>xx, 'm'=>xx, or null if not set
      */
     public function get_setting() {
@@ -2490,7 +2330,7 @@ class admin_setting_configtime extends admin_setting {
 
     /**
      * Store the time (hours and minutes)
-     * 
+     *
      * @param array $data Must be form 'h'=>xx, 'm'=>xx
      * @return bool true if success, false if not
      */
@@ -2538,7 +2378,6 @@ class admin_setting_configtime extends admin_setting {
  * Used to validate a textarea used for ip addresses
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_configiplist extends admin_setting_configtextarea {
 
@@ -2589,13 +2428,9 @@ class admin_setting_configiplist extends admin_setting_configtextarea {
  * get_users_from_config($CFG->mysetting, $capability); function in moodlelib.php.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_users_with_capability extends admin_setting_configmultiselect {
-    /**
-     * @var string The capabilities name
-     * @access protected
-     */
+    /** @var string The capabilities name */
     protected $capability;
 
     /**
@@ -2686,7 +2521,6 @@ class admin_setting_users_with_capability extends admin_setting_configmultiselec
  * Special checkbox for calendar - resets SESSION vars.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_special_adminseesall extends admin_setting_configcheckbox {
     /**
@@ -2705,7 +2539,6 @@ class admin_setting_special_adminseesall extends admin_setting_configcheckbox {
     /**
      * Stores the setting passed in $data
      *
-     * @global object
      * @param mixed gets converted to string for comparison
      * @return string empty string or error message
      */
@@ -2720,7 +2553,6 @@ class admin_setting_special_adminseesall extends admin_setting_configcheckbox {
  * Special select for settings that are altered in setup.php and can not be altered on the fly
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_special_selectsetup extends admin_setting_configselect {
     /**
@@ -2736,7 +2568,6 @@ class admin_setting_special_selectsetup extends admin_setting_configselect {
     /**
      * Save the setting passed in $data
      *
-     * @global object
      * @param string $data The setting to save
      * @return string empty or error message
      */
@@ -2754,7 +2585,6 @@ class admin_setting_special_selectsetup extends admin_setting_configselect {
  * Special select for frontpage - stores data in course table
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_sitesetselect extends admin_setting_configselect {
     /**
@@ -2770,8 +2600,6 @@ class admin_setting_sitesetselect extends admin_setting_configselect {
     /**
      * Updates the database and save the setting
      *
-     * @global object
-     * @global object
      * @param string data
      * @return string empty or error message
      */
@@ -2795,18 +2623,14 @@ class admin_setting_sitesetselect extends admin_setting_configselect {
  * Special select - lists on the frontpage - hacky
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_courselist_frontpage extends admin_setting {
-    /**
-     * @var array
-     */
+    /** @var array Array of choices value=>label */
     public $choices;
 
     /**
      * Construct override, requires one param
      *
-     * @global object
      * @param bool $loggedin Is the user logged in
      */
     public function __construct($loggedin) {
@@ -2822,7 +2646,6 @@ class admin_setting_courselist_frontpage extends admin_setting {
     /**
      * Loads the choices available
      *
-     * @global object
      * @return bool always returns true
      */
     public function load_choices() {
@@ -2917,7 +2740,6 @@ class admin_setting_courselist_frontpage extends admin_setting {
  * Special checkbox for frontpage - stores data in course table
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_sitesetcheckbox extends admin_setting_configcheckbox {
     /**
@@ -2933,8 +2755,6 @@ class admin_setting_sitesetcheckbox extends admin_setting_configcheckbox {
     /**
      * Save the selected setting
      *
-     * @global object
-     * @global object
      * @param string $data The selected site
      * @return string empty string or error message
      */
@@ -2955,7 +2775,6 @@ class admin_setting_sitesetcheckbox extends admin_setting_configcheckbox {
  * Empty string means not set here. Manual setting is required.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_sitesettext extends admin_setting_configtext {
     /**
@@ -2989,8 +2808,6 @@ class admin_setting_sitesettext extends admin_setting_configtext {
     /**
      * Save the selected setting
      *
-     * @global object
-     * @global object
      * @param string $data The selected value
      * @return string emtpy or error message
      */
@@ -3016,7 +2833,6 @@ class admin_setting_sitesettext extends admin_setting_configtext {
  * Special text editor for site description.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_special_frontpagedesc extends admin_setting {
     /**
@@ -3024,6 +2840,7 @@ class admin_setting_special_frontpagedesc extends admin_setting {
      */
     public function __construct() {
         parent::__construct('summary', get_string('frontpagedescription'), get_string('frontpagedescriptionhelp'), NULL);
+        editors_head_setup();
     }
 
     /**
@@ -3038,8 +2855,6 @@ class admin_setting_special_frontpagedesc extends admin_setting {
     /**
      * Save the new setting
      *
-     * @global object
-     * @global object
      * @param string $data The new value to save
      * @return string empty or error message
      */
@@ -3056,8 +2871,6 @@ class admin_setting_special_frontpagedesc extends admin_setting {
     /**
      * Returns XHTML for the field plus wrapping div
      *
-     * @global object
-     * @global object
      * @param string $data The current value
      * @param string $query
      * @return string The XHTML output
@@ -3076,18 +2889,10 @@ class admin_setting_special_frontpagedesc extends admin_setting {
  * Special font selector for use in admin section
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_special_editorfontlist extends admin_setting {
 
     /**
-     * @var array
-     * @todo Apparently unused var check if removable
-     */
-    public $items;
-
-    /**
-     * @global object
      * Construct method, calls parent::__construct with specific args
      */
     public function __construct() {
@@ -3118,8 +2923,7 @@ class admin_setting_special_editorfontlist extends admin_setting {
 
     /**
      * Return the current setting
-     * 
-     * @global object
+     *
      * @return array Array of the current setting(s)
      */
     public function get_setting() {
@@ -3206,18 +3010,10 @@ class admin_setting_special_editorfontlist extends admin_setting {
  * Special settings for emoticons
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_emoticons extends admin_setting {
 
     /**
-     * @var array
-     * @todo Apparently unused var, check if removable
-     */
-    public $items;
-
-    /**
-     * @global object
      * Calls parent::__construct with specific args
      */
     public function __construct() {
@@ -3283,11 +3079,10 @@ class admin_setting_emoticons extends admin_setting {
                           'v27' => 'egg');
         parent::__construct($name, $visiblename, $description, $defaults);
     }
-    
+
     /**
      * Return the current setting(s)
      *
-     * @global object
      * @return array Current settings array
      */
     public function get_setting() {
@@ -3371,13 +3166,10 @@ class admin_setting_emoticons extends admin_setting {
  * Used to set editor options/settings
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 
 class admin_setting_special_editorhidebuttons extends admin_setting {
-    /**
-     * @var array Array of possible options
-     */
+    /** @var array Array of possible options */
     public $items;
 
     /**
@@ -3471,7 +3263,6 @@ class admin_setting_special_editorhidebuttons extends admin_setting {
     /**
      * Return XHTML for the field and wrapping div(s)
      *
-     * @global object
      * @param array $data
      * @param string $query
      * @return string XHTML for output
@@ -3516,11 +3307,10 @@ class admin_setting_special_editorhidebuttons extends admin_setting {
  * Special setting for limiting of the list of available languages.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_langlist extends admin_setting_configtext {
     /**
-     * Calls parent::__consturct with specific arguments
+     * Calls parent::__construct with specific arguments
      */
     public function __construct() {
         parent::__construct('langlist', get_string('langlist', 'admin'), get_string('configlanglist', 'admin'), '', PARAM_NOTAGS);
@@ -3543,11 +3333,10 @@ class admin_setting_langlist extends admin_setting_configtext {
  * Course category selection
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_settings_coursecat_select extends admin_setting_configselect {
     /**
-     * Calls parent::__consturct with specific arguments
+     * Calls parent::__construct with specific arguments
      */
     public function __construct($name, $visiblename, $description, $defaultsetting) {
         parent::__construct($name, $visiblename, $description, $defaultsetting, NULL);
@@ -3556,7 +3345,6 @@ class admin_settings_coursecat_select extends admin_setting_configselect {
     /**
      * Load the available choices for the select box
      *
-     * @global object
      * @return bool
      */
     public function load_choices() {
@@ -3574,11 +3362,10 @@ class admin_settings_coursecat_select extends admin_setting_configselect {
  * Special control for selecting days to backup
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_special_backupdays extends admin_setting_configmulticheckbox2 {
     /**
-     * Calls parent::__consturct with specific arguments
+     * Calls parent::__construct with specific arguments
      */
     public function __construct() {
         parent::__construct('backup_sche_weekdays', get_string('schedule'), get_string('backupschedulehelp'), array(), NULL);
@@ -3606,11 +3393,10 @@ class admin_setting_special_backupdays extends admin_setting_configmulticheckbox
  * Special debug setting
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_special_debug extends admin_setting_configselect {
     /**
-     * Calls parent::__consturct with specific arguments
+     * Calls parent::__construct with specific arguments
      */
     public function __construct() {
         parent::__construct('debug', get_string('debug', 'admin'), get_string('configdebug', 'admin'), DEBUG_NONE, NULL);
@@ -3638,11 +3424,10 @@ class admin_setting_special_debug extends admin_setting_configselect {
  * Special admin control
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_special_calendar_weekend extends admin_setting {
     /**
-     * Calls parent::__consturct with specific arguments
+     * Calls parent::__construct with specific arguments
      */
     public function __construct() {
         $name = 'calendar_weekend';
@@ -3722,12 +3507,9 @@ class admin_setting_special_calendar_weekend extends admin_setting {
  * Admin setting that allows a user to pick appropriate roles for something.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_pickroles extends admin_setting_configmulticheckbox {
-    /**
-     * @var array Array of capabilities which identify roles
-     */
+    /** @var array Array of capabilities which identify roles */
     private $types;
 
     /**
@@ -3746,13 +3528,11 @@ class admin_setting_pickroles extends admin_setting_configmulticheckbox {
     /**
      * Load roles as choices
      *
-     * @global object
-     * @global object
      * @return bool true=>success, false=>error
      */
     public function load_choices() {
         global $CFG, $DB;
-        if (empty($CFG->rolesactive)) {
+        if (during_initial_install()) {
             return false;
         }
         if (is_array($this->choices)) {
@@ -3771,13 +3551,12 @@ class admin_setting_pickroles extends admin_setting_configmulticheckbox {
     /**
      * Return the default setting for this control
      *
-     * @global object
      * @return array Array of default settings
      */
     public function get_defaultsetting() {
         global $CFG;
 
-        if (empty($CFG->rolesactive)) {
+        if (during_initial_install()) {
             return null;
         }
         $result = array();
@@ -3793,32 +3572,36 @@ class admin_setting_pickroles extends admin_setting_configmulticheckbox {
 }
 
 /**
- * Text field with an advanced checkbox, that controls a additional "fix_$name" setting.
+ * Text field with an advanced checkbox, that controls a additional $name.'_adv' setting.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
-class admin_setting_text_with_advanced extends admin_setting_configtext {
+class admin_setting_configtext_with_advanced extends admin_setting_configtext {
     /**
-     * Calls parent::__consturct with specific arguments
+     * Constructor
+     * @param string $name unique ascii name, either 'mysetting' for settings that in config, or 'myplugin/mysetting' for ones in config_plugins.
+     * @param string $visiblename localised
+     * @param string $description long localised info
+     * @param array $defaultsetting ('value'=>string, '__construct'=>bool)
+     * @param mixed $paramtype int means PARAM_XXX type, string is a allowed format in regex
+     * @param int $size default field size
      */
-    public function __construct($name, $visiblename, $description, $defaultsetting, $paramtype) {
-        parent::__construct($name, $visiblename, $description,
-                $defaultsetting, $paramtype);
+    public function __construct($name, $visiblename, $description, $defaultsetting, $paramtype=PARAM_RAW, $size=null) {
+        parent::__construct($name, $visiblename, $description, $defaultsetting, $paramtype, $size);
     }
 
     /**
      * Loads the current setting and returns array
      *
-     * @return array Returns array value=>xx, fix=>xx
+     * @return array Returns array value=>xx, __construct=>xx
      */
     public function get_setting() {
         $value = parent::get_setting();
-        $fix = $this->config_read('fix_' . $this->name);
-        if (is_null($value) or is_null($fix)) {
+        $adv = $this->config_read($this->name.'_adv');
+        if (is_null($value) or is_null($adv)) {
             return NULL;
         }
-        return array('value' => $value, 'fix' => $fix);
+        return array('value' => $value, 'adv' => $adv);
     }
 
     /**
@@ -3831,14 +3614,8 @@ class admin_setting_text_with_advanced extends admin_setting_configtext {
     public function write_setting($data) {
         $error = parent::write_setting($data['value']);
         if (!$error) {
-            if (empty($data['fix'])) {
-                $ok = $this->config_write('fix_' . $this->name, 0);
-            } else {
-                $ok = $this->config_write('fix_' . $this->name, 1);
-            }
-            if (!$ok) {
-                $error = get_string('errorsetting', 'admin');
-            }
+            $value = empty($data['adv']) ? 0 : 1;
+            $this->config_write($this->name.'_adv', $value);
         }
         return $error;
     }
@@ -3860,19 +3637,19 @@ class admin_setting_text_with_advanced extends admin_setting_configtext {
                 $defaultinfo[] = $default['value'];
             }
         }
-        if (!empty($default['fix'])) {
+        if (!empty($default['adv'])) {
             $defaultinfo[] = get_string('advanced');
         }
         $defaultinfo = implode(', ', $defaultinfo);
 
-        $fix = !empty($data['fix']);
+        $adv = !empty($data['adv']);
         $return = '<div class="form-text defaultsnext">' .
                 '<input type="text" size="' . $this->size . '" id="' . $this->get_id() .
                 '" name="' . $this->get_full_name() . '[value]" value="' . s($data['value']) . '" />' .
                 ' <input type="checkbox" class="form-checkbox" id="' .
-                $this->get_id() . '_fix" name="' . $this->get_full_name() .
-                '[fix]" value="1" ' . ($fix ? 'checked="checked"' : '') . ' />' .
-                ' <label for="' . $this->get_id() . '_fix">' .
+                $this->get_id() . '_adv" name="' . $this->get_full_name() .
+                '[adv]" value="1" ' . ($adv ? 'checked="checked"' : '') . ' />' .
+                ' <label for="' . $this->get_id() . '_adv">' .
                 get_string('advanced') . '</label></div>';
 
         return format_admin_setting($this, $this->visiblename, $return,
@@ -3881,31 +3658,134 @@ class admin_setting_text_with_advanced extends admin_setting_configtext {
 }
 
 /**
- * Dropdown menu with an advanced checkbox, that controls a additional "fix_$name" setting.
+ * Checkbox with an advanced checkbox that controls an additional $name.'_adv' config setting.
+ *
+ * @copyright 2009 Petr Skoda (http://skodak.org)
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class admin_setting_configcheckbox_with_advanced extends admin_setting_configcheckbox {
+
+    /**
+     * Constructor
+     * @param string $name unique ascii name, either 'mysetting' for settings that in config, or 'myplugin/mysetting' for ones in config_plugins.
+     * @param string $visiblename localised
+     * @param string $description long localised info
+     * @param array $defaultsetting ('value'=>string, 'adv'=>bool)
+     * @param string $yes value used when checked
+     * @param string $no value used when not checked
+     */
+    public function __construct($name, $visiblename, $description, $defaultsetting, $yes='1', $no='0') {
+        parent::__construct($name, $visiblename, $description, $defaultsetting, $yes, $no);
+    }
+
+    /**
+     * Loads the current setting and returns array
+     *
+     * @return array Returns array value=>xx, adv=>xx
+     */
+    public function get_setting() {
+        $value = parent::get_setting();
+        $adv = $this->config_read($this->name.'_adv');
+        if (is_null($value) or is_null($adv)) {
+            return NULL;
+        }
+        return array('value' => $value, 'adv' => $adv);
+    }
+
+    /**
+     * Sets the value for the setting
+     *
+     * Sets the value for the setting to either the yes or no values
+     * of the object by comparing $data to yes
+     *
+     * @param mixed $data Gets converted to str for comparison against yes value
+     * @return string empty string or error
+     */
+    public function write_setting($data) {
+        $error = parent::write_setting($data['value']);
+        if (!$error) {
+            $value = empty($data['adv']) ? 0 : 1;
+            $this->config_write($this->name.'_adv', $value);
+        }
+        return $error;
+    }
+
+    /**
+     * Returns an XHTML checkbox field and with extra advanced cehckbox
+     *
+     * @param string $data If $data matches yes then checkbox is checked
+     * @param string $query
+     * @return string XHTML field
+     */
+    public function output_html($data, $query='') {
+        $defaults = $this->get_defaultsetting();
+        $defaultinfo = array();
+        if (!is_null($defaults)) {
+            if ((string)$defaults['value'] === $this->yes) {
+                $defaultinfo[] = get_string('checkboxyes', 'admin');
+            } else {
+                $defaultinfo[] = get_string('checkboxno', 'admin');
+            }
+            if (!empty($defaults['adv'])) {
+                $defaultinfo[] = get_string('advanced');
+            }
+        }
+        $defaultinfo = implode(', ', $defaultinfo);
+
+        if ((string)$data['value'] === $this->yes) { // convert to strings before comparison
+            $checked = 'checked="checked"';
+        } else {
+            $checked = '';
+        }
+        if (!empty($data['adv'])) {
+            $advanced = 'checked="checked"';
+        } else {
+            $advanced = '';
+        }
+
+        $fullname    = $this->get_full_name();
+        $novalue     = s($this->no);
+        $yesvalue    = s($this->yes);
+        $id          = $this->get_id();
+        $stradvanced = get_string('advanced');
+        $return = <<<EOT
+<div class="form-checkbox defaultsnext" >
+<input type="hidden" name="{$fullname}[value]" value="$novalue" />
+<input type="checkbox" id="$id" name="{$fullname}[value]" value="$yesvalue" $checked />
+<input type="checkbox" class="form-checkbox" id="{$id}_adv" name="{$fullname}[adv]" value="1" $advanced />
+<label for="{$id}_adv">$stradvanced</label>
+</div>
+EOT;
+        return format_admin_setting($this, $this->visiblename, $return, $this->description,
+                                    true, '', $defaultinfo, $query);
+    }
+}
+
+/**
+ * Dropdown menu with an advanced checkbox, that controls a additional $name.'_adv' setting.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
-class admin_setting_combo_with_advanced extends admin_setting_configselect {
+class admin_setting_configselect_with_advanced extends admin_setting_configselect {
     /**
-     * Calls parent::__consturct with specific arguments
+     * Calls parent::__construct with specific arguments
      */
     public function __construct($name, $visiblename, $description, $defaultsetting, $choices) {
         parent::__construct($name, $visiblename, $description, $defaultsetting, $choices);
     }
-    
+
     /**
      * Loads the current setting and returns array
      *
-     * @return array Returns array value=>xx, fix=>xx
+     * @return array Returns array value=>xx, adv=>xx
      */
     public function get_setting() {
         $value = parent::get_setting();
-        $fix = $this->config_read('fix_' . $this->name);
-        if (is_null($value) or is_null($fix)) {
+        $adv = $this->config_read($this->name.'_adv');
+        if (is_null($value) or is_null($adv)) {
             return NULL;
         }
-        return array('value' => $value, 'fix' => $fix);
+        return array('value' => $value, 'adv' => $adv);
     }
 
     /**
@@ -3918,14 +3798,8 @@ class admin_setting_combo_with_advanced extends admin_setting_configselect {
     public function write_setting($data) {
         $error = parent::write_setting($data['value']);
         if (!$error) {
-            if (empty($data['fix'])) {
-                $ok = $this->config_write('fix_' . $this->name, 0);
-            } else {
-                $ok = $this->config_write('fix_' . $this->name, 1);
-            }
-            if (!$ok) {
-                $error = get_string('errorsetting', 'admin');
-            }
+            $value = empty($data['adv']) ? 0 : 1;
+            $this->config_write($this->name.'_adv', $value);
         }
         return $error;
     }
@@ -3952,7 +3826,7 @@ class admin_setting_combo_with_advanced extends admin_setting_configselect {
             if (isset($this->choices[$default['value']])) {
                 $defaultinfo[] = $this->choices[$default['value']];
             }
-            if (!empty($default['fix'])) {
+            if (!empty($default['adv'])) {
                 $defaultinfo[] = get_string('advanced');
             }
             $defaultinfo = implode(', ', $defaultinfo);
@@ -3960,12 +3834,12 @@ class admin_setting_combo_with_advanced extends admin_setting_configselect {
             $defaultinfo = '';
         }
 
-        $fix = !empty($data['fix']);
+        $adv = !empty($data['adv']);
         $return = '<div class="form-select defaultsnext">' . $selecthtml .
                 ' <input type="checkbox" class="form-checkbox" id="' .
-                $this->get_id() . '_fix" name="' . $this->get_full_name() .
-                '[fix]" value="1" ' . ($fix ? 'checked="checked"' : '') . ' />' .
-                ' <label for="' . $this->get_id() . '_fix">' .
+                $this->get_id() . '_adv" name="' . $this->get_full_name() .
+                '[adv]" value="1" ' . ($adv ? 'checked="checked"' : '') . ' />' .
+                ' <label for="' . $this->get_id() . '_adv">' .
                 get_string('advanced') . '</label></div>';
 
         return format_admin_setting($this, $this->visiblename, $return, $this->description, true, $warning, $defaultinfo, $query);
@@ -3973,30 +3847,13 @@ class admin_setting_combo_with_advanced extends admin_setting_configselect {
 }
 
 /**
- * Specialisation of admin_setting_combo_with_advanced for easy yes/no choices.
- *
- * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
- */
-class admin_setting_yesno_with_advanced extends admin_setting_combo_with_advanced {
-    /**
-     * Calls parent::__consturct with specific arguments
-     */
-    public function __construct($name, $visiblename, $description, $defaultsetting) {
-        parent::__construct($name, $visiblename, $description,
-                $defaultsetting, array(get_string('no'), get_string('yes')));
-    }
-}
-
-/**
  * Graded roles in gradebook
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_special_gradebookroles extends admin_setting_pickroles {
     /**
-     * Calls parent::__consturct with specific arguments
+     * Calls parent::__construct with specific arguments
      */
     public function __construct() {
         parent::__construct('gradebookroles', get_string('gradebookroles', 'admin'),
@@ -4008,14 +3865,11 @@ class admin_setting_special_gradebookroles extends admin_setting_pickroles {
 /**
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_regradingcheckbox extends admin_setting_configcheckbox {
     /**
      * Saves the new settings passed in $data
      *
-     * @global object
-     * @global object
      * @param string $data
      * @return mixed string or Array
      */
@@ -4039,11 +3893,10 @@ class admin_setting_regradingcheckbox extends admin_setting_configcheckbox {
  * Which roles to show on course decription page
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_special_coursemanager extends admin_setting_pickroles {
     /**
-     * Calls parent::__consturct with specific arguments
+     * Calls parent::__construct with specific arguments
      */
     public function __construct() {
         parent::__construct('coursemanager', get_string('coursemanager', 'admin'),
@@ -4055,7 +3908,6 @@ class admin_setting_special_coursemanager extends admin_setting_pickroles {
 /**
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_special_gradelimiting extends admin_setting_configcheckbox {
     /**
@@ -4067,7 +3919,6 @@ class admin_setting_special_gradelimiting extends admin_setting_configcheckbox {
     }
 
     /**
-     * @global object
      * Force site regrading
      */
     function regrade_all() {
@@ -4103,7 +3954,6 @@ class admin_setting_special_gradelimiting extends admin_setting_configcheckbox {
  * Primary grade export plugin - has state tracking.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_special_gradeexport extends admin_setting_configmulticheckbox {
     /**
@@ -4125,8 +3975,8 @@ class admin_setting_special_gradeexport extends admin_setting_configmulticheckbo
         }
         $this->choices = array();
 
-        if ($plugins = get_list_of_plugins('grade/export')) {
-            foreach($plugins as $plugin) {
+        if ($plugins = get_plugin_list('gradeexport')) {
+            foreach($plugins as $plugin => $unused) {
                 $this->choices[$plugin] = get_string('modulename', 'gradeexport_'.$plugin);
             }
         }
@@ -4138,12 +3988,9 @@ class admin_setting_special_gradeexport extends admin_setting_configmulticheckbo
  * Grade category settings
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_gradecat_combo extends admin_setting {
-    /**
-     * @var array Array of choices
-     */
+    /** @var array Array of choices */
     public $choices;
 
     /**
@@ -4161,8 +4008,7 @@ class admin_setting_gradecat_combo extends admin_setting {
 
     /**
      * Return the current setting(s) array
-     * 
-     * @global object
+     *
      * @return array Array of value=>xx, forced=>xx, adv=>xx
      */
     public function get_setting() {
@@ -4186,7 +4032,6 @@ class admin_setting_gradecat_combo extends admin_setting {
      * Save the new settings passed in $data
      *
      * @todo Add vartype handling to ensure $data is array
-     * @global object
      * @param array $data Associative array of value=>xx, forced=>xx, adv=>xx
      * @return string empty or error message
      */
@@ -4227,7 +4072,7 @@ class admin_setting_gradecat_combo extends admin_setting {
      *
      * @todo Add vartype handling to ensure $data is array
      * @param array $data Associative array of value=>xx, forced=>xx, adv=>xx
-     * @param string $query 
+     * @param string $query
      * @return string XHTML to display control
      */
     public function output_html($data, $query='') {
@@ -4276,7 +4121,6 @@ class admin_setting_gradecat_combo extends admin_setting {
  * Selection of grade report in user profiles
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_grade_profilereport extends admin_setting_configselect {
     /**
@@ -4289,7 +4133,6 @@ class admin_setting_grade_profilereport extends admin_setting_configselect {
     /**
      * Loads an array of choices for the configselect control
      *
-     * @global object
      * @return bool always return true
      */
     public function load_choices() {
@@ -4301,9 +4144,9 @@ class admin_setting_grade_profilereport extends admin_setting_configselect {
         global $CFG;
         require_once($CFG->libdir.'/gradelib.php');
 
-        foreach (get_list_of_plugins('grade/report') as $plugin) {
-            if (file_exists($CFG->dirroot.'/grade/report/'.$plugin.'/lib.php')) {
-                require_once($CFG->dirroot.'/grade/report/'.$plugin.'/lib.php');
+        foreach (get_plugin_list('gradereport') as $plugin => $plugindir) {
+            if (file_exists($plugindir.'/lib.php')) {
+                require_once($plugindir.'/lib.php');
                 $functionname = 'grade_report_'.$plugin.'_profilereport';
                 if (function_exists($functionname)) {
                     $this->choices[$plugin] = get_string('modulename', 'gradereport_'.$plugin);
@@ -4318,7 +4161,6 @@ class admin_setting_grade_profilereport extends admin_setting_configselect {
  * Special class for register auth selection
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_special_registerauth extends admin_setting_configselect {
     /**
@@ -4346,7 +4188,6 @@ class admin_setting_special_registerauth extends admin_setting_configselect {
     /**
      * Loads the possible choices for the array
      *
-     * @global object
      * @return bool always returns true
      */
     public function load_choices() {
@@ -4377,13 +4218,10 @@ class admin_setting_special_registerauth extends admin_setting_configselect {
  * Module manage page
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_page_managemods extends admin_externalpage {
     /**
      * Calls parent::__construct with specific arguments
-     *
-     * @global object
      */
     public function __construct() {
         global $CFG;
@@ -4393,7 +4231,6 @@ class admin_page_managemods extends admin_externalpage {
     /**
      * Try to find the specified module
      *
-     * @global object
      * @param string $query The module to search for
      * @return array
      */
@@ -4433,13 +4270,10 @@ class admin_page_managemods extends admin_externalpage {
  * Enrolment manage page
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_enrolment_page extends admin_externalpage {
     /**
      * Calls parent::__construct with specific arguments
-     *
-     * @global object
      */
     public function __construct() {
         global $CFG;
@@ -4457,9 +4291,9 @@ class admin_enrolment_page extends admin_externalpage {
 
         $found = false;
 
-        if ($modules = get_list_of_plugins('enrol')) {
+        if ($modules = get_plugin_list('enrol')) {
             $textlib = textlib_get_instance();
-            foreach ($modules as $plugin) {
+            foreach ($modules as $plugin => $dir) {
                 if (strpos($plugin, $query) !== false) {
                     $found = true;
                     break;
@@ -4496,13 +4330,10 @@ class admin_enrolment_page extends admin_externalpage {
  * Blocks manage page
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_page_manageblocks extends admin_externalpage {
     /**
      * Calls parent::__construct with specific arguments
-     *
-     * @global object
      */
     public function __construct() {
         global $CFG;
@@ -4512,8 +4343,6 @@ class admin_page_manageblocks extends admin_externalpage {
     /**
      * Search for a specific block
      *
-     * @global object
-     * @global object
      * @param string $query The string to search for
      * @return array
      */
@@ -4553,13 +4382,10 @@ class admin_page_manageblocks extends admin_externalpage {
  * Question type manage page
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_page_manageqtypes extends admin_externalpage {
     /**
      * Calls parent::__construct with specific arguments
-     *
-     * @global object
      */
     public function __construct() {
         global $CFG;
@@ -4569,8 +4395,6 @@ class admin_page_manageqtypes extends admin_externalpage {
     /**
      * Search QTYPES for the specified string
      *
-     * @global object
-     * @global array
      * @param string $query The string to search for in QTYPES
      * @return array
      */
@@ -4605,7 +4429,6 @@ class admin_page_manageqtypes extends admin_externalpage {
  * Special class for authentication administration.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_manageauths extends admin_setting {
     /**
@@ -4655,8 +4478,8 @@ class admin_setting_manageauths extends admin_setting {
         }
 
         $textlib = textlib_get_instance();
-        $authsavailable = get_list_of_plugins('auth');
-        foreach ($authsavailable as $auth) {
+        $authsavailable = get_plugin_list('auth');
+        foreach ($authsavailable as $auth => $dir) {
             if (strpos($auth, $query) !== false) {
                 return true;
             }
@@ -4672,7 +4495,6 @@ class admin_setting_manageauths extends admin_setting {
     /**
      * Return XHTML to display control
      *
-     * @global object
      * @param mixed $data Unused
      * @param string $query
      * @return string highlight
@@ -4687,7 +4509,7 @@ class admin_setting_manageauths extends admin_setting {
                                  'up', 'down', 'none'));
         $txt->updown = "$txt->up/$txt->down";
 
-        $authsavailable = get_list_of_plugins('auth');
+        $authsavailable = get_plugin_list('auth');
         get_enabled_auth_plugins(true); // fix the list of enabled auths
         if (empty($CFG->auth)) {
             $authsenabled = array();
@@ -4710,7 +4532,7 @@ class admin_setting_manageauths extends admin_setting {
             }
         }
 
-        foreach ($authsavailable as $auth) {
+        foreach ($authsavailable as $auth => $dir) {
             if (array_key_exists($auth, $displayauths)) {
                 continue; //already in the list
             }
@@ -4808,7 +4630,6 @@ class admin_setting_manageauths extends admin_setting {
  * Special class for authentication administration.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_manageeditors extends admin_setting {
     /**
@@ -4819,7 +4640,7 @@ class admin_setting_manageeditors extends admin_setting {
     }
 
     /**
-     * Always returns true, does nothing 
+     * Always returns true, does nothing
      *
      * @return true
      */
@@ -4828,7 +4649,7 @@ class admin_setting_manageeditors extends admin_setting {
     }
 
     /**
-     * Always returns true, does nothing 
+     * Always returns true, does nothing
      *
      * @return true
      */
@@ -4848,7 +4669,7 @@ class admin_setting_manageeditors extends admin_setting {
 
     /**
      * Checks if $query is one of the available editors
-     * 
+     *
      * @param string $query The string to search for
      * @return bool Returns true if found, false if not
      */
@@ -4873,7 +4694,6 @@ class admin_setting_manageeditors extends admin_setting {
     /**
      * Builds the XHTML to display the control
      *
-     * @global object
      * @param string $data Unused
      * @param string $query
      * @return string
@@ -4974,13 +4794,10 @@ class admin_setting_manageeditors extends admin_setting {
  * Special class for filter administration.
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_page_managefilters extends admin_externalpage {
     /**
      * Calls parent::__construct with specific arguments
-     *
-     * @global object
      */
     public function __construct() {
         global $CFG;
@@ -4990,7 +4807,6 @@ class admin_page_managefilters extends admin_externalpage {
     /**
      * Searches all installed filters for specified filter
      *
-     * @global object
      * @param string $query The filter(string) to search for
      * @param string $query
      */
@@ -5029,13 +4845,10 @@ class admin_page_managefilters extends admin_externalpage {
 /**
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_manageportfolio extends admin_setting {
     private $baseurl;
-    /**
-     * @global object
-     */
+
     public function __construct() {
         global $CFG;
         parent::__construct('manageportfolio', get_string('manageportfolio', 'portfolio'), '', '');
@@ -5043,7 +4856,7 @@ class admin_setting_manageportfolio extends admin_setting {
     }
 
     /**
-     * Always returns true, does nothing 
+     * Always returns true, does nothing
      *
      * @return true
      */
@@ -5052,7 +4865,7 @@ class admin_setting_manageportfolio extends admin_setting {
     }
 
     /**
-     * Always returns true, does nothing 
+     * Always returns true, does nothing
      *
      * @return true
      */
@@ -5081,8 +4894,8 @@ class admin_setting_manageportfolio extends admin_setting {
         }
 
         $textlib = textlib_get_instance();
-        $portfolios= get_list_of_plugins('portfolio/type');
-        foreach ($portfolios as $p) {
+        $portfolios = get_plugin_list('portfolio');
+        foreach ($portfolios as $p => $dir) {
             if (strpos($p, $query) !== false) {
                 return true;
             }
@@ -5099,7 +4912,6 @@ class admin_setting_manageportfolio extends admin_setting {
     /**
      * Builds XHTML to display the control
      *
-     * @global object
      * @param string $data Unused
      * @param string $query
      * @return string XHTML to display the control
@@ -5112,7 +4924,8 @@ class admin_setting_manageportfolio extends admin_setting {
         $namestr = get_string('name');
         $pluginstr = get_string('plugin', 'portfolio');
 
-        $plugins = get_list_of_plugins('portfolio/type');
+        $plugins = get_plugin_list('portfolio');
+        $plugins = array_keys($plugins);
         $instances = portfolio_instances(false, false);
         $alreadyplugins = array();
 
@@ -5177,9 +4990,6 @@ class admin_setting_manageportfolio extends admin_setting {
  *
  * This function must be called on each admin page before other code.
  *
- * @global object
- * @global object
- * @global object
  * @param string $section name of page
  * @param string $extrabutton extra HTML that is added after the blocks editing on/off button.
  * @param array $extraurlparams an array paramname => paramvalue, or parameters that need to be
@@ -5233,10 +5043,6 @@ function admin_externalpage_setup($section, $extrabutton = '',
 /**
  * Print header for admin page
  *
- * @global object
- * @global object
- * @global object
- * @global object
  * @param string $focus focus element
  */
 function admin_externalpage_print_header($focus='') {
@@ -5383,12 +5189,10 @@ function admin_externalpage_print_footer() {
 /**
  * Returns the reference to admin tree root
  *
- * @global object
- * @global object
  * @return object admin_roow object
  */
 function admin_get_root($reload=false, $requirefulltree=true) {
-    global $CFG, $DB;
+    global $CFG, $DB, $OUTPUT;
 
     static $ADMIN = NULL;
 
@@ -5418,10 +5222,6 @@ function admin_get_root($reload=false, $requirefulltree=true) {
         }
         require($CFG->dirroot.'/'.$CFG->admin.'/settings/plugins.php');
 
-        if (file_exists($CFG->dirroot.'/local/settings.php')) {
-            require($CFG->dirroot.'/local/settings.php');
-        }
-
         $ADMIN->loaded = true;
     }
 
@@ -5433,7 +5233,6 @@ function admin_get_root($reload=false, $requirefulltree=true) {
 /**
  * This function applies default settings.
  *
- * @global object
  * @param object $node, NULL means complete tree, null by default
  * @param bool $uncoditional if true overrides all values with defaults, null buy default
  */
@@ -5469,13 +5268,11 @@ function admin_apply_default_settings($node=NULL, $unconditional=true) {
 /**
  * Store changed settings, this function updates the errors variable in $ADMIN
  *
- * @global object
- * @global object
  * @param object $formdata from form
  * @return int number of changed settings
  */
 function admin_write_settings($formdata) {
-    global $CFG, $SITE, $PAGE, $DB;
+    global $CFG, $SITE, $DB;
 
     $olddbsessions = !empty($CFG->dbsessions);
     $formdata = (array)$formdata;
@@ -5514,9 +5311,12 @@ function admin_write_settings($formdata) {
         require_logout();
     }
 
-    // now update $SITE - it might have been changed
-    $SITE = $DB->get_record('course', array('id'=>$SITE->id));
-    $PAGE->set_course($SITE);
+    // Now update $SITE - just update the fields, in case other people have a
+    // a reference to it (e.g. $PAGE, $COURSE).
+    $newsite = $DB->get_record('course', array('id'=>$SITE->id));
+    foreach (get_object_vars($newsite) as $field => $value) {
+        $SITE->$field = $value;
+    }
 
     // now reload all settings - some of them might depend on the changed
     admin_get_root(true);
@@ -5559,7 +5359,6 @@ function admin_find_write_settings($node, $data) {
 /**
  * Internal function - prints the search results
  *
- * @global object
  * @param string $query String to search for
  * @return string empty or XHTML
  */
@@ -5666,7 +5465,6 @@ function admin_output_new_settings_by_page($node) {
 /**
  * Format admin settings
  *
- * @global object
  * @param object $setting
  * @param string $title label element
  * @param string $form form fragment, html code - not highlighed automaticaly
@@ -5762,8 +5560,6 @@ function any_new_admin_settings($node) {
 /**
  * Moved from admin/replace.php so that we can use this in cron
  *
- * @global object
- * @global object
  * @param string $search string to look for
  * @param string $replace string to replace
  * @return bool success or fail
@@ -5804,8 +5600,6 @@ function db_replace($search, $replace) {
  * Prints tables of detected plugins, one table per plugin type,
  * and prints whether they are part of the standard Moodle
  * distribution or not.
- *
- * @global object
  */
 function print_plugin_tables() {
     global $DB;
@@ -5882,9 +5676,9 @@ function print_plugin_tables() {
     $plugins_installed['filter'] = array();
 
     $plugins_ondisk = array();
-    $plugins_ondisk['mod'] = get_list_of_plugins('mod', 'db');
-    $plugins_ondisk['blocks'] = get_list_of_plugins('blocks', 'db');
-    $plugins_ondisk['filter'] = get_list_of_plugins('filter', 'db');
+    $plugins_ondisk['mod']    = array_keys(get_plugin_list('mod'));
+    $plugins_ondisk['blocks'] = array_keys(get_plugin_list('block'));
+    $plugins_ondisk['filter'] = array_keys(get_plugin_list('filter'));
 
     $strstandard    = get_string('standard');
     $strnonstandard = get_string('nonstandard');
@@ -5978,17 +5772,13 @@ function print_plugin_tables() {
  * Manage repository settings
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_managerepository extends admin_setting {
-    /**
-     * @var string
-     */
+    /** @var string */
     private $baseurl;
+
     /**
      * calls parent::__construct with specific arguments
-     *
-     * @global object
      */
     public function __construct() {
         global $CFG;
@@ -6048,8 +5838,8 @@ class admin_setting_managerepository extends admin_setting {
         }
 
         $textlib = textlib_get_instance();
-        $repositories= get_list_of_plugins('repository');
-        foreach ($repositories as $p) {
+        $repositories= get_plugin_list('repository');
+        foreach ($repositories as $p => $dir) {
             if (strpos($p, $query) !== false) {
                 return true;
             }
@@ -6066,10 +5856,8 @@ class admin_setting_managerepository extends admin_setting {
     /**
      * Builds XHTML to display the control
      *
-     * @global object
-     * @global object
      * @param string $data Unused
-     * @param string $query 
+     * @param string $query
      * @return string XHTML
      */
     public function output_html($data, $query='') {
@@ -6080,7 +5868,7 @@ class admin_setting_managerepository extends admin_setting {
         $updownstr = get_string('updown', 'repository');
         $hiddenstr = get_string('hiddenshow', 'repository');
         $deletestr = get_string('delete');
-        $plugins = get_list_of_plugins('repository');
+        $plugins = get_plugin_list('repository');
         $instances = repository::get_types();
         $instancesnumber = count($instances);
         $alreadyplugins = array();
@@ -6161,7 +5949,7 @@ class admin_setting_managerepository extends admin_setting {
         $instancehtml .= get_string('addplugin', 'repository');
         $instancehtml .= '</h3><ul>';
         $addable = 0;
-        foreach ($plugins as $p) {
+        foreach ($plugins as $p=>$dir) {
             if (!in_array($p, $alreadyplugins)) {
                 $instancehtml .= '<li><a href="'.$CFG->wwwroot.'/'.$CFG->admin.'/repository.php?sesskey='
                     .sesskey().'&amp;new='.$p.'">'.get_string('add', 'repository')
@@ -6182,20 +5970,16 @@ class admin_setting_managerepository extends admin_setting {
 }
 
 /**
- *  
+ *
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_managewsprotocols extends admin_setting {
-    /**
-     * @var string
-     */
+    /** @var string */
     private $baseurl;
+
     /**
      * Calls parent::__construct with specific arguments
-     *
-     * @global object
      */
     public function __construct() {
         global $CFG;
@@ -6224,7 +6008,6 @@ class admin_setting_managewsprotocols extends admin_setting {
     /**
      * Builds XHTML to display the control
      *
-     * @global object
      * @param string $data
      * @param string $query
      * @return string XHTML
@@ -6276,17 +6059,13 @@ class admin_setting_managewsprotocols extends admin_setting {
 /**
  *
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @package moodlecore
  */
 class admin_setting_managewsusersettings extends admin_setting {
-    /**
-     * @var string
-     */
+    /** @var string */
     private $baseurl;
+
     /**
      * Calls parent::__construct with specific arguments
-     *
-     * @global object
      */
     public function __construct() {
         global $CFG;
@@ -6296,7 +6075,7 @@ class admin_setting_managewsusersettings extends admin_setting {
 
     /**
      * Always returns true does nothing
-     * 
+     *
      * @return true
      */
     public function get_setting() {
@@ -6305,7 +6084,7 @@ class admin_setting_managewsusersettings extends admin_setting {
 
     /**
      * Does nothing always returns ''
-     * 
+     *
      * @return string Always returns ''
      */
     public function write_setting($data) {
@@ -6316,7 +6095,6 @@ class admin_setting_managewsusersettings extends admin_setting {
     /**
      * Build XHTML to display the control
      *
-     * @global object
      * @param string $data Unused
      * @param string $query
      * @return string XHTML

@@ -166,10 +166,10 @@ require_once("$CFG->dirroot/question/type/questiontype.php");
 // Load the questiontype.php file for each question type
 // These files in turn call question_register_questiontype()
 // with a new instance of each qtype class.
-$qtypenames = get_list_of_plugins('question/type');
-foreach($qtypenames as $qtypename) {
+$qtypenames = get_plugin_list('qtype');
+foreach($qtypenames as $qtypename => $qdir) {
     // Instanciates all plug-in question types
-    $qtypefilepath= "$CFG->dirroot/question/type/$qtypename/questiontype.php";
+    $qtypefilepath= "$qdir/questiontype.php";
 
     // echo "Loading $qtypename<br/>"; // Uncomment for debugging
     if (is_readable($qtypefilepath)) {
@@ -2133,20 +2133,11 @@ function get_html_head_contributions($questionlist, &$questions, &$states) {
     $PAGE->requires->yui_lib('connection');
     $PAGE->requires->js('question/qengine.js');
 
-    // An inline script to record various lang strings, etc. that qengine.js needs.
-    $contributions = array();
-
     // Anything that questions on this page need.
     foreach ($questionlist as $questionid) {
         $question = $questions[$questionid];
-        $newcontributions = $QTYPES[$question->qtype]->
-                get_html_head_contributions($question, $states[$questionid]);
-        if (!empty($newcontributions)) {
-            $contributions = array_merge($contributions, $newcontributions);
-        }
+        $QTYPES[$question->qtype]->get_html_head_contributions($question, $states[$questionid]);
     }
-
-    return implode("\n", array_unique($contributions));
 }
 
 /**
@@ -2158,11 +2149,7 @@ function get_html_head_contributions($questionlist, &$questions, &$states) {
  */
 function get_editing_head_contributions($question) {
     global $QTYPES;
-    $contributions = $QTYPES[$question->qtype]->get_editing_head_contributions();
-    if (empty($contributions)) {
-        $contributions = array();
-    }
-    return implode("\n", array_unique($contributions));
+    $QTYPES[$question->qtype]->get_editing_head_contributions();
 }
 
 /**
@@ -2590,14 +2577,14 @@ function question_categorylist($categoryid) {
 function get_import_export_formats( $type ) {
 
     global $CFG;
-    $fileformats = get_list_of_plugins("question/format");
+    $fileformats = get_plugin_list("qformat");
 
     $fileformatname=array();
     require_once( "{$CFG->dirroot}/question/format.php" );
-    foreach ($fileformats as $key => $fileformat) {
-        $format_file = $CFG->dirroot . "/question/format/$fileformat/format.php";
-        if (file_exists( $format_file ) ) {
-            require_once( $format_file );
+    foreach ($fileformats as $fileformat=>$fdir) {
+        $format_file = "$fdir/format.php";
+        if (file_exists($format_file) ) {
+            require_once($format_file);
         }
         else {
             continue;
@@ -2613,7 +2600,10 @@ function get_import_export_formats( $type ) {
         if ($provided) {
             $formatname = get_string($fileformat, 'quiz');
             if ($formatname == "[[$fileformat]]") {
-                $formatname = $fileformat;  // Just use the raw folder name
+                $formatname = get_string($fileformat, 'qformat_'.$fileformat);
+                if ($formatname == "[[$fileformat]]") {
+                    $formatname = $fileformat;  // Just use the raw folder name
+                }
             }
             $fileformatnames[$fileformat] = $formatname;
         }

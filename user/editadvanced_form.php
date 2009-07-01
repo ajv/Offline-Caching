@@ -24,10 +24,10 @@ class user_editadvanced_form extends moodleform {
         $mform->addRule('username', $strrequired, 'required', null, 'client');
         $mform->setType('username', PARAM_RAW);
 
-        $modules = get_list_of_plugins('auth');
+        $auths = get_plugin_list('auth');
         $auth_options = array();
-        foreach ($modules as $module) {
-            $auth_options[$module] = auth_get_plugin_title ($module);
+        foreach ($auths as $auth => $unused) {
+            $auth_options[$auth] = auth_get_plugin_title($auth);
         }
         $mform->addElement('select', 'auth', get_string('chooseauthmethod','auth'), $auth_options);
         $mform->setHelpButton('auth', array('authchange', get_string('chooseauthmethod','auth')));
@@ -134,7 +134,7 @@ class user_editadvanced_form extends moodleform {
                 $err['username'] = get_string('usernamelowercase');
             } else {
                 if (empty($CFG->extendedusernamechars)) {
-                    $string = eregi_replace("[^(-\.[:alnum:])]", '', $usernew->username);
+                    $string = preg_replace("/[^(-\.[:alnum:])]/i", '', $usernew->username);
                     if ($usernew->username !== $string) {
                         $err['username'] = get_string('alphanumerical');
                     }

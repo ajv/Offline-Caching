@@ -137,7 +137,8 @@ class repository_boxnet extends repository {
      * @return mixed
      */
     public function search($search_text) {
-        global $CFG;
+        global $CFG, $OUTPUT;
+        $OUTPUT->initialise_deprecated_cfg_pixpath();
         $list = array();
         $ret  = array();
         $tree = $this->box->getAccountTree();
@@ -153,8 +154,8 @@ class repository_boxnet extends repository {
                             'size'=>$filesizes[$n],
                             'date'=>$filedates[$n],
                             'source'=>'http://box.net/api/1.0/download/'
-                                .$this->options['auth_token'].'/'.$fileids[$n],
-                            'thumbnail'=>$CFG->httpswwwroot.'/pix/f/'.mimeinfo('icon32', $v));
+                                .$this->auth_token.'/'.$fileids[$n],
+                            'thumbnail'=>$CFG->pixpath.'/f/'.mimeinfo('icon32', $v));
                 }
             }
         }
@@ -216,6 +217,7 @@ class repository_boxnet extends repository {
             echo '<td><input type="password" name="boxpassword" /></td></tr>';
             echo '<input type="hidden" name="ticket" value="'.$t['ticket'].'" />';
             echo '</table>';
+            echo '<input type="submit" value="'.get_string('enter', 'repository').'" />';
         }
     }
 

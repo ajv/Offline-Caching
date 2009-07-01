@@ -86,13 +86,11 @@ class repository_flickr_public extends repository {
         $this->sess_account = 'flickr_public_'.$this->id.'_account';
         $this->sess_tag     = 'flickr_public_'.$this->id.'_tag';
         $this->sess_text    = 'flickr_public_'.$this->id.'_text';
-        $this->sess_license = 'flickr_public_'.$this->id.'_license';
 
         if (!empty($account) or !empty($fulltext) or !empty($tag) or !empty($license)) {
             $SESSION->{$this->sess_tag}  = $tag;
             $SESSION->{$this->sess_text} = $fulltext;
             $SESSION->{$this->sess_account} = $account;
-            $SESSION->{$this->sess_license} = $license;
         }
     }
 
@@ -109,8 +107,8 @@ class repository_flickr_public extends repository {
      * @param boolean $ajax
      * @return array
      */
-    public function print_login($ajax = true) {
-        if ($ajax) {
+    public function print_login() {
+        if ($this->options['ajax']) {
             $ret = array();
             $fulltext = new stdclass;
             $fulltext->label = get_string('fulltext', 'repository_flickr_public').': ';
@@ -130,29 +128,64 @@ class repository_flickr_public extends repository {
             $email_field->type = 'text';
             $email_field->name = 'flickr_account';
 
-            $license = new stdclass;
-            $license->label = get_string('license', 'repository_flickr_public').': ';
-            $license->id    = 'flickr_license_type';
-            $license->type  = 'radio';
-            $license->name  = 'flickr_license';
-            // all -> all licenses
-            // cc  -> creative commons
-            // ccc -> reeative commons commercial
-            $license->value = implode('|', array('all', 1, 2, 3, 4, 5, 6));
-            $license->value_label = implode('|', array(
-                get_string('all', 'repository_flickr_public'),
-                get_string('by-nc-sa', 'repository_flickr_public'),
-                get_string('by-nc', 'repository_flickr_public'),
-                get_string('by-nc-nd', 'repository_flickr_public'),
-                get_string('by', 'repository_flickr_public'),
-                get_string('by-sa', 'repository_flickr_public'),
-                get_string('by-nd', 'repository_flickr_public')
-            ));
+            $commercial = new stdclass;
+            $commercial->label = get_string('commercialuse', 'repository_flickr_public').': ';
+            $commercial->id    = 'flickr_commercial_id';
+            $commercial->type  = 'radio';
+            $commercial->name  = 'flickr_commercial';
+            $commercial->value = implode('|', array('yes', 'no'));
+            $commercial->value_label = implode('|', array(
+                    get_string('yes'),
+                    get_string('no')
+                ));
 
-            $ret['login'] = array($fulltext, $tag, $email_field, $license);
+            $modification = new stdclass;
+            $modification->label = get_string('modification', 'repository_flickr_public').': ';
+            $modification->id    = 'flickr_modification_id';
+            $modification->type  = 'radio';
+            $modification->name  = 'flickr_modification';
+            $modification->value = implode('|', array('yes', 'sharealike', 'no'));
+            $modification->value_label = implode('|', array(
+                    get_string('yes'),
+                    get_string('sharealike', 'repository_flickr_public'),
+                    get_string('no')
+                ));
+
+            $ret['login'] = array($fulltext, $tag, $email_field, $commercial, $modification);
             $ret['login_btn_label'] = get_string('search');
             $ret['login_btn_action'] = 'search';
             return $ret;
+        } else {
+            echo '<table>';
+            echo '<tr><td><label>'.get_string('fulltext', 'repository_flickr_public').'</label></td>';
+            echo '<td><input type="text" name="flickr_fulltext" /></td></tr>';
+            echo '<tr><td><label>'.get_string('tag', 'repository_flickr_public').'</label></td>';
+            echo '<td><input type="text" name="flickr_tag" /></td></tr>';
+            echo '<tr><td><label>'.get_string('username', 'repository_flickr_public').'</label></td>';
+            echo '<td><input type="text" name="flickr_account" /></td></tr>';
+
+            echo '<tr><td><label>'.get_string('commercialuse', 'repository_flickr_public').'</label></td>';
+            echo '<td>';
+            echo '<input type="radio" name="flickr_commercial" value="yes" /> '.get_string('yes');
+            echo '<br />';
+            echo '<input type="radio" name="flickr_commercial" value="no" /> '.get_string('no');
+            echo '<br />';
+            echo '</td></tr>';
+
+            echo '<tr><td><label>'.get_string('modification', 'repository_flickr_public').'</label></td>';
+            echo '<td>';
+            echo '<input type="radio" name="flickr_modification" value="yes" /> '.get_string('yes');
+            echo '<br />';
+            echo '<input type="radio" name="flickr_modification" value="sharealike" /> '.get_string('sharealike', 'repository_flickr_public');
+            echo '<br />';
+            echo '<input type="radio" name="flickr_modification" value="no" /> '.get_string('no');
+            echo '<br />';
+            echo '</td></tr>';
+
+            echo '</table>';
+
+            echo '<input type="hidden" name="action" value="search" />';
+            echo '<input type="submit" value="'.get_string('search', 'repository').'" />';
         }
     }
 
@@ -175,6 +208,7 @@ class repository_flickr_public extends repository {
      */
     public function search($search_text) {
         global $SESSION;
+        $ret = array();
         if (!empty($this->flickr_account)) {
             $people = $this->flickr->people_findByEmail($this->flickr_account);
             $this->nsid = $people['nsid'];
@@ -185,6 +219,11 @@ class repository_flickr_public extends repository {
         }
         if (empty($this->nsid)) {
             $this->nsid = null;
+            // user specify a flickr account, but it is not valid
+            if (!empty($this->flickr_account) or !empty($SESSION->{$this->sess_account})) {
+                $ret['e'] = get_string('invalidemail', 'repository_flickr_public');
+                return $ret;
+            }
         }
         $is_paging = optional_param('search_paging', '', PARAM_RAW);
         if (!empty($is_paging)) {
@@ -192,31 +231,53 @@ class repository_flickr_public extends repository {
         } else {
             $page = 1;
         }
-        if (!empty($SESSION->{$this->sess_tag}) or !empty($SESSION->{$this->sess_text}) 
-            or !empty($SESSION->{$this->sess_account}) or !empty($this->nsid))
-        {
-            if ( empty($SESSION->{$this->sess_license}) or $SESSION->{$this->sess_license}=='all') {
-                $photos = $this->flickr->photos_search(array(
-                    'tags'=>$SESSION->{$this->sess_tag},
-                    'page'=>$page,
-                    'per_page'=>24,
-                    'user_id'=>$this->nsid,
-                    'text'=>$SESSION->{$this->sess_text}
-                    )
-                );
-            } else {
-                $photos = $this->flickr->photos_search(array(
-                    'tags'=>$SESSION->{$this->sess_tag},
-                    'page'=>$page,
-                    'per_page'=>24,
-                    'user_id'=>$this->nsid,
-                    'license'=>$SESSION->{$this->sess_license},
-                    'text'=>$SESSION->{$this->sess_text}
-                    )
-                );
-            }
+        // including all licenses by default
+        $licenses = array(1=>1, 2, 3, 4, 5, 6, 7);
+
+        $commercial   = optional_param('flickr_commercial', '', PARAM_RAW);
+        $modification = optional_param('flickr_modification', '', PARAM_RAW);
+
+        if ($commercial == 'yes') {
+            // including
+            // 4: Attribution License
+            // 5: Attribution ShareAlike
+            // 6: Attribution NoDerives
+            // 7: unknown license
+            unset($licenses[1], $licenses[2], $licenses[3]);
         }
-        $ret = array();
+        if ($modification == 'yes') {
+            // including
+            // 1: Attribution NonCommercial ShareAlike
+            // 2: Attribution NonCommercial
+            // 4: Attribution License
+            // 5: Attribution ShareAlike
+            // 7: unknown license
+            unset($licenses[3], $licenses[6]);
+        }
+        if ($modification == 'sharealike') {
+            // including
+            // 1: Attribution NonCommercial ShareAlike
+            // 5: Attribution ShareAlike
+            unset($licenses[2], $licenses[3], $licenses[4], $licenses[6], $licenses[7]);
+        }
+
+        $licenses = implode(',', $licenses);
+
+        if (!empty($SESSION->{$this->sess_tag})         // use tag to search
+            or !empty($SESSION->{$this->sess_text})     // use keyword to search
+            or !empty($this->nsid)/*use pre-defined accound*/) {                   
+            $photos = $this->flickr->photos_search(array(
+                'tags'=>$SESSION->{$this->sess_tag},
+                'page'=>$page,
+                'per_page'=>24,
+                'user_id'=>$this->nsid,
+                'license'=>$licenses,
+                'text'=>$SESSION->{$this->sess_text}
+                )
+            );
+        }
+        $ret['total'] = $photos['total'];
+        $ret['perpage'] = $photos['perpage'];
         if (empty($photos)) {
             $ret['list'] = array();
             return $ret;
@@ -270,8 +331,10 @@ class repository_flickr_public extends repository {
                     $format = 'jpg';
                 }
                 $format = '.'.$format;
-                // append extensions to the files
                 if (substr($p['title'], strlen($p['title'])-strlen($format)) != $format) {
+                    // append author id
+                    $p['title'] .= '-'.$p['owner'];
+                    // append file extension
                     $p['title'] .= $format; 
                 }
                 $ret['list'][] = array('title'=>$p['title'], 'source'=>$p['id'],
@@ -280,14 +343,6 @@ class repository_flickr_public extends repository {
             }
         }
         return $ret;
-    }
-
-    /**
-     *
-     * @return <type>
-     */
-    public function print_listing() {
-        return false;
     }
 
     /**
@@ -306,10 +361,10 @@ class repository_flickr_public extends repository {
 
     /**
      *
-     * @global <type> $CFG
-     * @param <type> $photo_id
-     * @param <type> $file
-     * @return <type>
+     * @global object $CFG
+     * @param string $photo_id
+     * @param string $file
+     * @return string
      */
     public function get_file($photo_id, $file = '') {
         global $CFG;
@@ -327,6 +382,10 @@ class repository_flickr_public extends repository {
         $c = new curl;
         $c->download(array(array('url'=>$url, 'file'=>$fp)));
 
+        $watermark = get_config('flickr_public', 'watermark');
+        if (!empty($watermark)) {
+            // process watermark
+        }
         return $path;
     }
 
@@ -357,8 +416,13 @@ class repository_flickr_public extends repository {
             $api_key = '';
         }
         $strrequired = get_string('required');
+
+        $mform->addElement('checkbox', 'watermark', get_string('watermark', 'repository_flickr_public'));
+
         $mform->addElement('text', 'api_key', get_string('apikey', 'repository_flickr_public'), array('value'=>$api_key,'size' => '40'));
         $mform->addRule('api_key', $strrequired, 'required', null, 'client');
+
+
         $mform->addElement('static', null, '',  get_string('information','repository_flickr_public'));
     }
 
@@ -367,7 +431,7 @@ class repository_flickr_public extends repository {
      * @return <type>
      */
     public static function get_type_option_names() {
-        return array('api_key');
+        return array('api_key', 'watermark');
     }
 
     /**

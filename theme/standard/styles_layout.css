@@ -630,6 +630,9 @@ div.hide {
    width:100%;
    text-align:right;
 }
+.jsenabled .advancedbutton .showadvancedbtn {
+  display:none;
+}
 .mform div.fitem {
   clear: both;
   width: 100%;
@@ -2870,6 +2873,20 @@ body#message-edit th {
   padding-left: 20px;
 }
 
+body.message .messagejsautorefresh {
+  display:none;
+}
+body.message .messagejsmanualrefresh {
+  display:block;
+}
+body.jsenabled .messagejsautorefresh {
+  display:block;
+}
+body.jsenabled .messagejsmanualrefresh {
+  display:none;
+}
+
+
 /***
  *** Notes
  ***/
@@ -4293,6 +4310,10 @@ body#mod-forum-search .introcontent {
 #mod-lesson-view #content .invisiblefieldset {
   display: block;
   text-align: left;
+}
+
+body.jsenabled .jshidewhenenabled {
+  display:none;
 }
 
 /***

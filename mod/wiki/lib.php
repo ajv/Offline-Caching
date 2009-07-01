@@ -24,11 +24,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-/** @global int $wiki_CONSTANT */
-$wiki_CONSTANT = 7;     /// for example
-/** @global object $site */
-$site = get_site();
 /** @global array $WIKI_TYPES */
+global $WIKI_TYPES;
 $WIKI_TYPES = array ('teacher' =>   get_string('defaultcourseteacher'),
                      'group' =>     get_string('groups',"wiki"),
                      'student' =>   get_string('defaultcoursestudent') );
@@ -1923,7 +1920,7 @@ function wiki_admin_checklinks($pagetocheck) {
      }
 
      /// Remove old Notices
-     $content = eregi_replace(' µµ__~\['.get_string("offline","wiki").'\]__µµ ','', $content);
+     $content = preg_replace('/ µµ__~\['.get_string("offline","wiki").'\]__µµ /i','', $content);
 
      #-- replace dead links
      foreach ($badlinks as $href) {
