@@ -2158,7 +2158,7 @@ function print_header($title='', $heading='', $navigation='', $focus='',
         throw new coding_exception('The $bodytags parameter to print_header is no longer supported.');
     }
 
-    $output = $OUTPUT->header($navigation, $menu);
+	$output = $OUTPUT->header($navigation, $menu);
 
     if ($return) {
         return $output;
