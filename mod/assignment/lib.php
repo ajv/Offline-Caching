@@ -847,7 +847,7 @@ class assignment_base {
      * @param string $extra_javascript
      */
     function display_submission($extra_javascript = '') {
-        global $CFG, $DB;
+        global $CFG, $DB, $PAGE;
         require_once($CFG->libdir.'/gradelib.php');
         require_once($CFG->libdir.'/tablelib.php');
 
@@ -919,22 +919,9 @@ class assignment_base {
         /// Print any extra javascript needed for saveandnext
         echo $extra_javascript;
 
-        ///SOme javascript to help with setting up >.>
+        echo $PAGE->requires->data_for_js('assignment', Array('nextid'=>$nextid, 'userid'=>$userid))->asap();
+        echo $PAGE->requires->js('mod/assignment/assignment.js')->asap();
 
-        echo '<script type="text/javascript">'."\n";
-        echo 'function setNext(){'."\n";
-        echo 'document.getElementById(\'submitform\').mode.value=\'next\';'."\n";
-        echo 'document.getElementById(\'submitform\').userid.value="'.$nextid.'";'."\n";
-        echo '}'."\n";
-
-        echo 'function saveNext(){'."\n";
-        echo 'document.getElementById(\'submitform\').mode.value=\'saveandnext\';'."\n";
-        echo 'document.getElementById(\'submitform\').userid.value="'.$nextid.'";'."\n";
-        echo 'document.getElementById(\'submitform\').saveuserid.value="'.$userid.'";'."\n";
-        echo 'document.getElementById(\'submitform\').menuindex.value = document.getElementById(\'submitform\').grade.selectedIndex;'."\n";
-        echo '}'."\n";
-
-        echo '</script>'."\n";
         echo '<table cellspacing="0" class="feedback '.$subtype.'" >';
 
         ///Start of teacher info row
@@ -1770,7 +1757,7 @@ class assignment_base {
      * @return string optional
      */
     function print_user_files($userid=0, $return=false) {
-        global $CFG, $USER;
+        global $CFG, $USER, $OUTPUT;
 
         if (!$userid) {
             if (!isloggedin()) {
@@ -1792,9 +1779,9 @@ class assignment_base {
                 $filename = $file->get_filename();
                 $found = true;
                 $mimetype = $file->get_mimetype();
-                $icon = mimeinfo_from_type('icon', $mimetype);
+                $icon = str_replace(array('.gif', '.png'), '', mimeinfo_from_type('icon', $mimetype));
                 $path = file_encode_url($CFG->wwwroot.'/pluginfile.php', '/'.$this->context->id.'/assignment_submission/'.$userid.'/'.$filename);
-                $output .= '<a href="'.$path.'" ><img src="'.$CFG->pixpath.'/f/'.$icon.'" class="icon" alt="'.$icon.'" />'.s($filename).'</a>';
+                $output .= '<a href="'.$path.'" ><img src="'.$OUTPUT->old_icon_url('f/'.$icon).'" class="icon" alt="'.$icon.'" />'.s($filename).'</a>';
                 if ($this->portfolio_exportable() && has_capability('mod/assignment:exportownsubmission', $this->context)) {
                     $button->set_callback_options('assignment_portfolio_caller', array('id' => $this->cm->id, 'fileid' => $file->get_id()));
                     $button->set_formats(portfolio_format_from_file($file));
@@ -2778,7 +2765,7 @@ function assignment_get_recent_mod_activity(&$activities, &$index, $timestart, $
  * This is used by course/recent.php
  */
 function assignment_print_recent_mod_activity($activity, $courseid, $detail, $modnames)  {
-    global $CFG;
+    global $CFG, $OUTPUT;
 
     echo '<table border="0" cellpadding="3" cellspacing="0" class="assignment-recent">';
 
@@ -2789,7 +2776,7 @@ function assignment_print_recent_mod_activity($activity, $courseid, $detail, $mo
     if ($detail) {
         $modname = $modnames[$activity->type];
         echo '<div class="title">';
-        echo "<img src=\"$CFG->modpixpath/assignment/icon.gif\" ".
+        echo "<img src=\"" . $OUTPUT->mod_icon_url('icon', 'assignment') . "\" ".
              "class=\"icon\" alt=\"$modname\">";
         echo "<a href=\"$CFG->wwwroot/mod/assignment/view.php?id={$activity->cmid}\">{$activity->name}</a>";
         echo '</div>';

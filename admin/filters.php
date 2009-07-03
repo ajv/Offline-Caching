@@ -232,7 +232,7 @@ function action_url($filterpath, $action) {
 function action_icon($url, $icon, $straction) {
     global $CFG;
     return '<a href="' . $url . '" title="' . $straction . '">' .
-            '<img src="' . $CFG->pixpath . '/t/' . $icon . '.gif" alt="' . $straction . '" /></a> ';
+            '<img src="' . $OUTPUT->old_icon_url('t/' . $icon) . '" alt="' . $straction . '" /></a> ';
 }
 
 function get_table_row($filterinfo, $isfirstrow, $islastactive, $applytostrings) {
@@ -253,7 +253,7 @@ function get_table_row($filterinfo, $isfirstrow, $islastactive, $applytostrings)
 
     // Re-order
     $updown = '';
-    $spacer = '<img src="' . $CFG->pixpath . '/spacer.gif" class="iconsmall" alt="" /> ';
+    $spacer = '<img src="' . $OUTPUT->old_icon_url('spacer') . '" class="iconsmall" alt="" /> ';
     if ($filterinfo->active != TEXTFILTER_DISABLED) {
         if (!$isfirstrow) {
             $updown .= action_icon(action_url($filter, 'up'), 'up', get_string('up'));

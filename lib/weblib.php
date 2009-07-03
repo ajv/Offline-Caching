@@ -1113,7 +1113,7 @@ function print_textfield ($name, $value, $alt = '',$size=50,$maxlength=0, $retur
  */
 function popup_form($baseurl, $options, $formid, $selected='', $nothing='choose', $help='', $helptext='', $return=false,
     $targetwindow='self', $selectlabel='', $optionsextra=NULL, $submitvalue='', $disabled=false, $showbutton=false) {
-    global $CFG, $SESSION;
+    global $CFG, $SESSION, $PAGE;
     static $go, $choose;   /// Locally cached, in case there's lots on a page
 
     if (empty($options)) {
@@ -1262,12 +1262,10 @@ function popup_form($baseurl, $options, $formid, $selected='', $nothing='choose'
     if (!$showbutton) {
         $output .= '<div id="noscript'.$formid.'" style="display: inline;">';
     }
-    $output .= '<input type="submit" value="'.$submitvalue.'" '.$disabled.' /></div>';
+    $output .= '<input type="submit" value="'.$submitvalue.'" '.$disabled.' />';
     if (!$showbutton) {
-        $output .= '<script type="text/javascript">'.
-                   "\n//<![CDATA[\n".
-                   'document.getElementById("noscript'.$formid.'").style.display = "none";'.
-                   "\n//]]>\n".'</script>';
+        $output .= $PAGE->requires->js_function_call('hide_item', Array('noscript'.$formid))->asap();
+        $output .= '</div>';
     }
     $output .= '</div></form>';
 
@@ -2020,8 +2018,7 @@ function cleanAttributes2($htmlArray){
  * @return string
  */
 function replace_smilies(&$text) {
-
-    global $CFG;
+    global $CFG, $OUTPUT;
 
     if (empty($CFG->emoticons)) { /// No emoticons defined, nothing to process here
         return;
@@ -2051,7 +2048,7 @@ function replace_smilies(&$text) {
             $alttext = get_string($image, 'pix');
             $alttext = preg_replace('/^\[\[(.*)\]\]$/', '$1', $alttext); /// Clean alttext in case there isn't lang string for it.
             $e[$lang][] = $emoticon;
-            $img[$lang][] = '<img alt="'. $alttext .'" width="15" height="15" src="'. $CFG->pixpath .'/s/'. $image .'.gif" />';
+            $img[$lang][] = '<img alt="'. $alttext .'" width="15" height="15" src="'. $OUTPUT->old_icon_url('s/' . $image) . '" />';
         }
     }
 
@@ -2090,7 +2087,7 @@ function replace_smilies(&$text) {
  * @return string HTML for a list of smilies.
  */
 function get_emoticons_list_for_help_file() {
-    global $CFG, $SESSION, $PAGE;
+    global $CFG, $SESSION, $PAGE, $OUTPUT;
     if (empty($CFG->emoticons)) {
         return '';
     }
@@ -2099,7 +2096,7 @@ function get_emoticons_list_for_help_file() {
     $output = '<ul id="emoticonlist">';
     foreach ($items as $item) {
         $item = explode('{:}', $item);
-        $output .= '<li><img src="' . $CFG->pixpath . '/s/' . $item[1] . '.gif" alt="' .
+        $output .= '<li><img src="' . $OUTPUT->old_icon_url('s/' . $item[1]) . '" alt="' .
                 $item[0] . '" /><code>' . $item[0] . '</code></li>';
     }
     $output .= '</ul>';
@@ -2974,7 +2971,7 @@ function print_collapsible_region($contents, $classes, $id, $caption, $userpref 
  * @return string|void if $return is false, returns nothing, otherwise returns a string of HTML.
  */
 function print_collapsible_region_start($classes, $id, $caption, $userpref = false, $default = false, $return = false) {
-    global $CFG, $PAGE;
+    global $CFG, $PAGE, $OUTPUT;
 
     // Include required JavaScript libraries.
     $PAGE->requires->yui_lib('animation');
@@ -2999,7 +2996,8 @@ function print_collapsible_region_start($classes, $id, $caption, $userpref = fal
     $output .= $caption . ' ';
     $output .= '</div><div id="' . $id . '_inner" class="collapsibleregioninner">';
     $PAGE->requires->js_function_call('new collapsible_region',
-            array($id, $userpref, get_string('clicktohideshow')));
+            array($id, $userpref, get_string('clicktohideshow'),
+            $OUTPUT->old_icon_url('t/collapsed'), $OUTPUT->old_icon_url('t/expanded')));
 
     if ($return) {
         return $output;
@@ -3270,7 +3268,7 @@ function print_file_picture($path, $courseid=0, $height='', $width='', $link='',
  * @return string|void String or nothing, depending on $return.
  */
 function print_user_picture($user, $courseid, $picture=NULL, $size=0, $return=false, $link=true, $target='', $alttext=true) {
-    global $CFG, $DB;
+    global $CFG, $DB, $OUTPUT;
 
     $needrec = false;
     // only touch the DB if we are missing data...
@@ -3335,7 +3333,7 @@ function print_user_picture($user, $courseid, $picture=NULL, $size=0, $return=fa
         $src = get_file_url($user->id.'/'.$file.'.jpg', null, 'user');
     } else {         // Print default user pictures (use theme version if available)
         $class .= " defaultuserpic";
-        $src =  "$CFG->pixpath/u/$file.png";
+        $src =  $OUTPUT->old_icon_url('u/' . $file);
     }
     $imagealt = '';
     if ($alttext) {
@@ -3572,7 +3570,7 @@ function print_group_picture($group, $courseid, $large=false, $return=false, $li
  * @return string|bool Depending on $return
  */
 function print_png($url, $sizex, $sizey, $return, $parameters='alt=""') {
-    global $CFG;
+    global $OUTPUT;
     static $recentIE;
 
     if (!isset($recentIE)) {
@@ -3580,7 +3578,7 @@ function print_png($url, $sizex, $sizey, $return, $parameters='alt=""') {
     }
 
     if ($recentIE) {  // work around the HORRIBLE bug IE has with alpha transparencies
-        $output .= '<img src="'. $CFG->pixpath .'/spacer.gif" width="'. $sizex .'" height="'. $sizey .'"'.
+        $output .= '<img src="'. $OUTPUT->old_icon_url('spacer') . '" width="'. $sizex .'" height="'. $sizey .'"'.
                    ' class="png" style="width: '. $sizex .'px; height: '. $sizey .'px; '.
                    ' filter: progid:DXImageTransform.Microsoft.AlphaImageLoader(src='.
                    "'$url', sizingMethod='scale') ".
@@ -4095,7 +4093,7 @@ function update_categories_search_button($search,$page,$perpage) {
  * @return string
  */
 function navmenu($course, $cm=NULL, $targetwindow='self') {
-    global $CFG, $THEME, $USER, $DB;
+    global $CFG, $THEME, $USER, $DB, $OUTPUT;
     require_once($CFG->dirroot . '/course/lib.php'); // Required for get_fast_modinfo
 
     if (empty($THEME->navmenuwidth)) {
@@ -4196,7 +4194,7 @@ function navmenu($course, $cm=NULL, $targetwindow='self') {
         }
         $menu[$url] = $localname;
         if (empty($THEME->navmenuiconshide)) {
-            $menustyle[$url] = 'style="background-image: url('.$CFG->modpixpath.'/'.$mod->modname.'/icon.gif);"';  // Unfortunately necessary to do this here
+            $menustyle[$url] = 'style="background-image: url('.$OUTPUT->mod_icon_url('icon', $mod->modname) . ');"';  // Unfortunately necessary to do this here
         }
         $previousmod = $mod;
     }
@@ -4208,7 +4206,7 @@ function navmenu($course, $cm=NULL, $targetwindow='self') {
                     $CFG->frametarget.'onclick="this.target=\''.$CFG->framename.'\';"'.' href="'.
                     $CFG->wwwroot.'/course/report/log/index.php?chooselog=1&amp;user=0&amp;date=0&amp;id='.
                        $course->id.'&amp;modid='.$selectmod->id.'">'.
-                    '<img class="icon log" src="'.$CFG->pixpath.'/i/log.gif" alt="'.$logstext.'" /></a>'."\n".'</li>';
+                    '<img class="icon log" src="'.$OUTPUT->old_icon_url('i/log') . '" alt="'.$logstext.'" /></a>'."\n".'</li>';
 
     }
     if ($backmod) {
@@ -4322,7 +4320,7 @@ function navmenulist($course, $sections, $modinfo, $strsection, $strjumpto, $wid
         $class = 'activity '.$mod->modname;
         $class .= ($cmid == $mod->id) ? ' selected' : '';
         $menu[] = '<li class="'.$class.'">'.
-                  '<img src="'.$CFG->modpixpath.'/'.$mod->modname.'/icon.gif" alt="" />'.
+                  '<img src="'.$OUTPUT->mod_icon_url('icon', $mod->modname) . '" alt="" />'.
                   '<a href="'.$CFG->wwwroot.'/mod/'.$url.'">'.$mod->name.'</a></li>';
     }
 
@@ -4469,7 +4467,7 @@ function print_timer_selector($timelimit = 0, $unit = '', $name = 'timelimit', $
  */
 function print_grade_menu($courseid, $name, $current, $includenograde=true, $return=false) {
 
-    global $CFG;
+    global $CFG, $OUTPUT;
 
     $output = '';
     $strscale = get_string('scale');
@@ -4487,7 +4485,7 @@ function print_grade_menu($courseid, $name, $current, $includenograde=true, $ret
     }
     $output .= choose_from_menu($grades, $name, $current, '', '', 0, true);
 
-    $linkobject = '<span class="helplink"><img class="iconhelp" alt="'.$strscales.'" src="'.$CFG->pixpath .'/help.gif" /></span>';
+    $linkobject = '<span class="helplink"><img class="iconhelp" alt="'.$strscales.'" src="'.$OUTPUT->old_icon_url('help') . '" /></span>';
     $output .= link_to_popup_window ('/course/scales.php?id='. $courseid .'&amp;list=true', 'ratingscales',
                                      $linkobject, 400, 500, $strscales, 'none', true);
 
@@ -4511,13 +4509,13 @@ function print_grade_menu($courseid, $name, $current, $includenograde=true, $ret
  */
 function print_scale_menu($courseid, $name, $current, $return=false) {
 
-    global $CFG;
+    global $CFG, $OUTPUT;
 
     $output = '';
     $strscales = get_string('scales');
     $output .= choose_from_menu(get_scales_menu($courseid), $name, $current, '', '', 0, true);
 
-    $linkobject = '<span class="helplink"><img class="iconhelp" alt="'.$strscales.'" src="'.$CFG->pixpath .'/help.gif" /></span>';
+    $linkobject = '<span class="helplink"><img class="iconhelp" alt="'.$strscales.'" src="'.$OUTPUT->old_icon_url('help') . '" /></span>';
     $output .= link_to_popup_window ('/course/scales.php?id='. $courseid .'&amp;list=true', 'ratingscales',
                                      $linkobject, 400, 500, $strscales, 'none', true);
     if ($return) {
@@ -4538,12 +4536,12 @@ function print_scale_menu($courseid, $name, $current, $return=false) {
  */
 function print_scale_menu_helpbutton($courseid, $scale, $return=false) {
 
-    global $CFG;
+    global $OUTPUT;
 
     $output = '';
     $strscales = get_string('scales');
 
-    $linkobject = '<span class="helplink"><img class="iconhelp" alt="'.$scale->name.'" src="'.$CFG->pixpath .'/help.gif" /></span>';
+    $linkobject = '<span class="helplink"><img class="iconhelp" alt="'.$scale->name.'" src="'.$OUTPUT->old_icon_url('help') . '" /></span>';
     $output .= link_to_popup_window ('/course/scales.php?id='. $courseid .'&amp;list=true&amp;scaleid='. $scale->id, 'ratingscale',
                                      $linkobject, 400, 500, $scale->name, 'none', true);
     if ($return) {
@@ -4580,7 +4578,7 @@ function mdie($msg='', $errorcode=1) {
  * @return string Link to help button
  */
 function editorhelpbutton(){
-    global $CFG, $SESSION;
+    global $CFG, $SESSION, $OUTPUT;
     $items = func_get_args();
     $i = 1;
     $urlparams = array();
@@ -4631,7 +4629,7 @@ function editorhelpbutton(){
     $alttag = join (', ', $titles);
 
     $paramstring = join('&', $urlparams);
-    $linkobject = '<img alt="'.$alttag.'" class="iconhelp" src="'.$CFG->pixpath .'/help.gif" />';
+    $linkobject = '<img alt="'.$alttag.'" class="iconhelp" src="'.$OUTPUT->old_icon_url('help') . '" />';
     return link_to_popup_window(s('/lib/form/editorhelp.php?'.$paramstring), 'popup', $linkobject, 400, 500, $alttag, 'none', true);
 }
 
@@ -4656,7 +4654,6 @@ function editorhelpbutton(){
 function helpbutton($page, $title, $module='moodle', $image=true, $linktext=false, $text='', $return=false,
                      $imagetext='') {
     global $CFG, $COURSE, $OUTPUT;
-    $OUTPUT->initialise_deprecated_cfg_pixpath();
 
     //warning if ever $text parameter is used
     //$text option won't work properly because the text needs to be always cleaned and,
@@ -4698,7 +4695,7 @@ function helpbutton($page, $title, $module='moodle', $image=true, $linktext=fals
             $linkobject .= $imagetext;
         } else {
             $linkobject .= '<img class="iconhelp" alt="'.s(strip_tags($tooltip)).'" src="'.
-                $CFG->pixpath .'/help.gif" />';
+                $OUTPUT->old_icon_url('help') . '" />';
         }
     } else {
         $linkobject .= $tooltip;
@@ -4741,11 +4738,11 @@ function helpbutton($page, $title, $module='moodle', $image=true, $linktext=fals
  */
 function emoticonhelpbutton($form, $field, $return = false) {
 
-    global $CFG, $SESSION;
+    global $SESSION, $OUTPUT;
 
     $SESSION->inserttextform = $form;
     $SESSION->inserttextfield = $field;
-    $imagetext = '<img src="' . $CFG->pixpath . '/s/smiley.gif" alt="" class="emoticon" style="margin-left:3px; padding-right:1px;width:15px;height:15px;" />';
+    $imagetext = '<img src="' . $OUTPUT->old_icon_url('s/smiley') . '" alt="" class="emoticon" style="margin-left:3px; padding-right:1px;width:15px;height:15px;" />';
     $help = helpbutton('emoticons2', get_string('helpemoticons'), 'moodle', true, true, '', true, $imagetext);
     if (!$return){
         echo $help;
@@ -4873,16 +4870,20 @@ function redirect($url, $message='', $delay=-1) {
        $url = $SESSION->sid_process_url($url);
     }
 
+    $lasterror = error_get_last();
+    $debugdisableredirect = defined('DEBUGGING_PRINTED') ||
+            (!empty($CFG->debugdisplay) && !empty($lasterror) && ($lasterror['type'] & DEBUG_DEVELOPER));
+
     $usingmsg = false;
-    if ($message!=='') {
-        $usingmsg = true;
-        if ($delay===-1 || !is_numeric($delay)) {
+    if (!empty($message)) {
+        if ($delay === -1 || !is_numeric($delay)) {
             $delay = 3;
         }
         $message = clean_text($message);
     } else {
-        $message = 'This page should redirect. If nothing is happening please click the continue button below.';
+        $message = get_string('pageshouldredirect');
         $delay = 0;
+        // We are going to try to use a HTTP redirect, so we need a full URL.
         if (!preg_match('|^[a-z]+:|', $url)) {
             // Get host name http://www.wherever.com
             $hostpart = preg_replace('|^(.*?[^:/])/.*$|', '$1', $CFG->wwwroot);
@@ -4904,7 +4905,6 @@ function redirect($url, $message='', $delay=-1) {
         }
     }
 
-    $performanceinfo = '';
     if (defined('MDL_PERF') || (!empty($CFG->perfdebug) and $CFG->perfdebug > 7)) {
         if (defined('MDL_PERFTOLOG') && !function_exists('register_shutdown_function')) {
             $perf = get_performance_info();
@@ -4915,11 +4915,16 @@ function redirect($url, $message='', $delay=-1) {
     $encodedurl = preg_replace("/\&(?![a-zA-Z0-9#]{1,8};)/", "&amp;", $url);
     $encodedurl = preg_replace('/^.*href="([^"]*)".*$/', "\\1", clean_text('<a href="'.$encodedurl.'" />'));
 
-    $message .= '<a href="'. $encodedurl .'">'. get_string('continue') .'</a>';
+    if ($delay == 0 && !$debugdisableredirect && !headers_sent()) {
+        //302 might not work for POST requests, 303 is ignored by obsolete clients.
+        @header($_SERVER['SERVER_PROTOCOL'] . ' 303 See Other');
+        @header('Location: '.$url);
+    }
 
+    // Include a redirect message, even with a HTTP redirect, because that is recommended practice.
     $CFG->docroot = false; // to prevent the link to moodle docs from being displayed on redirect page.
-    echo $OUTPUT->redirect($encodedurl, $message, $delay);
-    die();
+    echo $OUTPUT->redirect_message($encodedurl, $message, $delay, $debugdisableredirect);
+    exit;
 }
 
 /**
@@ -5497,7 +5502,7 @@ function print_location_comment($file, $line, $return = false)
  *
  */
 function print_arrow($direction='up', $strsort=null, $return=false) {
-    global $CFG;
+    global $OUTPUT;
 
     if (!in_array($direction, array('up', 'down', 'right', 'left', 'move'))) {
         return null;
@@ -5526,7 +5531,7 @@ function print_arrow($direction='up', $strsort=null, $return=false) {
         $strsort  = get_string('sort' . $sortdir, 'grades');
     }
 
-    $return = ' <img src="'.$CFG->pixpath.'/t/' . $direction . '.gif" alt="'.$strsort.'" /> ';
+    $return = ' <img src="'.$OUTPUT->old_icon_url('t/' . $direction) . '" alt="'.$strsort.'" /> ';
 
     if ($return) {
         return $return;
@@ -5714,6 +5719,7 @@ EOT;
      * @return void Echo's output
      */
     function _update($percent, $msg, $es){
+        global $PAGE;
         if(empty($this->time_start)){
             $this->time_start = microtime(true);
         }
@@ -5727,7 +5733,7 @@ EOT;
         if ($es === null){
             $es = "Infinity";
         }
-        echo "<script type=\"text/javascript\">up_".$this->html_id."('$this->html_id', '$w', '$this->percent', '$msg', $es);</script>";
+        echo $PAGE->requires->js_function_call("up_".$this->html_id, Array($this->html_id, $w, $this->percent, $msg, $es))->asap();
         flush();
     }
     /**

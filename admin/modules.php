@@ -210,7 +210,7 @@
     foreach ($modulebyname as $modulename => $module) {
 
         // took out hspace="\10\", because it does not validate. don't know what to replace with.
-        $icon = "<img src=\"$CFG->modpixpath/$module->name/icon.gif\" class=\"icon\" alt=\"\" />";
+        $icon = "<img src=\"" . $OUTPUT->mod_icon_url('icon', $module->name) . "\" class=\"icon\" alt=\"\" />";
 
         $delete = "<a href=\"modules.php?delete=$module->name&amp;sesskey=".sesskey()."\">$strdelete</a>";
 
@@ -232,11 +232,11 @@
 
         if ($module->visible) {
             $visible = "<a href=\"modules.php?hide=$module->name&amp;sesskey=".sesskey()."\" title=\"$strhide\">".
-                       "<img src=\"$CFG->pixpath/i/hide.gif\" class=\"icon\" alt=\"$strhide\" /></a>";
+                       "<img src=\"" . $OUTPUT->old_icon_url('i/hide') . "\" class=\"icon\" alt=\"$strhide\" /></a>";
             $class = "";
         } else {
             $visible = "<a href=\"modules.php?show=$module->name&amp;sesskey=".sesskey()."\" title=\"$strshow\">".
-                       "<img src=\"$CFG->pixpath/i/show.gif\" class=\"icon\" alt=\"$strshow\" /></a>";
+                       "<img src=\"" . $OUTPUT->old_icon_url('i/show') . "\" class=\"icon\" alt=\"$strshow\" /></a>";
             $class = " class=\"dimmed_text\"";
         }
         if ($module->name == "forum") {

@@ -22,7 +22,6 @@ require_once('lib.php');
 set_time_limit(0);
 
 require_login();
-$OUTPUT->initialise_deprecated_cfg_pixpath();
 
 $page        = optional_param('page', '',          PARAM_RAW);    // page
 $client_id   = optional_param('client_id', SITEID, PARAM_RAW);    // client ID
@@ -246,7 +245,7 @@ default:
             if ($file->get_filename()!='.') {
                 $drafturl = $CFG->httpswwwroot.'/draftfile.php/'.$context->id.'/user_draft/'.$itemid.'/'.$file->get_filename();
                 echo '<li><a href="'.$drafturl.'">'.$file->get_filename().'</a> ';
-                echo '<a href="'.$CFG->httpswwwroot.'/repository/filepicker.php?action=deletedraft&amp;itemid='.$itemid.'&amp;ctx_id='.$ctx_id.'&amp;title='.$file->get_filename().'"><img src="'.$CFG->pixpath.'/t/delete.gif" class="iconsmall" /></a></li>';
+                echo '<a href="'.$CFG->httpswwwroot.'/repository/filepicker.php?action=deletedraft&amp;itemid='.$itemid.'&amp;ctx_id='.$ctx_id.'&amp;title='.$file->get_filename().'"><img src="'.$OUTPUT->old_icon_url('t/delete') . '" class="iconsmall" /></a></li>';
             }
         }
         echo '</ul>';

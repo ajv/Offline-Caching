@@ -31,9 +31,8 @@
  */
 function rss_get_link($courseid, $userid, $modulename, $id, $tooltiptext='') {
 
-    global $CFG, $USER;
+    global $OUTPUT;
 
-    static $pixpath = '';
     static $rsspath = '';
 
     //In site course, if no logged (userid), use admin->id. Bug 2048.
@@ -43,7 +42,7 @@ function rss_get_link($courseid, $userid, $modulename, $id, $tooltiptext='') {
     }
 
     $rsspath = rss_get_url($courseid, $userid, $modulename, $id);
-    $rsspix = $CFG->pixpath .'/i/rss.gif';
+    $rsspix = $OUTPUT->old_icon_url('i/rss');
 
     return '<a href="'. $rsspath .'"><img src="'. $rsspix .'" title="'. strip_tags($tooltiptext) .'" alt="'.get_string('rss').'" /></a>';
 
@@ -172,8 +171,6 @@ function rss_file_name($modname, $mod) {
 function rss_standard_header($title = NULL, $link = NULL, $description = NULL) {
     global $CFG, $USER;
 
-    static $pixpath = '';
-
     $status = true;
     $result = "";
 
@@ -219,7 +216,7 @@ function rss_standard_header($title = NULL, $link = NULL, $description = NULL) {
        */
 
         //write image info
-        $rsspix = $CFG->pixpath."/i/rsssitelogo.gif";
+        $rsspix = $OUTPUT->old_icon_url('i/rsssitelogo');
 
         //write the info
         $result .= rss_start_tag('image', 2, true);
@@ -415,7 +412,7 @@ define('SUBMITTERS_ADMIN_AND_TEACHER', 2);
  * @param object $context we need the context object to check what the user is allowed to do.
  */
 function rss_display_feeds($courseid, $userid, $rssid='', $context) {
-    global $USER, $CFG, $DB;
+    global $USER, $CFG, $DB, $OUTPUT;
     global $blogid; //hackish, but if there is a blogid it would be good to preserve it
 
     require_once($CFG->libdir.'/tablelib.php');
@@ -461,11 +458,11 @@ function rss_display_feeds($courseid, $userid, $rssid='', $context) {
                     || ($feed->shared && $managesharedfeeds) ) {
 
                 $feedicons = '<a href="'. $CFG->wwwroot .'/blocks/rss_client/block_rss_client_action.php?id='. $courseid .'&amp;act=rssedit&amp;rssid='. $feed->id .'&amp;shared='.$feed->shared.'&amp;blogid='. $blogid .'">'.
-                             '<img src="'. $CFG->pixpath .'/t/edit.gif" alt="'. get_string('edit').'" title="'. get_string('edit') .'" /></a>&nbsp;'.
+                             '<img src="'. $OUTPUT->old_icon_url('t/edit') . '" alt="'. get_string('edit').'" title="'. get_string('edit') .'" /></a>&nbsp;'.
 
                              '<a href="'. $CFG->wwwroot .'/blocks/rss_client/block_rss_client_action.php?id='. $courseid .'&amp;act=delfeed&amp;rssid='. $feed->id.'&amp;shared='.$feed->shared.'blogid='. $blogid .'"
                 onclick="return confirm(\''. get_string('deletefeedconfirm', 'block_rss_client') .'\');">'.
-                             '<img src="'. $CFG->pixpath .'/t/delete.gif" alt="'. get_string('delete').'" title="'. get_string('delete') .'" /></a>';
+                             '<img src="'. $OUTPUT->old_icon_url('t/delete') . '" alt="'. get_string('delete').'" title="'. get_string('delete') .'" /></a>';
             }
             else {
                 $feedicons = '';

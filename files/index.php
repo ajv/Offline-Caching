@@ -207,7 +207,7 @@ function print_cell($alignment='center', $text='&nbsp;', $class='') {
 }
 
 function displaydir($file_info) {
-    global $CFG;
+    global $CFG, $OUTPUT;
 
     $children = $file_info->get_children();
     $parent_info = $file_info->get_parent();
@@ -258,7 +258,7 @@ function displaydir($file_info) {
 
         echo "<tr class=\"folder\">";
         print_cell();
-        print_cell('left', '<a href="index.php?'.$params.'"><img src="'.$CFG->pixpath.'/f/parent.gif" class="icon" alt="" />&nbsp;'.get_string('parentfolder').'</a>', 'name');
+        print_cell('left', '<a href="index.php?'.$params.'"><img src="'.$OUTPUT->old_icon_url('f/parent') . '" class="icon" alt="" />&nbsp;'.get_string('parentfolder').'</a>', 'name');
         print_cell();
         print_cell();
         print_cell();
@@ -283,11 +283,11 @@ function displaydir($file_info) {
 
                 echo "<tr class=\"folder\">";
                 print_cell();
-                print_cell("left", "<a href=\"index.php?$params\"><img src=\"$CFG->pixpath/f/folder.gif\" class=\"icon\" alt=\"$strfolder\" />&nbsp;".s($filename)."</a>", 'name');
+                print_cell("left", "<a href=\"index.php?$params\"><img src=\"" . $OUTPUT->old_icon_url('f/folder') . "\" class=\"icon\" alt=\"$strfolder\" />&nbsp;".s($filename)."</a>", 'name');
                 print_cell("right", $filesize, 'size');
                 print_cell("right", $filedate, 'date');
                 if ($parentwritable) {
-                    print_cell("right", "<a href=\"index.php?$params&amp;sesskey=".sesskey()."&amp;delete=1\"><img src=\"$CFG->pixpath/t/delete.gif\" class=\"iconsmall\" alt=\"$strdelete\" /></a>", 'command');
+                    print_cell("right", "<a href=\"index.php?$params&amp;sesskey=".sesskey()."&amp;delete=1\"><img src=\"" . $OUTPUT->old_icon_url('t/delete') . "\" class=\"iconsmall\" alt=\"$strdelete\" /></a>", 'command');
                 } else {
                     print_cell();
                 }
@@ -295,16 +295,16 @@ function displaydir($file_info) {
 
             } else {
 
-                $icon = mimeinfo_from_type("icon", $mimetype);
+                $icon = str_replace(array('.gif', '.png'), '', mimeinfo_from_type("icon", $mimetype));
                 if ($downloadurl = $child_info->get_url(true)) {
-                    $downloadurl = "&nbsp;<a href=\"$downloadurl\" title=\"" . get_string('downloadfile') . "\"><img src=\"$CFG->pixpath/t/down.gif\" class=\"iconsmall\" alt=\"$strdownload\" /></a>";
+                    $downloadurl = "&nbsp;<a href=\"$downloadurl\" title=\"" . get_string('downloadfile') . "\"><img src=\"" . $OUTPUT->old_icon_url('t/down') . "\" class=\"iconsmall\" alt=\"$strdownload\" /></a>";
                 } else {
                     $downloadurl = '';
                 }
 
                 if ($viewurl = $child_info->get_url()) {
                     $viewurl = "&nbsp;".link_to_popup_window ($viewurl, "display",
-                                                     "<img src=\"$CFG->pixpath/t/preview.gif\" class=\"iconsmall\" alt=\"$strfile\" />&nbsp;",
+                                                     "<img src=\"" . $OUTPUT->old_icon_url('t/preview') . "\" class=\"iconsmall\" alt=\"$strfile\" />&nbsp;",
                                                      480, 640, get_string('viewfileinpopup'), null, true);
                 } else {
                     $viewurl = '';
@@ -314,11 +314,11 @@ function displaydir($file_info) {
 
                 echo "<tr class=\"file\">";
                 print_cell();
-                print_cell("left", "<img src=\"$CFG->pixpath/f/$icon\" class=\"icon\" alt=\"$strfile\" />&nbsp;".s($filename).$downloadurl.$viewurl, 'name');
+                print_cell("left", "<img src=\"" . $OUTPUT->old_icon_url('f/' . $icon) . "\" class=\"icon\" alt=\"$strfile\" />&nbsp;".s($filename).$downloadurl.$viewurl, 'name');
                 print_cell("right", $filesize, 'size');
                 print_cell("right", $filedate, 'date');
                 if ($parentwritable) {
-                    print_cell("right", "<a href=\"index.php?$params&amp;sesskey=".sesskey()."&amp;delete=1\"><img src=\"$CFG->pixpath/t/delete.gif\" class=\"iconsmall\" alt=\"$strdelete\" /></a>", 'command');
+                    print_cell("right", "<a href=\"index.php?$params&amp;sesskey=".sesskey()."&amp;delete=1\"><img src=\"" . $OUTPUT->old_icon_url('t/delete') . "\" class=\"iconsmall\" alt=\"$strdelete\" /></a>", 'command');
                 } else {
                     print_cell();
                 }

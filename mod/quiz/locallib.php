@@ -795,7 +795,7 @@ function quiz_question_action_icons($quiz, $cmid, $question, $returnurl) {
  * @return the HTML for an edit icon, view icon, or nothing for a question (depending on permissions).
  */
 function quiz_question_edit_button($cmid, $question, $returnurl, $contentbeforeicon = '') {
-    global $CFG;
+    global $CFG, $OUTPUT;
 
     // Minor efficiency saving. Only get strings once, even if there are a lot of icons on one page.
     static $stredit = null;
@@ -821,7 +821,7 @@ function quiz_question_edit_button($cmid, $question, $returnurl, $contentbeforei
         $questionparams = array('returnurl' => $returnurl, 'cmid' => $cmid, 'id' => $question->id);
         $questionurl = new moodle_url("$CFG->wwwroot/question/question.php", $questionparams);
         return '<a title="' . $action . '" href="' . $questionurl->out() . '">' . $contentbeforeicon .
-                '<img src="' . $CFG->pixpath . $icon . '.gif" alt="' . $action . '" /></a>';
+                '<img src="' . $OUTPUT->old_icon_url($icon) . '.gif" alt="' . $action . '" /></a>';
     } else {
         return $contentbeforeicon;
     }
@@ -834,7 +834,7 @@ function quiz_question_edit_button($cmid, $question, $returnurl, $contentbeforei
  * @return the HTML for a preview question icon.
  */
 function quiz_question_preview_button($quiz, $question, $label = false) {
-    global $CFG, $COURSE;
+    global $CFG, $COURSE, $OUTPUT;
     if (!question_has_capability_on($question, 'use', $question->category)) {
         return '';
     }
@@ -855,7 +855,7 @@ function quiz_question_preview_button($quiz, $question, $label = false) {
 
     // Build the icon.
     return link_to_popup_window('/question/preview.php?id=' . $question->id . '&amp;quizid=' . $quiz->id, 'questionpreview',
-            "<img src=\"$CFG->pixpath/t/preview.gif\" class=\"iconsmall\" alt=\"$strpreviewquestion\" /> $strpreviewlabel",
+            "<img src=\"" . $OUTPUT->old_icon_url('t/preview') . "\" class=\"iconsmall\" alt=\"$strpreviewquestion\" /> $strpreviewlabel",
             0, 0, $strpreviewquestion, QUESTION_PREVIEW_POPUP_OPTIONS, true);
 }
 

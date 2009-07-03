@@ -155,7 +155,7 @@ $numusers = $report->get_numusers();
 $report->load_final_grades();
 
 /// Print header
-print_grade_page_head($COURSE->id, 'report', 'grader', $reportname, false, null, $buttons);
+print_grade_page_head($COURSE->id, 'report', 'grader', $reportname, false, $buttons);
 
 echo $report->group_selector;
 echo '<div class="clearer"></div>';
@@ -221,6 +221,12 @@ if ($report->get_pref('enableajax')) {
 YAHOO.namespace("graderreport");
 
 function init() {
+    // Adjust height of header c0
+    var rows = document.getElementsByClassName('heading_name_row');
+    var header_cell_region = YAHOO.util.Dom.getRegion(rows[rows.length-1].firstChild);
+    var height = header_cell_region.bottom - header_cell_region.top;
+    YAHOO.util.Dom.setStyle('studentheader', 'height', height + 'px');
+    
     // attach event listener to the table for mouseover and mouseout
     var table = document.getElementById('user-grades');
     YAHOO.util.Event.on(table, 'mouseover', YAHOO.graderreport.mouseoverHandler);

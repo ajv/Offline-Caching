@@ -313,7 +313,7 @@
                 echo '<h3>'.$group->name;
                 if (has_capability('moodle/course:managegroups', $context)) {
                     echo '&nbsp;<a title="'.get_string('editgroupprofile').'" href="'.$CFG->wwwroot.'/group/group.php?id='.$group->id.'&amp;courseid='.$group->courseid.'">';
-                    echo '<img src="'.$CFG->pixpath.'/t/edit.gif" alt="'.get_string('editgroupprofile').'" />';
+                    echo '<img src="'.$OUTPUT->old_icon_url('t/edit') . '" alt="'.get_string('editgroupprofile').'" />';
                     echo '</a>';
                 }
                 echo '</h3>';
@@ -611,13 +611,13 @@
         $heading .= ": $a->number";
         if (user_can_assign($context, $roleid)) {
             $heading .= ' <a href="'.$CFG->wwwroot.'/'.$CFG->admin.'/roles/assign.php?roleid='.$roleid.'&amp;contextid='.$context->id.'">';
-            $heading .= '<img src="'.$CFG->pixpath.'/i/edit.gif" class="icon" alt="" /></a>';
+            $heading .= '<img src="'.$OUTPUT->old_icon_url('i/edit') . '" class="icon" alt="" /></a>';
         }
         print_heading($heading, 'center', 3);
     } else {
         if ($course->id != SITEID && has_capability('moodle/role:assign', $context)) {
             $editlink  = ' <a href="'.$CFG->wwwroot.'/'.$CFG->admin.'/roles/assign.php?contextid='.$context->id.'">';
-            $editlink .= '<img src="'.$CFG->pixpath.'/i/edit.gif" class="icon" alt="" /></a>';
+            $editlink .= '<img src="'.$OUTPUT->old_icon_url('i/edit') . '" class="icon" alt="" /></a>';
         } else {
             $editlink = '';
         }
@@ -635,33 +635,7 @@
 
 
     if ($bulkoperations) {
-        echo '
-        <script type="text/javascript">
-        //<![CDATA[
-        function checksubmit(form) {
-            var destination = form.formaction.options[form.formaction.selectedIndex].value;
-            if (destination == "" || !checkchecked(form)) {
-                form.formaction.selectedIndex = 0;
-                return false;
-            } else {
-                return true;
-            }
-        }
-
-        function checkchecked(form) {
-            var inputs = document.getElementsByTagName(\'INPUT\');
-            var checked = false;
-            inputs = filterByParent(inputs, function() {return form;});
-            for(var i = 0; i < inputs.length; ++i) {
-                if (inputs[i].type == \'checkbox\' && inputs[i].checked) {
-                    checked = true;
-                }
-            }
-            return checked;
-        }
-        //]]>
-        </script>
-            ';
+        $PAGE->requires->js('user/user.js');
         echo '<form action="action_redir.php" method="post" id="participantsform" onsubmit="return checksubmit(this);">';
         echo '<div>';
         echo '<input type="hidden" name="sesskey" value="'.sesskey().'" />';
@@ -762,7 +736,7 @@
                 $user = make_context_subobj($user);
                 if ( !empty($user->hidden) ) {
                 // if the assignment is hidden, display icon
-                    $hidden = " <img src=\"{$CFG->pixpath}/t/show.gif\" title=\"".get_string('userhashiddenassignments', 'role')."\" alt=\"".get_string('hiddenassign')."\" class=\"hide-show-image\"/>";
+                    $hidden = " <img src=\"" . $OUTPUT->old_icon_url('t/show') . "\" title=\"".get_string('userhashiddenassignments', 'role')."\" alt=\"".get_string('hiddenassign')."\" class=\"hide-show-image\"/>";
                 } else {
                     $hidden = '';
                 }
@@ -879,10 +853,7 @@
         echo '<input type="hidden" name="id" value="'.$course->id.'" />';
         echo '<div id="noscriptparticipantsform" style="display: inline;">';
         echo '<input type="submit" value="'.get_string('ok').'" /></div>';
-        echo '<script type="text/javascript">'.
-               "\n//<![CDATA[\n".
-               'document.getElementById("noscriptparticipantsform").style.display = "none";'.
-               "\n//]]>\n".'</script>';
+        $PAGE->requires->js_function_call('hide_item', Array('noscriptparticipantsform'));
         echo '</div>';
         echo '</div>';
         echo '</form>';

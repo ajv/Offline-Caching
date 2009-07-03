@@ -902,7 +902,7 @@ function  glossary_print_entry_aliases($course, $cm, $glossary, $entry,$mode='',
  * @return string|void
  */
 function glossary_print_entry_icons($course, $cm, $glossary, $entry, $mode='',$hook='', $type = 'print') {
-    global $USER, $CFG, $DB;
+    global $USER, $CFG, $DB, $OUTPUT;
 
     $context = get_context_instance(CONTEXT_MODULE, $cm->id);
 
@@ -940,7 +940,7 @@ function glossary_print_entry_icons($course, $cm, $glossary, $entry, $mode='',$h
         if ( $entry->sourceglossaryid ) {
             $icon = "minus.gif";   // graphical metaphor (minus) for deleting an imported entry
         } else {
-            $icon = "$CFG->pixpath/t/delete.gif";
+            $icon = $OUTPUT->old_icon_url('t/delete');
         }
 
         //Decide if an entry is editable:
@@ -953,7 +953,7 @@ function glossary_print_entry_icons($course, $cm, $glossary, $entry, $mode='',$h
             $return .= $icon;
             $return .= "\" class=\"iconsmall\" alt=\"" . get_string("delete") .$altsuffix."\" /></a> ";
 
-            $return .= " <a title=\"" . get_string("edit") . "\" href=\"edit.php?cmid=$cm->id&amp;id=$entry->id&amp;mode=$mode&amp;hook=".urlencode($hook)."\"><img src=\"$CFG->pixpath/t/edit.gif\" class=\"iconsmall\" alt=\"" . get_string("edit") .$altsuffix. "\" /></a>";
+            $return .= " <a title=\"" . get_string("edit") . "\" href=\"edit.php?cmid=$cm->id&amp;id=$entry->id&amp;mode=$mode&amp;hook=".urlencode($hook)."\"><img src=\"" . $OUTPUT->old_icon_url('t/edit') . "\" class=\"iconsmall\" alt=\"" . get_string("edit") .$altsuffix. "\" /></a>";
         } elseif ( $importedentry ) {
             $return .= " <font size=\"-1\">" . get_string("exportedentry","glossary") . "</font>";
         }
@@ -1084,13 +1084,13 @@ function glossary_print_entry_attachment($entry, $cm, $format=NULL, $align="righ
  * @param bool $insidetable
  */
 function  glossary_print_entry_approval($cm, $entry, $mode, $align="right", $insidetable=true) {
-    global $CFG;
+    global $CFG, $OUTPUT;
 
     if ($mode == 'approval' and !$entry->approved) {
         if ($insidetable) {
             echo '<table class="glossaryapproval" align="'.$align.'"><tr><td align="'.$align.'">';
         }
-        echo '<a title="'.get_string('approve','glossary').'" href="approve.php?id='.$cm->id.'&amp;eid='.$entry->id.'&amp;mode='.$mode.'"><img align="'.$align.'" src="'.$CFG->pixpath.'/i/approve.gif" style="border:0px; width:34px; height:34px" alt="'.get_string('approve','glossary').'" /></a>';
+        echo '<a title="'.get_string('approve','glossary').'" href="approve.php?id='.$cm->id.'&amp;eid='.$entry->id.'&amp;mode='.$mode.'"><img align="'.$align.'" src="'.$OUTPUT->old_icon_url('i/approve') . '" style="border:0px; width:34px; height:34px" alt="'.get_string('approve','glossary').'" /></a>';
         if ($insidetable) {
             echo '</td></tr></table>';
         }
@@ -1228,7 +1228,7 @@ function glossary_search_entries($searchterms, $glossary, $extended) {
  * @return string image string or nothing depending on $type param
  */
 function glossary_print_attachments($entry, $cm, $type=NULL, $align="left") {
-    global $CFG, $DB;
+    global $CFG, $DB, $OUTPUT;
 
     if (!$context = get_context_instance(CONTEXT_MODULE, $cm->id)) {
         return '';
@@ -1256,8 +1256,8 @@ function glossary_print_attachments($entry, $cm, $type=NULL, $align="left") {
         foreach ($files as $file) {
             $filename = $file->get_filename();
             $mimetype = $file->get_mimetype();
-            $icon = mimeinfo_from_type('icon', $mimetype);
-            $iconimage = '<img src="'.$CFG->pixpath.'/f/'.$icon.'" class="icon" alt="'.$icon.'" />';
+            $icon = str_replace(array('.gif', '.png'), '', mimeinfo_from_type('icon', $mimetype));
+            $iconimage = '<img src="'.$OUTPUT->old_icon_url('f/'.$icon).'" class="icon" alt="'.$icon.'" />';
             $path = file_encode_url($CFG->wwwroot.'/pluginfile.php', '/'.$context->id.'/glossary_attachment/'.$entry->id.'/'.$filename);
 
             if ($type == 'html') {
@@ -1305,11 +1305,15 @@ function glossary_get_file_areas($course, $cm, $context) {
 /**
  * Serves the glossary attachments. Implements needed access control ;-)
  *
- * @global object
- * @global object
- * @return bool
+ * @param object $course
+ * @param object $cminfo
+ * @param object $context
+ * @param string $filearea
+ * @param array $args
+ * @param bool $forcedownload
+ * @return bool false if file not found, does not return if found - justsend the file
  */
-function glossary_pluginfile($course, $cminfo, $context, $filearea, $args) {
+function glossary_pluginfile($course, $cminfo, $context, $filearea, $args, $forcedownload) {
     global $CFG, $DB;
 
     if (!$cminfo->uservisible) {
@@ -1720,7 +1724,7 @@ function glossary_sort_entries ( $entry0, $entry1 ) {
  * @param object $comment
  */
 function glossary_print_comment($course, $cm, $glossary, $entry, $comment) {
-    global $CFG, $USER, $DB;
+    global $CFG, $USER, $DB, $OUTPUT;
 
     $context = get_context_instance(CONTEXT_MODULE, $cm->id);
 
@@ -1757,11 +1761,11 @@ function glossary_print_comment($course, $cm, $glossary, $entry, $comment) {
     $ineditperiod = ((time() - $comment->timemodified <  $CFG->maxeditingtime) || $glossary->editalways);
     if ( ($glossary->allowcomments &&  $ineditperiod && $USER->id == $comment->userid)  || has_capability('mod/glossary:managecomments', $context)) {
         echo "<a href=\"comment.php?id=$comment->id&amp;action=edit\"><img
-               alt=\"" . get_string("edit") . "\" src=\"$CFG->pixpath/t/edit.gif\" class=\"iconsmall\" /></a> ";
+               alt=\"" . get_string("edit") . "\" src=\"" . $OUTPUT->old_icon_url('t/edit') . "\" class=\"iconsmall\" /></a> ";
     }
     if ( ($glossary->allowcomments && $USER->id == $comment->userid) || has_capability('mod/glossary:managecomments', $context) ) {
         echo "<a href=\"comment.php?id=$comment->id&amp;action=delete\"><img
-               alt=\"" . get_string("delete") . "\" src=\"$CFG->pixpath/t/delete.gif\" class=\"iconsmall\" /></a>";
+               alt=\"" . get_string("delete") . "\" src=\"" . $OUTPUT->old_icon_url('t/delete') . "\" class=\"iconsmall\" /></a>";
     }
 
     echo '</div></td></tr>';

@@ -2138,8 +2138,12 @@ border-width:0px;
   background:white;
   font-size:0.85em;
 }
-.course-view form.togglecompletion img.iconhelp,
-.course-view span.autocompletion img.iconhelp {
+.course-view .completionprogress {
+    font-size:0.80em;
+    float:right;
+    padding:8px 26px 5px 5px; ;
+}
+.course-view .completionprogress img.iconhelp {
   vertical-align:top;
 }
 
@@ -3839,6 +3843,12 @@ body#user-index .rolesform {
   margin-right:5px;
   padding:0px;
   display:inline;
+}
+
+body.mod-chat-gui_ajax .yui-layout-doc .yui-layout-unit .yui-layout-wrap .yui-layout-hd h2 {
+  font-size:100%;
+  padding:0px;
+  font-weight:normal;
 }
 
 /***

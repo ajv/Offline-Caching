@@ -640,7 +640,7 @@ function grade_get_plugin_info($courseid, $active_type, $active_plugin) {
     }
     $importnames = array();
     if (!empty($imports)) {
-        foreach ($imports as $plugin) {
+        foreach ($imports as $plugin => $plugindir) {
             $pluginstr = get_string('modulename', 'gradeimport_'.$plugin);
             $url = $url_prefix.'import/'.$plugin.'/index.php?id='.$courseid;
             if ($active_type == 'import' and $active_plugin == $plugin ) {
@@ -657,9 +657,9 @@ function grade_get_plugin_info($courseid, $active_type, $active_plugin) {
 
     // standard export plugins
     if ($exports = get_plugin_list('gradeexport')) { // Get all installed export plugins
-        foreach ($exports as $key => $plugin) { // Remove ones we can't see
+        foreach ($exports as $plugin => $plugindir) { // Remove ones we can't see
             if (!has_capability('gradeexport/'.$plugin.':view', $context)) {
-                unset($exports[$key]);
+                unset($exports[$plugin]);
             }
         }
     }
@@ -1232,7 +1232,7 @@ class grade_structure {
      * @return string icon or spacer
      */
     public function get_element_icon(&$element, $spacerifnone=false) {
-        global $CFG;
+        global $CFG, $OUTPUT;
 
         switch ($element['type']) {
             case 'item':
@@ -1245,7 +1245,7 @@ class grade_structure {
 
                 if ($element['object']->is_calculated()) {
                     $strcalc = get_string('calculatedgrade', 'grades');
-                    return '<img src="'.$CFG->pixpath.'/i/calc.gif" class="icon itemicon" title="'.
+                    return '<img src="'.$OUTPUT->old_icon_url('i/calc') . '" class="icon itemicon" title="'.
                             s($strcalc).'" alt="'.s($strcalc).'"/>';
 
                 } else if (($is_course or $is_category) and ($is_scale or $is_value)) {
@@ -1257,31 +1257,31 @@ class grade_structure {
                             case GRADE_AGGREGATE_WEIGHTED_MEAN2:
                             case GRADE_AGGREGATE_EXTRACREDIT_MEAN:
                                 $stragg = get_string('aggregation', 'grades');
-                                return '<img src="'.$CFG->pixpath.'/i/agg_mean.gif" ' .
+                                return '<img src="'.$OUTPUT->old_icon_url('i/agg_mean') . '" ' .
                                         'class="icon itemicon" title="'.s($stragg).'" alt="'.s($stragg).'"/>';
                             case GRADE_AGGREGATE_SUM:
                                 $stragg = get_string('aggregation', 'grades');
-                                return '<img src="'.$CFG->pixpath.'/i/agg_sum.gif" ' .
+                                return '<img src="'.$OUTPUT->old_icon_url('i/agg_sum') . '" ' .
                                         'class="icon itemicon" title="'.s($stragg).'" alt="'.s($stragg).'"/>';
                         }
                     }
 
                 } else if ($element['object']->itemtype == 'mod') {
                     $strmodname = get_string('modulename', $element['object']->itemmodule);
-                    return '<img src="'.$CFG->modpixpath.'/'.
-                            $element['object']->itemmodule.'/icon.gif" ' .
+                    return '<img src="'.$OUTPUT->mod_icon_url('icon', 
+                            $element['object']->itemmodule) . '" ' .
                             'class="icon itemicon" title="' .s($strmodname).
                             '" alt="' .s($strmodname).'"/>';
 
                 } else if ($element['object']->itemtype == 'manual') {
                     if ($element['object']->is_outcome_item()) {
                         $stroutcome = get_string('outcome', 'grades');
-                        return '<img src="'.$CFG->pixpath.'/i/outcomes.gif" ' .
+                        return '<img src="'.$OUTPUT->old_icon_url('i/outcomes') . '" ' .
                                 'class="icon itemicon" title="'.s($stroutcome).
                                 '" alt="'.s($stroutcome).'"/>';
                     } else {
                         $strmanual = get_string('manualitem', 'grades');
-                        return '<img src="'.$CFG->pixpath.'/t/manual_item.gif" '.
+                        return '<img src="'.$OUTPUT->old_icon_url('t/manual_item') . '" '.
                                 'class="icon itemicon" title="'.s($strmanual).
                                 '" alt="'.s($strmanual).'"/>';
                     }
@@ -1290,7 +1290,7 @@ class grade_structure {
 
             case 'category':
                 $strcat = get_string('category', 'grades');
-                return '<img src="'.$CFG->pixpath.'/f/folder.gif" class="icon itemicon" ' .
+                return '<img src="'.$OUTPUT->old_icon_url('f/folder') . '" class="icon itemicon" ' .
                         'title="'.s($strcat).'" alt="'.s($strcat).'" />';
         }
 
@@ -1419,7 +1419,7 @@ class grade_structure {
      * @return string
      */
     public function get_edit_icon($element, $gpr) {
-        global $CFG;
+        global $CFG, $OUTPUT;
 
         if (!has_capability('moodle/grade:manage', $this->context)) {
             if ($element['type'] == 'grade' and has_capability('moodle/grade:edit', $this->context)) {
@@ -1484,7 +1484,7 @@ class grade_structure {
         }
 
         if ($url) {
-            return '<a href="'.$url.'"><img src="'.$CFG->pixpath.'/t/edit.gif" ' .
+            return '<a href="'.$url.'"><img src="'.$OUTPUT->old_icon_url('t/edit') . '" ' .
                     'class="iconsmall" alt="'.s($stredit).'" title="'.s($stredit).'"/></a>';
 
         } else {
@@ -1501,7 +1501,7 @@ class grade_structure {
      * @return string
      */
     public function get_hiding_icon($element, $gpr) {
-        global $CFG;
+        global $CFG, $OUTPUT;
 
         if (!has_capability('moodle/grade:manage', $this->context) and
             !has_capability('moodle/grade:hide', $this->context)) {
@@ -1529,7 +1529,7 @@ class grade_structure {
 
             $url     = $gpr->add_url_params($url);
             $action  = '<a href="'.$url.'" class="hide"><img alt="'.s($strshow).
-                    '" src="'.$CFG->pixpath.'/t/'.$icon.'.gif" ' .
+                    '" src="'.$OUTPUT->old_icon_url('t/' . $icon) . '" ' .
                     'class="iconsmall" title="'.s($tooltip).'"/></a>';
 
         } else {
@@ -1538,7 +1538,7 @@ class grade_structure {
                      . '&amp;eid='.$element['eid'];
             $url     = $gpr->add_url_params($url);
             $action  = '<a href="'.$url.'" class="hide"><img src="'.
-                    $CFG->pixpath.'/t/hide.gif" class="iconsmall" alt="'.s($strhide).'" title="'.s($strhide).'"/></a>';
+                    $OUTPUT->old_icon_url('t/hide') . '" class="iconsmall" alt="'.s($strhide).'" title="'.s($strhide).'"/></a>';
         }
         return $action;
     }
@@ -1552,7 +1552,7 @@ class grade_structure {
      * @return string
      */
     public function get_locking_icon($element, $gpr) {
-        global $CFG;
+        global $CFG, $OUTPUT;
 
         $strparams = $this->get_params_for_iconstr($element);
         $strunlock = get_string('unlockverbose', 'grades', $strparams);
@@ -1563,7 +1563,7 @@ class grade_structure {
             $strparamobj = new stdClass();
             $strparamobj->itemname = $element['object']->grade_item->itemname;
             $strnonunlockable = get_string('nonunlockableverbose', 'grades', $strparamobj);
-            $action  = '<img src="'.$CFG->pixpath.'/t/unlock_gray.gif" alt="'.
+            $action  = '<img src="'.$OUTPUT->old_icon_url('t/unlock_gray') . '" alt="'.
                     s($strnonunlockable).'" class="iconsmall" title="'.
                     s($strnonunlockable).'"/>';
         } else if ($element['object']->is_locked()) {
@@ -1586,8 +1586,7 @@ class grade_structure {
                     '&amp;eid='.$element['eid'];
 
             $url     = $gpr->add_url_params($url);
-            $action  = '<a href="'.$url.'" class="lock"><img src="'.$CFG->pixpath.
-                    '/t/'.$icon.'.gif" alt="'.s($strunlock).
+            $action  = '<a href="'.$url.'" class="lock"><img src="'.$OUTPUT->old_icon_url('t/'.$icon).'" alt="'.s($strunlock).
                     '" class="iconsmall" title="'.s($tooltip).'"/></a>';
 
         } else {
@@ -1601,7 +1600,7 @@ class grade_structure {
 
             $url     = $gpr->add_url_params($url);
             $action  = '<a href="'.$url.'" class="lock"><img src="'.
-                    $CFG->pixpath.'/t/lock.gif" class="iconsmall" alt="'.
+                    $OUTPUT->old_icon_url('t/lock') . '" class="iconsmall" alt="'.
                     s($strlock).'" title="' . s($strlock).'"/></a>';
         }
         return $action;
@@ -1616,7 +1615,7 @@ class grade_structure {
      * @return string
      */
     public function get_calculation_icon($element, $gpr) {
-        global $CFG;
+        global $CFG, $OUTPUT;
         if (!has_capability('moodle/grade:manage', $this->context)) {
             return '';
         }
@@ -1637,16 +1636,16 @@ class grade_structure {
             // show calculation icon only when calculation possible
             if (!$object->is_external_item() and ($is_scale or $is_value)) {
                 if ($object->is_calculated()) {
-                    $icon = 'calc.gif';
+                    $icon = 't/calc';
                 } else {
-                    $icon = 'calc_off.gif';
+                    $icon = 't/calc_off';
                 }
 
                 $url = $CFG->wwwroot.'/grade/edit/tree/calculation.php?courseid='.
                         $this->courseid.'&amp;id='.$object->id;
                 $url = $gpr->add_url_params($url);
                 $calculation_icon = '<a href="'. $url.'" class="calculation">' .
-                        '<img src="'.$CFG->pixpath.'/t/'.$icon.'" class="iconsmall" alt="' .
+                        '<img src="'.$OUTPUT->old_icon_url($icon).'" class="iconsmall" alt="' .
                         s($streditcalculation).'" title="'.s($streditcalculation).'" /></a>'. "\n";
             }
         }

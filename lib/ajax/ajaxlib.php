@@ -40,8 +40,6 @@ function setup_core_javascript(page_requirements_manager $requires) {
 
     $config = array(
         'wwwroot' => $CFG->httpswwwroot, // Yes, really. See above.
-        'pixpath' => $CFG->pixpath,
-        'modpixpath' => $CFG->modpixpath,
         'sesskey' => sesskey(),
     );
     if (debugging('', DEBUG_DEVELOPER)) {
@@ -281,6 +279,41 @@ class page_requirements_manager {
                     "from lang file '$module'. Did you already ask for it with a different \$a?");
         }
         $this->stringsforjs[$module][$identifier] = $string;
+    }
+
+    /**
+     * Make an array of language strings available for JS
+     *
+     * This function calls the above function {@link string_for_js()} for each requested
+     * string in the $identifiers array that is passed to the argument for a single module
+     * passed in $module.
+     *
+     * <code>
+     * $PAGE->strings_for_js(Array('one', 'two', 'three'), 'mymod', Array('a', null, 3));
+     *
+     * // The above is identifical to calling
+     *
+     * $PAGE->string_for_js('one', 'mymod', 'a');
+     * $PAGE->string_for_js('two', 'mymod');
+     * $PAGE->string_for_js('three', 'mymod', 3);
+     * </code>
+     *
+     * @param array $identifiers An array of desired strings
+     * @param string $module The module to load for
+     * @param mixed $a This can either be a single variable that gets passed as extra
+     *         information for every string or it can be an array of mixed data where the
+     *         key for the data matches that of the identifier it is meant for.
+     *
+     */
+    public function strings_for_js($identifiers, $module, $a=NULL) {
+        foreach ($identifiers as $key => $identifier) {
+            if (is_array($a) && array_key_exists($key, $a)) {
+                $extra = $a[$key];
+            } else {
+                $extra = $a;
+            }
+            $this->string_for_js($identifier, $module, $extra);
+        }
     }
 
     /**
@@ -1268,7 +1301,6 @@ class jsportal {
         $output .= "    main.portal.id = ".$courseid.";\n";
         $output .= "    main.portal.blocks = new Array(".$blocksoutput.");\n";
         $output .= "    main.portal.strings['wwwroot']='".$CFG->wwwroot."';\n";
-        $output .= "    main.portal.strings['pixpath']='".$CFG->pixpath."';\n";
         $output .= "    main.portal.strings['marker']='".get_string('markthistopic', '', '_var_')."';\n";
         $output .= "    main.portal.strings['marked']='".get_string('markedthistopic', '', '_var_')."';\n";
         $output .= "    main.portal.strings['hide']='".get_string('hide')."';\n";
@@ -1288,6 +1320,24 @@ class jsportal {
         $output .= "    main.portal.strings['resource']='".get_string('resource')."';\n";
         $output .= "    main.portal.strings['activity']='".get_string('activity')."';\n";
         $output .= "    main.portal.strings['sesskey']='".sesskey()."';\n";
+        $output .= "    main.portal.icons['spacerimg']='".$OUTPUT->old_icon_url('spaces')."';\n";
+        $output .= "    main.portal.icons['marker']='".$OUTPUT->old_icon_url('i/marker')."';\n";
+        $output .= "    main.portal.icons['ihide']='".$OUTPUT->old_icon_url('i/hide')."';\n";
+        $output .= "    main.portal.icons['move_2d']='".$OUTPUT->old_icon_url('i/move_2d')."';\n";
+        $output .= "    main.portal.icons['show']='".$OUTPUT->old_icon_url('t/show')."';\n";
+        $output .= "    main.portal.icons['hide']='".$OUTPUT->old_icon_url('t/hide')."';\n";
+        $output .= "    main.portal.icons['delete']='".$OUTPUT->old_icon_url('t/delete')."';\n";
+        $output .= "    main.portal.icons['groupn']='".$OUTPUT->old_icon_url('t/groupn')."';\n";
+        $output .= "    main.portal.icons['groups']='".$OUTPUT->old_icon_url('t/groups')."';\n";
+        $output .= "    main.portal.icons['groupv']='".$OUTPUT->old_icon_url('t/groupv')."';\n";
+        if (right_to_left()) {
+            $output .= "    main.portal.icons['backwards']='".$OUTPUT->old_icon_url('t/right')."';\n";
+            $output .= "    main.portal.icons['forwards']='".$OUTPUT->old_icon_url('t/left')."';\n";
+        } else {
+            $output .= "    main.portal.icons['backwards']='".$OUTPUT->old_icon_url('t/left')."';\n";
+            $output .= "    main.portal.icons['forwards']='".$OUTPUT->old_icon_url('t/right')."';\n";
+        }
+
         $output .= "    onloadobj.load();\n";
         $output .= "    main.process_blocks();\n";
         $output .= "</script>";

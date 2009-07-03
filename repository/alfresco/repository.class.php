@@ -100,7 +100,6 @@ class repository_alfresco extends repository {
 
     public function get_listing($uuid = '', $path = '') {
         global $CFG, $SESSION, $OUTPUT;
-        $OUTPUT->initialise_deprecated_cfg_pixpath();
         $ret = array();
         $ret['dynload'] = true;
         $ret['list'] = array();
@@ -125,11 +124,11 @@ class repository_alfresco extends repository {
                 {
                     $ret['list'][] = array('title'=>$child->child->cm_name,
                         'path'=>$child->child->id,
-                        'thumbnail'=>$CFG->pixpath.'/f/folder-32.png',
+                        'thumbnail'=>$OUTPUT->old_icon_url('f/folder-32') . '',
                         'children'=>array());
                 } elseif ($child->child->type == $file_filter) {
                     $ret['list'][] = array('title'=>$child->child->cm_name,
-                        'thumbnail' => $CFG->pixpath .'/f/'. mimeinfo('icon32', $child->child->cm_name),
+                        'thumbnail' => $OUTPUT->old_icon_url('f/'. str_replace(array('.png', '.gif'), '', mimeinfo('icon32', $child->child->cm_name))),
                         'source'=>$child->child->id);
                 }
             }

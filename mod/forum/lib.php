@@ -3582,7 +3582,7 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
 function forum_print_discussion_header(&$post, $forum, $group=-1, $datestring="",
                                         $cantrack=true, $forumtracked=true, $canviewparticipants=true, $modcontext=NULL) {
 
-    global $USER, $CFG;
+    global $USER, $CFG, $OUTPUT;
 
     static $rowcount;
     static $strmarkalldread;
@@ -3660,7 +3660,7 @@ function forum_print_discussion_header(&$post, $forum, $group=-1, $datestring=""
                     echo '</a>';
                     echo '<a title="'.$strmarkalldread.'" href="'.$CFG->wwwroot.'/mod/forum/markposts.php?f='.
                          $forum->id.'&amp;d='.$post->discussion.'&amp;mark=read&amp;returnpage=view.php">' .
-                         '<img src="'.$CFG->pixpath.'/t/clear.gif" class="iconsmall" alt="'.$strmarkalldread.'" /></a>';
+                         '<img src="'.$OUTPUT->old_icon_url('t/clear') . '" class="iconsmall" alt="'.$strmarkalldread.'" /></a>';
                     echo '</span>';
                 } else {
                     echo '<span class="read">';
@@ -4268,7 +4268,7 @@ function forum_move_attachments($discussion, $forumfrom, $forumto) {
  * @return mixed string or array of (html text withouth images and image HTML)
  */
 function forum_print_attachments($post, $cm, $type) {
-    global $CFG, $DB, $USER;
+    global $CFG, $DB, $USER, $OUTPUT;
 
     if (empty($post->attachment)) {
         return $type !== 'separateimages' ? '' : array('', '');
@@ -4296,8 +4296,8 @@ function forum_print_attachments($post, $cm, $type) {
         foreach ($files as $file) {
             $filename = $file->get_filename();
             $mimetype = $file->get_mimetype();
-            $icon = mimeinfo_from_type('icon', $mimetype);
-            $iconimage = '<img src="'.$CFG->pixpath.'/f/'.$icon.'" class="icon" alt="'.$icon.'" />';
+            $icon = str_replace(array('.gif', '.png'), '', mimeinfo_from_type('icon', $mimetype));
+            $iconimage = '<img src="'.$OUTPUT->old_icon_url('f/'.$icon).'" class="icon" alt="'.$icon.'" />';
             $path = file_encode_url($CFG->wwwroot.'/pluginfile.php', '/'.$context->id.'/forum_attachment/'.$post->id.'/'.$filename);
 
             if ($type == 'html') {
@@ -4365,9 +4365,10 @@ function forum_get_file_areas($course, $cm, $context) {
  * @param object $context
  * @param string $filearea
  * @param array $args
- * @return bool
+ * @param bool $forcedownload
+ * @return bool false if file not found, does not return if found - justsend the file
  */
-function forum_pluginfile($course, $cminfo, $context, $filearea, $args) {
+function forum_pluginfile($course, $cminfo, $context, $filearea, $args, $forcedownload) {
     global $CFG, $DB;
 
     if (!$cminfo->uservisible) {
@@ -5416,7 +5417,7 @@ function forum_user_can_see_post($forum, $discussion, $post, $user=NULL, $cm=NUL
  */
 function forum_print_latest_discussions($course, $forum, $maxdiscussions=-1, $displayformat='plain', $sort='',
                                         $currentgroup=-1, $groupmode=-1, $page=-1, $perpage=100, $cm=NULL) {
-    global $CFG, $USER;
+    global $CFG, $USER, $OUTPUT;
 
     if (!$cm) {
         if (!$cm = get_coursemodule_from_instance('forum', $forum->id, $forum->course)) {
@@ -5572,7 +5573,7 @@ function forum_print_latest_discussions($course, $forum, $maxdiscussions=-1, $di
                     echo '&nbsp;<a title="'.get_string('markallread', 'forum').
                          '" href="'.$CFG->wwwroot.'/mod/forum/markposts.php?f='.
                          $forum->id.'&amp;mark=read&amp;returnpage=view.php">'.
-                         '<img src="'.$CFG->pixpath.'/t/clear.gif" class="iconsmall" alt="'.get_string('markallread', 'forum').'" /></a>';
+                         '<img src="'.$OUTPUT->old_icon_url('t/clear') . '" class="iconsmall" alt="'.get_string('markallread', 'forum').'" /></a>';
                 }
                 echo '</th>';
             }
@@ -5685,7 +5686,7 @@ function forum_print_latest_discussions($course, $forum, $maxdiscussions=-1, $di
  */
 function forum_print_discussion($course, $cm, $forum, $discussion, $post, $mode, $canreply=NULL, $canrate=false) {
 
-    global $USER, $CFG, $DB, $PAGE;
+    global $USER, $CFG, $DB, $PAGE, $OUTPUT;
 
     if (!empty($USER->id)) {
         $ownpost = ($USER->id == $post->userid);
@@ -5806,7 +5807,7 @@ function forum_print_discussion($course, $cm, $forum, $discussion, $post, $mode,
             echo '<div class="ratingsubmit">';
             echo '<input type="submit" id="forumpostratingsubmit" value="'.get_string('sendinratings', 'forum').'" />';
             if (ajaxenabled() && !empty($CFG->forum_ajaxrating)) { /// AJAX enabled, standard submission form
-                $PAGE->requires->js_function_call('init_rate_ajax');
+                $PAGE->requires->js_function_call('add_menu_listeners', array($OUTPUT->old_icon_url('i/loading_small')))->on_dom_ready();
             }
             if ($forum->scale < 0) {
                 if ($scale = $DB->get_record("scale", array("id" => abs($forum->scale)))) {
@@ -5815,7 +5816,6 @@ function forum_print_discussion($course, $cm, $forum, $discussion, $post, $mode,
             }
             echo '</div>';
         }
-
         echo '</div>';
         echo '</form>';
     }
@@ -6103,7 +6103,7 @@ function forum_get_recent_mod_activity(&$activities, &$index, $timestart, $cours
  * @global object
  */
 function forum_print_recent_mod_activity($activity, $courseid, $detail, $modnames, $viewfullnames) {
-    global $CFG;
+    global $CFG, $OUTPUT;
 
     if ($activity->content->parent) {
         $class = 'reply';
@@ -6120,7 +6120,7 @@ function forum_print_recent_mod_activity($activity, $courseid, $detail, $modname
     echo '<div class="title">';
     if ($detail) {
         $aname = s($activity->name);
-        echo "<img src=\"$CFG->modpixpath/$activity->type/icon.gif\" ".
+        echo "<img src=\"" . $OUTPUT->mod_icon_url('icon', $activity->type) . "\" ".
              "class=\"icon\" alt=\"{$aname}\" />";
     }
     echo "<a href=\"$CFG->wwwroot/mod/forum/discuss.php?d={$activity->content->discussion}"

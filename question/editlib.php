@@ -239,11 +239,11 @@ abstract class question_bank_column_base {
      * @return string HTML image tag.
      */
     protected function get_sort_icon($reverse) {
-        global $CFG;
+        global $OUTPUT;
         if ($reverse) {
-            return ' <img src="' . $CFG->pixpath . '/t/up.gif" alt="' . get_string('desc') . '" />';
+            return ' <img src="' . $OUTPUT->old_icon_url('t/up') . '" alt="' . get_string('desc') . '" />';
         } else {
-            return ' <img src="' . $CFG->pixpath . '/t/down.gif" alt="' . get_string('asc') . '" />';
+            return ' <img src="' . $OUTPUT->old_icon_url('t/down') . '" alt="' . get_string('asc') . '" />';
         }
     }
 
@@ -576,9 +576,9 @@ abstract class question_bank_action_column_base extends question_bank_column_bas
     }
 
     protected function print_icon($icon, $title, $url) {
-        global $CFG;
+        global $OUTPUT;
         echo '<a title="' . $title . '" href="' . $url . '">
-                <img src="' . $CFG->pixpath . '/' . $icon . '" class="iconsmall" alt="' . $title . '" /></a>';
+                <img src="' . $OUTPUT->old_icon_url($icon) . '" class="iconsmall" alt="' . $title . '" /></a>';
     }
 
     public function get_required_fields() {
@@ -603,9 +603,9 @@ class question_bank_edit_action_column extends question_bank_action_column_base 
     protected function display_content($question, $rowclasses) {
         if (question_has_capability_on($question, 'edit') ||
                 question_has_capability_on($question, 'move')) {
-            $this->print_icon('t/edit.gif', $this->stredit, $this->qbank->edit_question_url($question->id));
+            $this->print_icon('t/edit', $this->stredit, $this->qbank->edit_question_url($question->id));
         } else {
-            $this->print_icon('i/info.gif', $this->strview, $this->qbank->edit_question_url($question->id));
+            $this->print_icon('i/info', $this->strview, $this->qbank->edit_question_url($question->id));
         }
     }
 }
@@ -623,10 +623,10 @@ class question_bank_preview_action_column extends question_bank_action_column_ba
     }
 
     protected function display_content($question, $rowclasses) {
-        global $CFG;
+        global $OUTPUT;
         if (question_has_capability_on($question, 'use')) {
             link_to_popup_window($this->qbank->preview_question_url($question->id), 'questionpreview',
-                    ' <img src="' . $CFG->pixpath . '/t/preview.gif" class="iconsmall" alt="' . $this->strpreview . '" />',
+                    ' <img src="' . $OUTPUT->old_icon_url('t/preview') . '" class="iconsmall" alt="' . $this->strpreview . '" />',
                     0, 0, $this->strpreview, QUESTION_PREVIEW_POPUP_OPTIONS);
         }
     }
@@ -650,7 +650,7 @@ class question_bank_move_action_column extends question_bank_action_column_base 
 
     protected function display_content($question, $rowclasses) {
         if (question_has_capability_on($question, 'move')) {
-            $this->print_icon('t/move.gif', $this->strmove, $this->qbank->move_question_url($question->id));
+            $this->print_icon('t/move', $this->strmove, $this->qbank->move_question_url($question->id));
         }
     }
 }
@@ -675,9 +675,9 @@ class question_bank_delete_action_column extends question_bank_action_column_bas
     protected function display_content($question, $rowclasses) {
         if (question_has_capability_on($question, 'edit')) {
             if ($question->hidden) {
-                $this->print_icon('t/restore.gif', $this->strrestore, $this->qbank->base_url()->out(false, array('unhide' => $question->id)));
+                $this->print_icon('t/restore', $this->strrestore, $this->qbank->base_url()->out(false, array('unhide' => $question->id)));
             } else {
-                $this->print_icon('t/delete.gif', $this->strdelete,
+                $this->print_icon('t/delete', $this->strdelete,
                         $this->qbank->base_url()->out(false, array('deleteselected' => $question->id, 'q' . $question->id => 1)));
             }
         }

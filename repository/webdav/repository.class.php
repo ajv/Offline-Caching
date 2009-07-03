@@ -64,7 +64,6 @@ class repository_webdav extends repository {
     }
     public function get_listing($path='', $page = '') {
         global $CFG, $OUTPUT;
-        $OUTPUT->initialise_deprecated_cfg_pixpath();
         $list = array();
         $ret  = array();
         $ret['dynload'] = true;
@@ -109,7 +108,7 @@ class repository_webdav extends repository {
                     }
                     $ret['list'][] = array(
                         'title'=>$title,
-                        'thumbnail'=>$CFG->pixpath.'/f/folder-32.png',
+                        'thumbnail'=>$OUTPUT->old_icon_url('f/folder-32'),
                         'children'=>array(),
                         'date'=>$filedate,
                         'size'=>0,
@@ -122,7 +121,7 @@ class repository_webdav extends repository {
                 $size = !empty($v['getcontentlength'])? $v['getcontentlength']:'';
                 $ret['list'][] = array(
                     'title'=>$title,
-                    'thumbnail' => $CFG->pixpath .'/f/'. mimeinfo('icon32', $title),
+                    'thumbnail' => $OUTPUT->old_icon_url('f/'. str_replace(array('.png', '.gif'), '', mimeinfo('icon32', $title))),
                     'size'=>$size,
                     'date'=>$filedate,
                     'source'=>$v['href']

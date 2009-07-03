@@ -35,8 +35,8 @@
  * Which renderer factory to use is chose by the current theme, and an instance
  * if created automatically when the theme is set up.
  *
- * A renderer factory must also have a constructor that takes a theme object and
- * a moodle_page object. (See {@link renderer_factory_base::__construct} for an example.)
+ * A renderer factory must also have a constructor that takes a theme_config object.
+ * (See {@link renderer_factory_base::__construct} for an example.)
  *
  * @copyright 2009 Tim Hunt
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -57,10 +57,580 @@ interface renderer_factory {
      * 'Duck typing'. For a tricky example, see {@link template_renderer} below.
      * renderer ob
      *
-     * @param $module the name of part of moodle. E.g. 'core', 'quiz', 'qtype_multichoice'.
+     * @param string $component name such as 'core', 'mod_forum' or 'qtype_multichoice'.
+     * @param moodle_page $page the page the renderer is outputting content for.
      * @return object an object implementing the requested renderer interface.
      */
-    public function get_renderer($module);
+    public function get_renderer($component, $page);
+}
+
+
+/**
+ * An icon finder is responsible for working out the correct URL for an icon.
+ *
+ * A icon finder must also have a constructor that takes a theme object.
+ * (See {@link standard_icon_finder::__construct} for an example.)
+ *
+ * Note that we are planning to change the Moodle icon naming convention before
+ * the Moodle 2.0 relase. Therefore, this API will probably change.
+ *
+ * @copyright 2009 Tim Hunt
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since     Moodle 2.0
+ */
+interface icon_finder {
+    /**
+     * Return the URL for an icon indentifed as in pre-Moodle 2.0 code.
+     *
+     * Suppose you have old code like $url = "$CFG->pixpath/i/course.gif";
+     * then old_icon_url('i/course'); will return the equivalent URL that is correct now.
+     *
+     * @param $iconname the name of the icon.
+     * @return string the URL for that icon.
+     */
+    public function old_icon_url($iconname);
+
+    /**
+     * Return the URL for an icon indentifed as in pre-Moodle 2.0 code.
+     *
+     * Suppose you have old code like $url = "$CFG->modpixpath/$mod/icon.gif";
+     * then mod_icon_url('icon', $mod); will return the equivalent URL that is correct now.
+     *
+     * @param $iconname the name of the icon.
+     * @param $module the module the icon belongs to.
+     * @return string the URL for that icon.
+     */
+    public function mod_icon_url($iconname, $module);
+}
+
+
+/**
+ *This class represents the configuration variables of a Moodle theme.
+ *
+ * Normally, to create an instance of this class, you should use the
+ * {@link theme_config::load()} factory method to load a themes config.php file.
+ *
+ * @copyright 2009 Tim Hunt
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since     Moodle 2.0
+ */
+class theme_config {
+    /**
+     * @var array The names of all the stylesheets from this theme that you would
+     * like included, in order.
+     */
+    public $sheets = array('styles_layout', 'styles_fonts', 'styles_color');
+
+    public $standardsheets = true;  
+
+/// This variable can be set to an array containing
+/// filenames from the *STANDARD* theme.  If the 
+/// array exists, it will be used to choose the 
+/// files to include in the standard style sheet.
+/// When false, then no files are used.
+/// When true or NON-EXISTENT, then ALL standard files are used.
+/// This parameter can be used, for example, to prevent 
+/// having to override too many classes.
+/// Note that the trailing .css should not be included
+/// eg $THEME->standardsheets = array('styles_layout','styles_fonts','styles_color');
+////////////////////////////////////////////////////////////////////////////////
+
+
+    public $parent = null;  
+
+/// This variable can be set to the name of a parent theme
+/// which you want to have included before the current theme.
+/// This can make it easy to make modifications to another 
+/// theme without having to actually change the files
+/// If this variable is empty or false then a parent theme 
+/// is not used.
+////////////////////////////////////////////////////////////////////////////////
+
+
+    public $parentsheets = false;  
+
+/// This variable can be set to an array containing
+/// filenames from a chosen *PARENT* theme.  If the 
+/// array exists, it will be used to choose the 
+/// files to include in the standard style sheet.
+/// When false, then no files are used.
+/// When true or NON-EXISTENT, then ALL standard files are used.
+/// This parameter can be used, for example, to prevent 
+/// having to override too many classes.
+/// Note that the trailing .css should not be included
+/// eg $THEME->parentsheets = array('styles_layout','styles_fonts','styles_color');
+////////////////////////////////////////////////////////////////////////////////
+
+
+    public $modsheets = true;  
+
+/// When this is enabled, then this theme will search for 
+/// files named "styles.php" inside all Activity modules and 
+/// include them.   This allows modules to provide some basic 
+/// layouts so they work out of the box.
+/// It is HIGHLY recommended to leave this enabled.
+
+
+    public $blocksheets = true;  
+
+/// When this is enabled, then this theme will search for 
+/// files named "styles.php" inside all Block modules and 
+/// include them.   This allows Blocks to provide some basic 
+/// layouts so they work out of the box.
+/// It is HIGHLY recommended to leave this enabled.
+
+
+    public $langsheets = false;  
+
+/// By setting this to true, then this theme will search for 
+/// a file named "styles.php" inside the current language
+/// directory.  This allows different languages to provide 
+/// different styles.
+
+
+    public $courseformatsheets = true;
+
+/// When this is enabled, this theme will search for files 
+/// named "styles.php" inside all course formats and 
+/// include them.  This allows course formats to provide 
+/// their own default styles.
+
+
+    public $metainclude = false;
+
+/// When this is enabled (or not set!) then Moodle will try 
+/// to include a file meta.php from this theme into the 
+/// <head></head> part of the page.
+
+
+    public $standardmetainclude = true;
+
+
+/// When this is enabled (or not set!) then Moodle will try 
+/// to include a file meta.php from the standard theme into the 
+/// <head></head> part of the page.
+
+
+    public $parentmetainclude = false;
+
+/// When this is enabled (or not set!) then Moodle will try 
+/// to include a file meta.php from the parent theme into the 
+/// <head></head> part of the page.
+
+
+    public $navmenuwidth = 50;
+
+/// You can use this to control the cutoff point for strings 
+/// in the navmenus (list of activities in popup menu etc)
+/// Default is 50 characters wide.
+
+
+    public $makenavmenulist = false;
+
+/// By setting this to true, then you will have access to a
+/// new variable in your header.html and footer.html called
+/// $navmenulist ... this contains a simple XHTML menu of 
+/// all activities in the current course, mostly useful for 
+/// creating popup navigation menus and so on.
+
+
+
+    public $resource_mp3player_colors = 'bgColour=000000&btnColour=ffffff&btnBorderColour=cccccc&iconColour=000000&iconOverColour=00cc00&trackColour=cccccc&handleColour=ffffff&loaderColour=ffffff&font=Arial&fontColour=3333FF&buffer=10&waitForPlay=no&autoPlay=yes';
+
+/// With this you can control the colours of the "big" MP3 player 
+/// that is used for MP3 resources.
+
+
+    public $filter_mediaplugin_colors = 'bgColour=000000&btnColour=ffffff&btnBorderColour=cccccc&iconColour=000000&iconOverColour=00cc00&trackColour=cccccc&handleColour=ffffff&loaderColour=ffffff&waitForPlay=yes';
+
+/// ...And this controls the small embedded player
+
+
+    public $custompix = false;
+
+/// If true, then this theme must have a "pix" 
+/// subdirectory that contains copies of all 
+/// files from the moodle/pix directory, plus a
+/// "pix/mod" directory containing all the icons 
+/// for all the activity modules.
+
+
+///$THEME->rarrow = '&#x25BA;' //OR '&rarr;';
+///$THEME->larrow = '&#x25C4;' //OR '&larr;';
+///$CFG->block_search_button = link_arrow_right(get_string('search'), $url='', $accesshide=true);
+///
+/// Accessibility: Right and left arrow-like characters are
+/// used in the breadcrumb trail, course navigation menu 
+/// (previous/next activity), calendar, and search forum block.
+///
+/// If the theme does not set characters, appropriate defaults
+/// are set by (lib/weblib.php:check_theme_arrows). The suggestions
+/// above are 'silent' in a screen-reader like JAWS. Please DO NOT
+/// use &lt; &gt; &raquo; - these are confusing for blind users.
+////////////////////////////////////////////////////////////////////////////////
+
+
+    public $blockregions = array('side-pre', 'side-post');
+    public $defaultblockregion = 'side-post';
+/// Areas where blocks may appear on any page that uses this theme. For each
+/// region you list in $THEME->blockregions you must call blocks_print_group
+/// with that region id somewhere in header.html or footer.html.
+/// defaultblockregion is the region where new blocks will be added, and
+/// where any blocks in unrecognised regions will be shown. (Suppose someone
+/// added a block when anther theme was selected).
+////////////////////////////////////////////////////////////////////////////////
+
+    /** @var string the name of this theme. Set automatically. */
+    public $name;
+    /** @var string the folder where this themes fiels are stored. $CFG->themedir . '/' . $this->name */
+    public $dir;
+
+    /** @var string Name of the renderer factory class to use. */
+    public $rendererfactory = 'standard_renderer_factory';
+    /** @var renderer_factory Instance of the renderer_factory class. */
+    protected $rf = null;
+
+    /** @var string Name of the icon finder class to use. */
+    public $iconfinder = 'pix_icon_finder';
+    /** @var renderer_factory Instance of the renderer_factory class. */
+    protected $if = null;
+
+    /**
+     * If you want to do custom processing on the CSS before it is output (for
+     * example, to replace certain variable names with particular values) you can
+     * give the name of a function here.
+     *
+     * There are two functions avaiable that you may wish to use (defined in lib/outputlib.php):
+     *   output_css_replacing_constants
+     *   output_css_for_css_edit
+     * If you wish to write your own function, use those two as examples, and it
+     * should be clear what you have to do.
+     *
+     * @var string the name of a function.
+     */
+    public $customcssoutputfunction = null;
+
+    /**
+     * Load the config.php file for a particular theme, and return an instance
+     * of this class. (That is, this is a factory method.)
+     *
+     * @param string $themename the name of the theme.
+     * @return theme_config an instance of this class.
+     */
+    public static function load($themename) {
+        global $CFG;
+
+        // We have to use the variable name $THEME (upper case) becuase that
+        // is what is used in theme config.php files.
+
+        // Set some other standard properties of the theme.
+        $THEME = new theme_config;
+        $THEME->name = $themename;
+        $THEME->dir = $CFG->themedir . '/' . $themename;
+
+        // Load up the theme config
+        $configfile = $THEME->dir . '/config.php';
+        if (!is_readable($configfile)) {
+            throw new coding_exception('Cannot use theme ' . $themename .
+                    '. The file ' . $configfile . ' does not exist or is not readable.');
+        }
+        include($configfile);
+
+        $THEME->update_legacy_information();
+
+        return $THEME;
+    }
+
+    /**
+     * Get the renderer for a part of Moodle for this theme.
+     * @param string $module the name of part of moodle. E.g. 'core', 'quiz', 'qtype_multichoice'.
+     * @param moodle_page $page the page we are rendering
+     * @return moodle_renderer_base the requested renderer.
+     */
+    public function get_renderer($module, $page) {
+        if (is_null($this->rf)) {
+            if (CLI_SCRIPT) {
+                $classname = 'cli_renderer_factory';
+            } else {
+                $classname = $this->rendererfactory;
+            }
+            $this->rf = new $classname($this);
+        }
+
+        return $this->rf->get_renderer($module, $page);
+    }
+
+    /**
+     * Get the renderer for a part of Moodle for this theme.
+     * @return moodle_renderer_base the requested renderer.
+     */
+    protected function get_icon_finder() {
+        if (is_null($this->if)) {
+            $classname = $this->iconfinder;
+            $this->if = new $classname($this);
+        }
+        return $this->if;
+    }
+
+    /**
+     * Return the URL for an icon indentifed as in pre-Moodle 2.0 code.
+     *
+     * Suppose you have old code like $url = "$CFG->pixpath/i/course.gif";
+     * then old_icon_url('i/course'); will return the equivalent URL that is correct now.
+     *
+     * @param $iconname the name of the icon.
+     * @return string the URL for that icon.
+     */
+    public function old_icon_url($iconname) {
+        return $this->get_icon_finder()->old_icon_url($iconname);
+    }
+
+    /**
+     * Return the URL for an icon indentifed as in pre-Moodle 2.0 code.
+     *
+     * Suppose you have old code like $url = "$CFG->modpixpath/$mod/icon.gif";
+     * then mod_icon_url('icon', $mod); will return the equivalent URL that is correct now.
+     *
+     * @param $iconname the name of the icon.
+     * @param $module the module the icon belongs to.
+     * @return string the URL for that icon.
+     */
+    public function mod_icon_url($iconname, $module) {
+        return $this->get_icon_finder()->mod_icon_url($iconname, $module);
+    }
+
+    /**
+     * Get the list of stylesheet URLs that need to go in the header for this theme.
+     * @return array of URLs.
+     */
+    public function get_stylesheet_urls() {
+        global $CFG;
+
+        // Put together the parameters
+        $params = '?for=' . $this->name;
+
+        // Stylesheets, in order (standard, parent, this - some of which may be the same).
+        $stylesheets = array();
+        if ($this->name != 'standard' && $this->standardsheets) {
+            $stylesheets[] = $CFG->httpsthemewww . '/standard/styles.php' . $params;
+        }
+        if (!empty($this->parent)) {
+            $stylesheets[] = $CFG->httpsthemewww . '/' . $this->parent . '/styles.php' . $params;
+        }
+
+        // Pass on the current language, if it will be needed.
+        if (!empty($this->langsheets)) {
+            $params .= '&lang=' . current_language();
+        }
+        $stylesheets[] = $CFG->httpsthemewww . '/' . $this->name . '/styles.php' . $params;
+
+        // Additional styles for right-to-left languages.
+        if (right_to_left()) {
+            $stylesheets[] = $CFG->httpsthemewww . '/standard/rtl.css';
+
+            if (!empty($this->parent) && file_exists($CFG->themedir . '/' . $this->parent . '/rtl.css')) {
+                $stylesheets[] = $CFG->httpsthemewww . '/' . $this->parent . '/rtl.css';
+            }
+
+            if (file_exists($this->dir . '/rtl.css')) {
+                $stylesheets[] = $CFG->httpsthemewww . '/' . $this->name . '/rtl.css';
+            }
+        }
+
+        return $stylesheets;
+    }
+
+    /**
+     * This methon looks a the settings that have been loaded, to see whether
+     * any legacy things are being used, and outputs warning and tries to update
+     * things to use equivalent newer settings.
+     */
+    protected function update_legacy_information() {
+        global $CFG;
+        if (!empty($this->customcorners)) {
+            // $THEME->customcorners is deprecated but we provide support for it via the
+            // custom_corners_renderer_factory class in lib/deprecatedlib.php
+            debugging('$THEME->customcorners is deprecated. Please use the new $THEME->rendererfactory ' .
+                    'to control HTML generation. Please use $this->rendererfactory = \'custom_corners_renderer_factory\'; ' .
+                    'in your config.php file instead.', DEBUG_DEVELOPER);
+            $this->rendererfactory = 'custom_corners_renderer_factory';
+        }
+
+        if (!empty($this->cssconstants)) {
+            debugging('$THEME->cssconstants is deprecated. Please use ' .
+                    '$THEME->customcssoutputfunction = \'output_css_replacing_constants\'; ' .
+                    'in your config.php file instead.', DEBUG_DEVELOPER);
+            $this->customcssoutputfunction = 'output_css_replacing_constants';
+        }
+
+        if (!empty($this->CSSEdit)) {
+            debugging('$THEME->CSSEdit is deprecated. Please use ' .
+                    '$THEME->customcssoutputfunction = \'output_css_for_css_edit\'; ' .
+                    'in your config.php file instead.', DEBUG_DEVELOPER);
+            $this->customcssoutputfunction = 'output_css_for_css_edit';
+        }
+
+        if (!empty($CFG->smartpix)) {
+            $this->iconfinder = 'smartpix_icon_finder';
+        } else if ($this->custompix) {
+            $this->iconfinder = 'theme_icon_finder';
+        }
+    }
+
+    /**
+     * Set the variable $CFG->pixpath and $CFG->modpixpath to be the right
+     * ones for this theme. These should no longer be used, but legacy code
+     * might still rely on them.
+     */
+    public function setup_legacy_pix_paths() {
+        global $CFG;
+        if (!empty($CFG->smartpix)) {
+            if ($CFG->slasharguments) {
+                // Use this method if possible for better caching
+                $extra = '';
+            } else {
+                $extra = '?file=';
+            }
+            $CFG->pixpath = $CFG->httpswwwroot . '/pix/smartpix.php' . $extra . '/' . $this->name;
+            $CFG->modpixpath = $CFG->httpswwwroot . '/pix/smartpix.php' . $extra . '/' . $this->name . '/mod';
+
+        } else if (empty($THEME->custompix)) {
+            $CFG->pixpath = $CFG->httpswwwroot . '/pix';
+            $CFG->modpixpath = $CFG->httpswwwroot . '/mod';
+
+        } else {
+            $CFG->pixpath = $CFG->httpsthemewww . '/' . $this->name . '/pix';
+            $CFG->modpixpath = $CFG->httpsthemewww . '/' . $this->name . '/pix/mod';
+        }
+    }
+}
+
+
+/**
+ * This icon finder implements the old scheme that was used when themes that had
+ * $THEME->custompix = false.
+ *
+ * @copyright 2009 Tim Hunt
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since     Moodle 2.0
+ */
+class pix_icon_finder implements icon_finder {
+    /**
+     * Constructor
+     * @param theme_config $theme the theme we are finding icons for (which is irrelevant).
+     */
+    public function __construct($theme) {
+    }
+
+    /* Implement interface method. */
+    public function old_icon_url($iconname) {
+        global $CFG;
+        if (file_exists($CFG->dirroot . '/pix/' . $iconname . '.png')) {
+            return $CFG->httpswwwroot . '/pix/' . $iconname . '.png';
+        } else {
+            return $CFG->httpswwwroot . '/pix/' . $iconname . '.gif';
+        }
+    }
+
+    /* Implement interface method. */
+    public function mod_icon_url($iconname, $module) {
+        global $CFG;
+        if (file_exists($CFG->dirroot . '/mod/' . $module . '/' . $iconname . '.png')) {
+            return $CFG->httpswwwroot . '/mod/' . $module . '/' . $iconname . '.png';
+        } else {
+            return $CFG->httpswwwroot . '/mod/' . $module . '/' . $iconname . '.gif';
+        }
+    }
+}
+
+
+/**
+ * This icon finder implements the old scheme that was used for themes that had
+ * $THEME->custompix = true.
+ *
+ * @copyright 2009 Tim Hunt
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since     Moodle 2.0
+ */
+class theme_icon_finder implements icon_finder {
+    protected $themename;
+    /**
+     * Constructor
+     * @param theme_config $theme the theme we are finding icons for.
+     */
+    public function __construct($theme) {
+        $this->themename = $theme->name;
+    }
+
+    /* Implement interface method. */
+    public function old_icon_url($iconname) {
+        global $CFG;
+        if (file_exists($CFG->themedir . '/' . $this->themename . '/pix/' . $iconname . '.png')) {
+            return $CFG->httpsthemewww . '/' . $this->themename . '/pix/' . $iconname . '.png';
+        } else {
+            return $CFG->httpsthemewww . '/' . $this->themename . '/pix/' . $iconname . '.gif';
+        }
+    }
+
+    /* Implement interface method. */
+    public function mod_icon_url($iconname, $module) {
+        global $CFG;
+        if (file_exists($CFG->themedir . '/' . $this->themename . '/pix/mod/' . $module . '/' . $iconname . '.png')) {
+            return $CFG->httpsthemewww . '/' . $this->themename . '/pix/mod/' . $module . '/' . $iconname . '.png';
+        } else {
+            return $CFG->httpsthemewww . '/' . $this->themename . '/pix/mod/' . $module . '/' . $iconname . '.gif';
+        }
+    }
+}
+
+
+/**
+ * This icon finder implements the algorithm in pix/smartpix.php.
+ *
+ * @copyright 2009 Tim Hunt
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since     Moodle 2.0
+ */
+class smartpix_icon_finder extends pix_icon_finder {
+    protected $places = array();
+
+    /**
+     * Constructor
+     * @param theme_config $theme the theme we are finding icons for.
+     */
+    public function __construct($theme) {
+        global $CFG;
+        $this->places[$CFG->themedir . '/' . $theme->name . '/pix/'] =
+                $CFG->httpsthemewww . '/' . $theme->name . '/pix/';
+        if (!empty($theme->parent)) {
+            $this->places[$CFG->themedir . '/' . $theme->parent . '/pix/'] =
+                    $CFG->httpsthemewww . '/' . $theme->parent . '/pix/';
+        }
+    }
+
+    /* Implement interface method. */
+    public function old_icon_url($iconname) {
+        foreach ($this->places as $dirroot => $urlroot) {
+            if (file_exists($dirroot . $iconname . '.png')) {
+                return $dirroot . $iconname . '.png';
+            } else if (file_exists($dirroot . $iconname . '.gif')) {
+                return $dirroot . $iconname . '.gif';
+            }
+        }
+        return parent::old_icon_url($iconname);
+    }
+
+    /* Implement interface method. */
+    public function mod_icon_url($iconname, $module) {
+        foreach ($this->places as $dirroot => $urlroot) {
+            if (file_exists($dirroot . 'mod/' . $iconname . '.png')) {
+                return $dirroot . 'mod/' . $iconname . '.png';
+            } else if (file_exists($dirroot . 'mod/' . $iconname . '.gif')) {
+                return $dirroot . 'mod/' . $iconname . '.gif';
+            }
+        }
+        return parent::old_icon_url($iconname, $module);
+    }
 }
 
 
@@ -78,50 +648,16 @@ interface renderer_factory {
  * @since     Moodle 2.0
  */
 abstract class renderer_factory_base implements renderer_factory {
-    /** The theme we are rendering for. */
+    /** @var theme_config the theme we belong to. */
     protected $theme;
-
-    /** The page we are doing output for. */
-    protected $page;
-
-    /** Used to cache renderers as they are created. */
-    protected $renderers = array();
-
-    protected $opencontainers;
 
     /**
      * Constructor.
-     * @param object $theme the theme we are rendering for.
-     * @param moodle_page $page the page we are doing output for.
+     * @param theme_config $theme the theme we belong to.
      */
-    public function __construct($theme, $page) {
+    public function __construct($theme) {
         $this->theme = $theme;
-        $this->page = $page;
-        $this->opencontainers = new xhtml_container_stack();
     }
-
-    /* Implement the interface method. */
-    public function get_renderer($module) {
-        // Cache the renderers by module name, and delegate the actual
-        // construction to the create_renderer method.
-        if (!array_key_exists($module, $this->renderers)) {
-            $this->renderers[$module] = $this->create_renderer($module);
-        }
-
-        return $this->renderers[$module];
-    }
-
-    /**
-     * Subclasses should override this method to actually create an instance of
-     * the appropriate renderer class, based on the module name. That is,
-     * this method should implement the same contract as
-     * {@link renderer_factory::get_renderer}.
-     *
-     * @param $module the name of part of moodle. E.g. 'core', 'quiz', 'qtype_multichoice'.
-     * @return object an object implementing the requested renderer interface.
-     */
-    abstract public function create_renderer($module);
-
     /**
      * For a given module name, return the name of the standard renderer class
      * that defines the renderer interface for that module.
@@ -129,15 +665,17 @@ abstract class renderer_factory_base implements renderer_factory {
      * Also, if it exists, include the renderer.php file for that module, so
      * the class definition of the default renderer has been loaded.
      *
-     * @param string $module the name of part of moodle. E.g. 'core', 'quiz', 'qtype_multichoice'.
+     * @param string $component name such as 'core', 'mod_forum' or 'qtype_multichoice'.
      * @return string the name of the standard renderer class for that module.
      */
-    protected function standard_renderer_class_for_module($module) {
-        $pluginrenderer = get_plugin_dir($module) . '/renderer.php';
-        if (file_exists($pluginrenderer)) {
-            include_once($pluginrenderer);
+    protected function standard_renderer_class_for_module($component) {
+        if ($component != 'core') {
+            $pluginrenderer = get_component_directory($component) . '/renderer.php';
+            if (file_exists($pluginrenderer)) {
+                include_once($pluginrenderer);
+            }
         }
-        $class = 'moodle_' . $module . '_renderer';
+        $class = 'moodle_' . $component . '_renderer';
         if (!class_exists($class)) {
             throw new coding_exception('Request for an unknown renderer class ' . $class);
         }
@@ -155,22 +693,13 @@ abstract class renderer_factory_base implements renderer_factory {
  * @since     Moodle 2.0
  */
 class standard_renderer_factory extends renderer_factory_base {
-    /**
-     * Constructor.
-     * @param object $theme the theme we are rendering for.
-     * @param moodle_page $page the page we are doing output for.
-     */
-    public function __construct($theme, $page) {
-        parent::__construct($theme, $page);
-    }
-
     /* Implement the subclass method. */
-    public function create_renderer($module) {
+    public function get_renderer($module, $page) {
         if ($module == 'core') {
-            return new moodle_core_renderer($this->opencontainers, $this->page, $this);
+            return new moodle_core_renderer($page);
         } else {
             $class = $this->standard_renderer_class_for_module($module);
-            return new $class($this->opencontainers, $this->get_renderer('core'), $this->page);
+            return new $class($page, $this->get_renderer('core', $page));
         }
     }
 }
@@ -184,14 +713,13 @@ class standard_renderer_factory extends renderer_factory_base {
  * @since     Moodle 2.0
  */
 class cli_renderer_factory extends standard_renderer_factory {
-    /**
-     * Constructor.
-     * @param object $theme the theme we are rendering for.
-     * @param moodle_page $page the page we are doing output for.
-     */
-    public function __construct($theme, $page) {
-        parent::__construct($theme, $page);
-        $this->renderers = array('core' => new cli_core_renderer($this->opencontainers, $this->page, $this));
+    /* Implement the subclass method. */
+    public function get_renderer($module, $page) {
+        if ($module == 'core') {
+            return new cli_core_renderer($page);
+        } else {
+            parent::get_renderer($module, $page);
+        }
     }
 }
 
@@ -220,9 +748,9 @@ class theme_overridden_renderer_factory extends standard_renderer_factory {
      * @param object $theme the theme we are rendering for.
      * @param moodle_page $page the page we are doing output for.
      */
-    public function __construct($theme, $page) {
+    public function __construct($theme) {
         global $CFG;
-        parent::__construct($theme, $page);
+        parent::__construct($theme);
 
         // Initialise $this->prefixes.
         $renderersfile = $theme->dir . '/renderers.php';
@@ -240,18 +768,18 @@ class theme_overridden_renderer_factory extends standard_renderer_factory {
     }
 
     /* Implement the subclass method. */
-    public function create_renderer($module) {
+    public function get_renderer($module, $page) {
         foreach ($this->prefixes as $prefix) {
             $classname = $prefix . $module . '_renderer';
             if (class_exists($classname)) {
                 if ($module == 'core') {
-                    return new $classname($this->opencontainers, $this->page, $this);
+                    return new $classname($page);
                 } else {
-                    return new $classname($this->opencontainers, $this->get_renderer('core'), $this->page);
+                    return new $classname($page, $this->get_renderer('core', $page));
                 }
             }
         }
-        return parent::create_renderer($module);
+        return parent::get_renderer($module, $page);
     }
 }
 
@@ -292,9 +820,9 @@ class template_renderer_factory extends renderer_factory_base {
      * @param object $theme the theme we are rendering for.
      * @param moodle_page $page the page we are doing output for.
      */
-    public function __construct($theme, $page) {
+    public function __construct($theme) {
         global $CFG;
-        parent::__construct($theme, $page);
+        parent::__construct($theme);
 
         // Initialise $this->searchpaths.
         if ($theme->name != 'standardtemplate') {
@@ -313,7 +841,7 @@ class template_renderer_factory extends renderer_factory_base {
     }
 
     /* Implement the subclass method. */
-    public function create_renderer($module) {
+    public function get_renderer($module, $page) {
         // Refine the list of search paths for this module.
         $searchpaths = array();
         foreach ($this->searchpaths as $rootpath) {
@@ -325,7 +853,7 @@ class template_renderer_factory extends renderer_factory_base {
 
         // Create a template_renderer that copies the API of the standard renderer.
         $copiedclass = $this->standard_renderer_class_for_module($module);
-        return new template_renderer($copiedclass, $searchpaths, $this->opencontainers, $this->page, $this);
+        return new template_renderer($copiedclass, $searchpaths, $page);
     }
 }
 
@@ -352,8 +880,8 @@ class moodle_renderer_base {
      * @param $opencontainers the xhtml_container_stack to use.
      * @param moodle_page $page the page we are doing output for.
      */
-    public function __construct($opencontainers, $page) {
-        $this->opencontainers = $opencontainers;
+    public function __construct($page) {
+        $this->opencontainers = $page->opencontainers;
         $this->page = $page;
     }
 
@@ -401,6 +929,33 @@ class moodle_renderer_base {
         }
         return $classes;
     }
+
+    /**
+     * Return the URL for an icon indentifed as in pre-Moodle 2.0 code.
+     *
+     * Suppose you have old code like $url = "$CFG->pixpath/i/course.gif";
+     * then old_icon_url('i/course'); will return the equivalent URL that is correct now.
+     *
+     * @param $iconname the name of the icon.
+     * @return string the URL for that icon.
+     */
+    public function old_icon_url($iconname) {
+        return $this->page->theme->old_icon_url($iconname);
+    }
+
+    /**
+     * Return the URL for an icon indentifed as in pre-Moodle 2.0 code.
+     *
+     * Suppose you have old code like $url = "$CFG->modpixpath/$mod/icon.gif";
+     * then mod_icon_url('icon', $mod); will return the equivalent URL that is correct now.
+     *
+     * @param $iconname the name of the icon.
+     * @param $module the module the icon belongs to.
+     * @return string the URL for that icon.
+     */
+    public function mod_icon_url($iconname, $module) {
+        return $this->page->theme->mod_icon_url($iconname, $module);
+    }
 }
 
 
@@ -440,22 +995,11 @@ class template_renderer extends moodle_renderer_base {
      * @param $searchpaths a list of folders to search for templates in.
      * @param $opencontainers the xhtml_container_stack to use.
      * @param moodle_page $page the page we are doing output for.
-     * @param renderer_factory $rendererfactory the renderer factory that created us.
      */
-    public function __construct($copiedclass, $searchpaths, $opencontainers, $page, $rendererfactory) {
-        parent::__construct($opencontainers, $page);
+    public function __construct($copiedclass, $searchpaths, $page) {
+        parent::__construct($page);
         $this->copiedclass = new ReflectionClass($copiedclass);
         $this->searchpaths = $searchpaths;
-        $this->rendererfactory = $rendererfactory;
-    }
-
-    /**
-     * Get a renderer for another part of Moodle.
-     * @param $module the name of part of moodle. E.g. 'core', 'quiz', 'qtype_multichoice'.
-     * @return object an object implementing the requested renderer interface.
-     */
-    public function get_other_renderer($module) {
-        $this->rendererfactory->get_renderer($module);
     }
 
     /* PHP magic method implementation. */
@@ -710,27 +1254,7 @@ class moodle_core_renderer extends moodle_renderer_base {
     const END_HTML_TOKEN = '%%ENDHTML%%';
     const MAIN_CONTENT_TOKEN = '[MAIN CONTENT GOES HERE]';
     protected $contenttype;
-    protected $rendererfactory;
     protected $metarefreshtag = '';
-    /**
-     * Constructor
-     * @param $opencontainers the xhtml_container_stack to use.
-     * @param moodle_page $page the page we are doing output for.
-     * @param renderer_factory $rendererfactory the renderer factory that created us.
-     */
-    public function __construct($opencontainers, $page, $rendererfactory) {
-        parent::__construct($opencontainers, $page);
-        $this->rendererfactory = $rendererfactory;
-    }
-
-    /**
-     * Get a renderer for another part of Moodle.
-     * @param $module the name of part of moodle. E.g. 'core', 'quiz', 'qtype_multichoice'.
-     * @return object an object implementing the requested renderer interface.
-     */
-    public function get_other_renderer($module) {
-        $this->rendererfactory->get_renderer($module);
-    }
 
     public function doctype() {
         global $CFG;
@@ -892,39 +1416,25 @@ class moodle_core_renderer extends moodle_renderer_base {
      *         set this is a requirement and defaults to 3, set to 0 no delay
      * @param string $messageclass The css class to put on the message that is
      *         being displayed to the user
+     * @param boolean $debugdisableredirect this redirect has been disabled for
+     *         debugging purposes. Display a message that explains, and don't
+     *         trigger the redirect.
      * @return string The HTML to display to the user before dying, may contain
      *         meta refresh, javascript refresh, and may have set header redirects
      */
-    public function redirect($encodedurl, $message, $delay, $messageclass='notifyproblem') {
+    public function redirect_message($encodedurl, $message, $delay, $debugdisableredirect) {
         global $CFG;
         $url = str_replace('&amp;', '&', $encodedurl);
-
-        $disableredirect = false;
-
-        if ($delay!=0) {
-            /// At developer debug level. Don't redirect if errors have been printed on screen.
-            /// Currenly only works in PHP 5.2+; we do not want strict PHP5 errors
-            $lasterror = error_get_last();
-            $error = defined('DEBUGGING_PRINTED') or (!empty($lasterror) && ($lasterror['type'] & DEBUG_DEVELOPER));
-            $errorprinted = debugging('', DEBUG_ALL) && $CFG->debugdisplay && $error;
-            if ($errorprinted) {
-                $disableredirect= true;
-                $message = "<strong>Error output, so disabling automatic redirect.</strong></p><p>" . $message;
-            }
-        }
 
         switch ($this->page->state) {
             case moodle_page::STATE_BEFORE_HEADER :
                 // No output yet it is safe to delivery the full arsenol of redirect methods
-                if (!$disableredirect) {
-                    @header($_SERVER['SERVER_PROTOCOL'] . ' 303 See Other'); //302 might not work for POST requests, 303 is ignored by obsolete clients
-                    @header('Location: '.$url);
+                if (!$debugdisableredirect) {
+                    // Don't use exactly the same time here, it can cause problems when both redirects fire at the same time.
                     $this->metarefreshtag = '<meta http-equiv="refresh" content="'. $delay .'; url='. $encodedurl .'" />'."\n";
-                    $this->page->requires->js_function_call('document.location.replace', array($url))->after_delay($delay+3);
+                    $this->page->requires->js_function_call('document.location.replace', array($url))->after_delay($delay + 3);
                 }
                 $output = $this->header();
-                $output .= $this->notification($message, $messageclass);
-                $output .= $this->footer();
                 break;
             case moodle_page::STATE_PRINTING_HEADER :
                 // We should hopefully never get here
@@ -934,17 +1444,21 @@ class moodle_core_renderer extends moodle_renderer_base {
                 // We really shouldn't be here but we can deal with this
                 debugging("You should really redirect before you start page output");
                 if (!$disableredirect) {
-                    $this->page->requires->js_function_call('document.location.replace', array($url))->after_delay($delay+3);
+                    $this->page->requires->js_function_call('document.location.replace', array($url))->after_delay($delay);
                 }
                 $output = $this->opencontainers->pop_all_but_last();
-                $output .= $this->notification($message, $messageclass);
-                $output .= $this->footer();
                 break;
             case moodle_page::STATE_DONE :
                 // Too late to be calling redirect now
                 throw new coding_exception('You cannot redirect after the entire page has been generated');
                 break;
         }
+        $output .= $this->notification($message, 'redirectmessage');
+        $output .= '<a href="'. $encodedurl .'">'. get_string('continue') .'</a>';
+        if ($debugdisableredirect) {
+            $output .= '<p><strong>Error output, so disabling automatic redirect.</strong></p>';
+        }
+        $output .= $this->footer();
         return $output;
     }
 
@@ -1408,353 +1922,6 @@ class moodle_core_renderer extends moodle_renderer_base {
 
     public function container_end() {
         return $this->opencontainers->pop('container');
-    }
-
-    /**
-     * At the moment we frequently have a problem with $CFG->pixpath not being
-     * initialised when it is needed. Unfortunately, there is no nice way to handle
-     * this. I think we need to replace $CFG->pixpath with something like $OUTPUT->icon(...).
-     * However, until then, we need a way to force $CFG->pixpath to be initialised,
-     * to fix the error messages, and that is what this function if for.
-     */
-    public function initialise_deprecated_cfg_pixpath() {
-        // Actually, we don't have to do anything here. Just calling any method
-        // of $OBJECT  is enough. However, if the only reason you are calling
-        // an $OUTPUT method is to get $CFG->pixpath initialised, please use this
-        // method, so we can find them and clean them up later once we have
-        // found a better replacement for $CFG->pixpath.
-    }
-}
-
-
-/**
- *This class represents the configuration variables of a Moodle theme.
- *
- * Normally, to create an instance of this class, you should use the
- * {@link theme_config::load()} factory method to load a themes config.php file.
- *
- * @copyright 2009 Tim Hunt
- * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @since     Moodle 2.0
- */
-class theme_config {
-    /**
-     * @var array The names of all the stylesheets from this theme that you would
-     * like included, in order.
-     */
-    public $sheets = array('styles_layout', 'styles_fonts', 'styles_color');
-
-    public $standardsheets = true;  
-
-/// This variable can be set to an array containing
-/// filenames from the *STANDARD* theme.  If the 
-/// array exists, it will be used to choose the 
-/// files to include in the standard style sheet.
-/// When false, then no files are used.
-/// When true or NON-EXISTENT, then ALL standard files are used.
-/// This parameter can be used, for example, to prevent 
-/// having to override too many classes.
-/// Note that the trailing .css should not be included
-/// eg $THEME->standardsheets = array('styles_layout','styles_fonts','styles_color');
-////////////////////////////////////////////////////////////////////////////////
-
-
-    public $parent = null;  
-
-/// This variable can be set to the name of a parent theme
-/// which you want to have included before the current theme.
-/// This can make it easy to make modifications to another 
-/// theme without having to actually change the files
-/// If this variable is empty or false then a parent theme 
-/// is not used.
-////////////////////////////////////////////////////////////////////////////////
-
-
-    public $parentsheets = false;  
-
-/// This variable can be set to an array containing
-/// filenames from a chosen *PARENT* theme.  If the 
-/// array exists, it will be used to choose the 
-/// files to include in the standard style sheet.
-/// When false, then no files are used.
-/// When true or NON-EXISTENT, then ALL standard files are used.
-/// This parameter can be used, for example, to prevent 
-/// having to override too many classes.
-/// Note that the trailing .css should not be included
-/// eg $THEME->parentsheets = array('styles_layout','styles_fonts','styles_color');
-////////////////////////////////////////////////////////////////////////////////
-
-
-    public $modsheets = true;  
-
-/// When this is enabled, then this theme will search for 
-/// files named "styles.php" inside all Activity modules and 
-/// include them.   This allows modules to provide some basic 
-/// layouts so they work out of the box.
-/// It is HIGHLY recommended to leave this enabled.
-
-
-    public $blocksheets = true;  
-
-/// When this is enabled, then this theme will search for 
-/// files named "styles.php" inside all Block modules and 
-/// include them.   This allows Blocks to provide some basic 
-/// layouts so they work out of the box.
-/// It is HIGHLY recommended to leave this enabled.
-
-
-    public $langsheets = false;  
-
-/// By setting this to true, then this theme will search for 
-/// a file named "styles.php" inside the current language
-/// directory.  This allows different languages to provide 
-/// different styles.
-
-
-    public $courseformatsheets = true;
-
-/// When this is enabled, this theme will search for files 
-/// named "styles.php" inside all course formats and 
-/// include them.  This allows course formats to provide 
-/// their own default styles.
-
-
-    public $metainclude = false;
-
-/// When this is enabled (or not set!) then Moodle will try 
-/// to include a file meta.php from this theme into the 
-/// <head></head> part of the page.
-
-
-    public $standardmetainclude = true;
-
-
-/// When this is enabled (or not set!) then Moodle will try 
-/// to include a file meta.php from the standard theme into the 
-/// <head></head> part of the page.
-
-
-    public $parentmetainclude = false;
-
-/// When this is enabled (or not set!) then Moodle will try 
-/// to include a file meta.php from the parent theme into the 
-/// <head></head> part of the page.
-
-
-    public $navmenuwidth = 50;
-
-/// You can use this to control the cutoff point for strings 
-/// in the navmenus (list of activities in popup menu etc)
-/// Default is 50 characters wide.
-
-
-    public $makenavmenulist = false;
-
-/// By setting this to true, then you will have access to a
-/// new variable in your header.html and footer.html called
-/// $navmenulist ... this contains a simple XHTML menu of 
-/// all activities in the current course, mostly useful for 
-/// creating popup navigation menus and so on.
-
-
-
-    public $resource_mp3player_colors = 'bgColour=000000&btnColour=ffffff&btnBorderColour=cccccc&iconColour=000000&iconOverColour=00cc00&trackColour=cccccc&handleColour=ffffff&loaderColour=ffffff&font=Arial&fontColour=3333FF&buffer=10&waitForPlay=no&autoPlay=yes';
-
-/// With this you can control the colours of the "big" MP3 player 
-/// that is used for MP3 resources.
-
-
-    public $filter_mediaplugin_colors = 'bgColour=000000&btnColour=ffffff&btnBorderColour=cccccc&iconColour=000000&iconOverColour=00cc00&trackColour=cccccc&handleColour=ffffff&loaderColour=ffffff&waitForPlay=yes';
-
-/// ...And this controls the small embedded player
-
-
-    public $custompix = false;
-
-/// If true, then this theme must have a "pix" 
-/// subdirectory that contains copies of all 
-/// files from the moodle/pix directory, plus a
-/// "pix/mod" directory containing all the icons 
-/// for all the activity modules.
-
-
-///$THEME->rarrow = '&#x25BA;' //OR '&rarr;';
-///$THEME->larrow = '&#x25C4;' //OR '&larr;';
-///$CFG->block_search_button = link_arrow_right(get_string('search'), $url='', $accesshide=true);
-///
-/// Accessibility: Right and left arrow-like characters are
-/// used in the breadcrumb trail, course navigation menu 
-/// (previous/next activity), calendar, and search forum block.
-///
-/// If the theme does not set characters, appropriate defaults
-/// are set by (lib/weblib.php:check_theme_arrows). The suggestions
-/// above are 'silent' in a screen-reader like JAWS. Please DO NOT
-/// use &lt; &gt; &raquo; - these are confusing for blind users.
-////////////////////////////////////////////////////////////////////////////////
-
-
-    public $blockregions = array('side-pre', 'side-post');
-    public $defaultblockregion = 'side-post';
-/// Areas where blocks may appear on any page that uses this theme. For each
-/// region you list in $THEME->blockregions you must call blocks_print_group
-/// with that region id somewhere in header.html or footer.html.
-/// defaultblockregion is the region where new blocks will be added, and
-/// where any blocks in unrecognised regions will be shown. (Suppose someone
-/// added a block when anther theme was selected).
-////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * @var string the name of this theme. Set automatically.
-     */
-    public $name;
-    /**
-     * @var string the folder where this themes fiels are stored. $CFG->themedir . '/' . $this->name
-     */
-    public $dir;
-
-    public $rendererfactory = 'standard_renderer_factory';
-
-    /**
-     * If you want to do custom processing on the CSS before it is output (for
-     * example, to replace certain variable names with particular values) you can
-     * give the name of a function here.
-     *
-     * There are two functions avaiable that you may wish to use (defined in lib/outputlib.php):
-     *   output_css_replacing_constants
-     *   output_css_for_css_edit
-     * If you wish to write your own function, use those two as examples, and it
-     * should be clear what you have to do.
-     *
-     * @var string the name of a function.
-     */
-    public $customcssoutputfunction = null;
-
-    /**
-     * Load the config.php file for a particular theme, and return an instance
-     * of this class. (That is, this is a factory method.)
-     *
-     * @param string $themename the name of the theme.
-     * @return theme_config an instance of this class.
-     */
-    public static function load($themename) {
-        global $CFG, $PAGE;
-
-        // We have to use the variable name $THEME (upper case) becuase that
-        // is what is used in theme config.php files.
-
-        // Set some other standard properties of the theme.
-        $THEME = new theme_config;
-        $THEME->name = $themename;
-        $THEME->dir = $CFG->themedir . '/' . $themename;
-
-        // Load up the theme config
-        $configfile = $THEME->dir . '/config.php';
-        if (!is_readable($configfile)) {
-            throw new coding_exception('Cannot use theme ' . $themename .
-                    '. The file ' . $configfile . ' does not exist or is not readable.');
-        }
-        include($configfile);
-
-        $THEME->update_legacy_information();
-
-        return $THEME;
-    }
-
-    /**
-     * Set the variable $CFG->pixpath and $CFG->modpixpath to be the right
-     * ones for this theme.
-     */
-    public function setup_cfg_paths() {
-        global $CFG;
-        if (!empty($CFG->smartpix)) {
-            if ($CFG->slasharguments) {
-                // Use this method if possible for better caching
-                $extra = '';
-            } else {
-                $extra = '?file=';
-            }
-            $CFG->pixpath = $CFG->httpswwwroot . '/pix/smartpix.php' . $extra . '/' . $this->name;
-            $CFG->modpixpath = $CFG->httpswwwroot . '/pix/smartpix.php' . $extra . '/' . $this->name . '/mod';
-
-        } else if (empty($THEME->custompix)) {
-            $CFG->pixpath = $CFG->httpswwwroot . '/pix';
-            $CFG->modpixpath = $CFG->httpswwwroot . '/mod';
-
-        } else {
-            $CFG->pixpath = $CFG->httpsthemewww . '/' . $this->name . '/pix';
-            $CFG->modpixpath = $CFG->httpsthemewww . '/' . $this->name . '/pix/mod';
-        }
-    }
-
-    /**
-     * Get the list of stylesheet URLs that need to go in the header for this theme.
-     * @return array of URLs.
-     */
-    public function get_stylesheet_urls() {
-        global $CFG;
-
-        // Put together the parameters
-        $params = '?for=' . $this->name;
-
-        // Stylesheets, in order (standard, parent, this - some of which may be the same).
-        $stylesheets = array();
-        if ($this->name != 'standard' && $this->standardsheets) {
-            $stylesheets[] = $CFG->httpsthemewww . '/standard/styles.php' . $params;
-        }
-        if (!empty($this->parent)) {
-            $stylesheets[] = $CFG->httpsthemewww . '/' . $this->parent . '/styles.php' . $params;
-        }
-
-        // Pass on the current language, if it will be needed.
-        if (!empty($this->langsheets)) {
-            $params .= '&lang=' . current_language();
-        }
-        $stylesheets[] = $CFG->httpsthemewww . '/' . $this->name . '/styles.php' . $params;
-
-        // Additional styles for right-to-left languages.
-        if (right_to_left()) {
-            $stylesheets[] = $CFG->httpsthemewww . '/standard/rtl.css';
-
-            if (!empty($this->parent) && file_exists($CFG->themedir . '/' . $this->parent . '/rtl.css')) {
-                $stylesheets[] = $CFG->httpsthemewww . '/' . $this->parent . '/rtl.css';
-            }
-
-            if (file_exists($this->dir . '/rtl.css')) {
-                $stylesheets[] = $CFG->httpsthemewww . '/' . $this->name . '/rtl.css';
-            }
-        }
-
-        return $stylesheets;
-    }
-
-    /**
-     * This methon looks a the settings that have been loaded, to see whether
-     * any legacy things are being used, and outputs warning and tries to update
-     * things to use equivalent newer settings.
-     */
-    protected function update_legacy_information() {
-        if (!empty($this->customcorners)) {
-            // $THEME->customcorners is deprecated but we provide support for it via the
-            // custom_corners_renderer_factory class in lib/deprecatedlib.php
-            debugging('$THEME->customcorners is deprecated. Please use the new $THEME->rendererfactory ' .
-                    'to control HTML generation. Please use $this->rendererfactory = \'custom_corners_renderer_factory\'; ' .
-                    'in your config.php file instead.', DEBUG_DEVELOPER);
-            $this->rendererfactory = 'custom_corners_renderer_factory';
-        }
-
-        if (!empty($this->cssconstants)) {
-            debugging('$THEME->cssconstants is deprecated. Please use ' .
-                    '$THEME->customcssoutputfunction = \'output_css_replacing_constants\'; ' .
-                    'in your config.php file instead.', DEBUG_DEVELOPER);
-            $this->customcssoutputfunction = 'output_css_replacing_constants';
-        }
-
-        if (!empty($this->CSSEdit)) {
-            debugging('$THEME->CSSEdit is deprecated. Please use ' .
-                    '$THEME->customcssoutputfunction = \'output_css_for_css_edit\'; ' .
-                    'in your config.php file instead.', DEBUG_DEVELOPER);
-            $this->customcssoutputfunction = 'output_css_for_css_edit';
-        }
     }
 }
 

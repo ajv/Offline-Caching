@@ -38,9 +38,6 @@ define('FEEDBACK_RESETFORM_RESET', 'feedback_reset_data_');
 define('FEEDBACK_RESETFORM_DROP', 'feedback_drop_feedback_');
 define('FEEDBACK_MAX_PIX_LENGTH', '400'); //max. Breite des grafischen Balkens in der Auswertung
 
-global $feedback_names; // not nice 
-$feedback_names = feedback_load_feedback_items('mod/feedback/item');
-
 //initialize the feedback-Session - not nice at all!!
 global $SESSION;
 if(!isset($SESSION->feedback) OR !is_object($SESSION->feedback)) {
@@ -325,7 +322,7 @@ function feedback_get_recent_mod_activity(&$activities, &$index, $timemodified, 
  * @return void Output is echo'd
  */
 function feedback_print_recent_mod_activity($activity, $courseid, $detail, $modnames) {
-    global $CFG;
+    global $CFG, $OUTPUT;
 
     echo '<table border="0" cellpadding="3" cellspacing="0" class="forum-recent">';
 
@@ -336,7 +333,7 @@ function feedback_print_recent_mod_activity($activity, $courseid, $detail, $modn
     if ($detail) {
         $modname = $modnames[$activity->type];
         echo '<div class="title">';
-        echo "<img src=\"$CFG->modpixpath/{$activity->type}/icon.gif\" ".
+        echo "<img src=\"" . $OUTPUT->mod_icon_url('icon', $activity->type) . "\" ".
              "class=\"icon\" alt=\"$modname\" />";
         echo "<a href=\"$CFG->wwwroot/mod/feedback/view.php?id={$activity->cmid}\">{$activity->name}</a>";
         echo '</div>';

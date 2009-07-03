@@ -586,46 +586,12 @@ function xmldb_main_upgrade($oldversion) {
         upgrade_main_savepoint($result, 2008080600);
     }
 
-/// Changing the type of all the columns that the question bank uses to store grades to be NUMBER(12, 7).
     if ($result && $oldversion < 2008081500) {
+    /// Changing the type of all the columns that the question bank uses to store grades to be NUMBER(12, 7).
         $table = new xmldb_table('question');
         $field = new xmldb_field('defaultgrade', XMLDB_TYPE_NUMBER, '12, 7', null, null, null, null, 'generalfeedback');
         $dbman->change_field_type($table, $field);
         upgrade_main_savepoint($result, 2008081500);
-    }
-    if ($result && $oldversion < 2008081300) {
-    /// Define table blog_association to be created
-        $table = new xmldb_table('blog_association');
-
-    /// Adding fields to table blog_association
-        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, XMLDB_SEQUENCE, null, null, null);
-        $table->add_field('contextid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null, null, null);
-        $table->add_field('blogid', XMLDB_TYPE_INTEGER, '10', XMLDB_UNSIGNED, XMLDB_NOTNULL, null, null, null, null);
-    /// Adding keys to table blog_association
-        $table->add_key('primary', XMLDB_KEY_PRIMARY, array('id'));
-        $table->add_key('contextid', XMLDB_KEY_FOREIGN, array('contextid'), 'context', array('id'));
-        $table->add_key('blogid', XMLDB_KEY_FOREIGN, array('blogid'), 'post', array('id'));
- 
-        if (!$dbman->table_exists($table)) {
-        /// Launch create table for blog_association
-            $dbman->create_table($table);
-        }
-
-
-    /// Main savepoint reached
-        upgrade_main_savepoint($result, 2008081300);
-    }   
-    if ($result && $oldversion < 2008081301) {
-
-    /// Changing list of values (enum) of field publishstate on table post to 'draft', 'site', 'public', 'group', 'course'
-        $table = new xmldb_table('post');
-        $field = new xmldb_field('publishstate', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, XMLDB_ENUM, array('draft', 'site', 'public', 'group', 'course'), 'draft', 'attachment');
-
-    /// Launch change of list of values for field publishstate
-        $dbman->change_field_enum($table, $field);
-
-    /// Main savepoint reached
-        upgrade_main_savepoint($result, 2008081301);
     }
 
     if ($result && $oldversion < 2008081501) {
@@ -2124,12 +2090,24 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
     /// Define field blockid to be dropped from block_instances
         $field = new xmldb_field('blockid');
         if ($dbman->field_exists($table, $field)) {
+        /// Before dropping the field, drop dependent indexes
+            $index = new xmldb_index('blockid', XMLDB_INDEX_NOTUNIQUE, array('blockid'));
+            if ($dbman->index_exists($table, $index)) {
+            /// Launch drop index blockid
+                $dbman->drop_index($table, $index);
+            }
             $dbman->drop_field($table, $field);
         }
 
     /// Define field pageid to be dropped from block_instances
         $field = new xmldb_field('pageid');
         if ($dbman->field_exists($table, $field)) {
+        /// Before dropping the field, drop dependent indexes
+            $index = new xmldb_index('pageid', XMLDB_INDEX_NOTUNIQUE, array('pageid'));
+            if ($dbman->index_exists($table, $index)) {
+            /// Launch drop index pageid
+                $dbman->drop_index($table, $index);
+            }
             $dbman->drop_field($table, $field);
         }
 
@@ -2288,14 +2266,15 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
     if ($result && $oldversion < 2009063000) {
         // upgrade format of _with_advanced settings - quiz only
         // note: this can be removed later, not needed for upgrades from 1.9.x
-        $quiz = get_config('quiz');
-        foreach ($quiz as $name=>$value) {
-            if (strpos($name, 'fix_') !== 0) {
-                continue;
+        if ($quiz = get_config('quiz')) {
+            foreach ($quiz as $name=>$value) {
+                if (strpos($name, 'fix_') !== 0) {
+                    continue;
+                }
+                $newname = substr($name,4).'_adv';
+                set_config($newname, $value, 'quiz');
+                unset_config($name, 'quiz');
             }
-            $newname = substr($name,4).'_adv';
-            set_config($newname, $value, 'quiz');
-            unset_config($name, 'quiz');
         } 
         upgrade_main_savepoint($result, 2009063000);
     }

@@ -737,7 +737,6 @@ abstract class repository {
      */
     public static function move_to_filepool($path, $name, $itemid, $filearea = 'user_draft') {
         global $DB, $CFG, $USER, $OUTPUT;
-        $OUTPUT->initialise_deprecated_cfg_pixpath();
         $context = get_context_instance(CONTEXT_USER, $USER->id);
         $now = time();
         $entry = new object();
@@ -770,7 +769,7 @@ abstract class repository {
                 return array('url'=>$ret->get_url(),
                     'id'=>$file->get_itemid(),
                     'file'=>$file->get_filename(),
-                    'icon'=>$CFG->pixpath.'/f/'.mimeinfo('icon32', $path)
+                    'icon'=>$OUTPUT->old_icon_url('f/'. str_replace(array('.png', '.gif'), '', mimeinfo('icon32', $path)))
                 );
             } else {
                 return null;
@@ -897,7 +896,6 @@ abstract class repository {
      */
     public static function build_tree($fileinfo, $search, $dynamicmode, &$list) {
         global $CFG, $OUTPUT;
-        $OUTPUT->initialise_deprecated_cfg_pixpath();
 
         $filecount = 0;
         $children = $fileinfo->get_children();
@@ -924,7 +922,7 @@ abstract class repository {
                     'size' => 0,
                     'date' => $filedate,
                     'path' => array_reverse($path),
-                    'thumbnail' => $CFG->pixpath .'/f/folder-32.png'
+                    'thumbnail' => $OUTPUT->old_icon_url('f/folder-32')
                 );
 
                 //if ($dynamicmode && $child->is_writable()) {
@@ -962,7 +960,7 @@ abstract class repository {
                     'date' => $filedate,
                     //'source' => $child->get_url(),
                     'source' => base64_encode($source),
-                    'thumbnail' => $CFG->pixpath .'/f/'. mimeinfo('icon32', $filename)
+                    'thumbnail' => $OUTPUT->old_icon_url('f/'. str_replace(array('.gif', '.png'), '', mimeinfo('icon32', $filename)))
                 );
                 $filecount++;
             }
@@ -1763,7 +1761,7 @@ function repository_head_setup() {
  * @return array
  */
 function repository_get_client($context, $id = '',  $accepted_filetypes = '*', $returnvalue = '*') {
-    global $CFG, $USER, $PAGE;
+    global $CFG, $USER, $PAGE, $OUTPUT;
 
     $ft = new file_type_to_ext();
     $image_file_ext = json_encode($ft->get_file_ext(array('image')));
@@ -1819,6 +1817,13 @@ function repository_get_client($context, $id = '',  $accepted_filetypes = '*', $
         $options = array();
         $context = get_system_context();
         $options['contextid'] = $context->id;
+        $options['icons']['loading'] = $OUTPUT->old_icon_url('i/loading');
+        $options['icons']['progressbar'] = $OUTPUT->old_icon_url('i/progressbar');
+        $options['icons']['search'] = $OUTPUT->old_icon_url('a/search');
+        $options['icons']['refresh'] = $OUTPUT->old_icon_url('a/refresh');
+        $options['icons']['setting'] = $OUTPUT->old_icon_url('a/setting');
+        $options['icons']['logout'] = $OUTPUT->old_icon_url('a/logout');
+        $options['icons']['help'] = $OUTPUT->old_icon_url('a/help');
         $options = json_encode($options);
         // fp_config includes filepicker options
 

@@ -242,14 +242,12 @@
             $fromform->coursemodule = $cm->id;
         }
 
-        require_login($course); // needed to setup proper $COURSE
 
         if (!empty($fromform->coursemodule)) {
             $context = get_context_instance(CONTEXT_MODULE, $fromform->coursemodule);
         } else {
             $context = get_context_instance(CONTEXT_COURSE, $course->id);
         }
-        require_capability('moodle/course:manageactivities', $context);
 
         $fromform->course = $course->id;
         $fromform->modulename = clean_param($fromform->modulename, PARAM_SAFEDIR);  // For safety
@@ -558,7 +556,6 @@
         } else {
             $context = get_context_instance(CONTEXT_COURSE, $course->id);
         }
-        require_capability('moodle/course:manageactivities', $context);
 
         $streditinga = get_string('editinga', 'moodle', $fullmodulename);
         $strmodulenameplural = get_string('modulenameplural', $module->name);
@@ -581,7 +578,7 @@
             $currenttab = 'update';
             require($CFG->dirroot.'/'.$CFG->admin.'/roles/tabs.php');
         }
-        $icon = '<img src="'.$CFG->modpixpath.'/'.$module->name.'/icon.gif" alt=""/>';
+        $icon = '<img src="'.$OUTPUT->mod_icon_url('icon', $module->name) . '" alt=""/>';
 
         print_heading_with_help($pageheading, 'mods', $module->name, $icon);
         $mform->display();

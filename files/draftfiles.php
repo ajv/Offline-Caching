@@ -132,7 +132,7 @@ $strdelete   = get_string('delete');
 
 if ($parent) {
     echo '<div class="folder">';
-    echo '<a href="draftfiles.php?itemid='.$itemid.'&amp;filepath='.$parent->get_filepath().'&amp;subdirs='.$subdirs.'&amp;maxbytes='.$maxbytes.'"><img src="'.$CFG->pixpath.'/f/parent.gif" class="icon" alt="" />&nbsp;'.get_string('parentfolder').'</a>';
+    echo '<a href="draftfiles.php?itemid='.$itemid.'&amp;filepath='.$parent->get_filepath().'&amp;subdirs='.$subdirs.'&amp;maxbytes='.$maxbytes.'"><img src="'.$OUTPUT->old_icon_url('f/parent') . '" class="icon" alt="" />&nbsp;'.get_string('parentfolder').'</a>';
     echo '</div>';
 }
 
@@ -150,17 +150,17 @@ foreach ($files as $file) {
             $dirname = explode('/', trim($filepath, '/'));
             $dirname = array_pop($dirname);
             echo '<div class="folder">';
-            echo "<a href=\"draftfiles.php?itemid=$itemid&amp;filepath=$filepath&amp;subdirs=$subdirs&amp;maxbytes=$maxbytes\"><img src=\"$CFG->pixpath/f/folder.gif\" class=\"icon\" alt=\"$strfolder\" />&nbsp;".s($dirname)."</a> ";
-            echo "<a href=\"draftfiles.php?itemid=$itemid&amp;filepath=$filepath&amp;delete=$filenameurl&amp;subdirs=$subdirs&amp;maxbytes=$maxbytes\"><img src=\"$CFG->pixpath/t/delete.gif\" class=\"iconsmall\" alt=\"$strdelete\" /></a>";
+            echo "<a href=\"draftfiles.php?itemid=$itemid&amp;filepath=$filepath&amp;subdirs=$subdirs&amp;maxbytes=$maxbytes\"><img src=\"" . $OUTPUT->old_icon_url('f/folder') . "\" class=\"icon\" alt=\"$strfolder\" />&nbsp;".s($dirname)."</a> ";
+            echo "<a href=\"draftfiles.php?itemid=$itemid&amp;filepath=$filepath&amp;delete=$filenameurl&amp;subdirs=$subdirs&amp;maxbytes=$maxbytes\"><img src=\"" . $OUTPUT->old_icon_url('t/delete') . "\" class=\"iconsmall\" alt=\"$strdelete\" /></a>";
             echo '</div>';
         }
 
     } else {
-        $icon    = mimeinfo_from_type('icon', $mimetype);
+        $icon = str_replace(array('.gif', '.png'), '', mimeinfo_from_type('icon', $mimetype));
         $viewurl = file_encode_url("$CFG->wwwroot/draftfile.php", "/$contextid/user_draft/$itemid".$filepath.$filename, false, false);
         echo '<div class="file">';
-        echo "<a href=\"$viewurl\"><img src=\"$CFG->pixpath/f/$icon\" class=\"icon\" alt=\"$strfile\" />&nbsp;".s($filename)." ($filesize)</a> ";
-        echo "<a href=\"draftfiles.php?itemid=$itemid&amp;filepath=$filepath&amp;delete=$filenameurl&amp;subdirs=$subdirs&amp;maxbytes=$maxbytes\"><img src=\"$CFG->pixpath/t/delete.gif\" class=\"iconsmall\" alt=\"$strdelete\" /></a>";;
+        echo "<a href=\"$viewurl\"><img src=\"" . $OUTPUT->old_icon_url('f/' . $icon) . "\" class=\"icon\" alt=\"$strfile\" />&nbsp;".s($filename)." ($filesize)</a> ";
+        echo "<a href=\"draftfiles.php?itemid=$itemid&amp;filepath=$filepath&amp;delete=$filenameurl&amp;subdirs=$subdirs&amp;maxbytes=$maxbytes\"><img src=\"" . $OUTPUT->old_icon_url('t/delete') . "\" class=\"iconsmall\" alt=\"$strdelete\" /></a>";;
         echo '</div>';
     }
 }

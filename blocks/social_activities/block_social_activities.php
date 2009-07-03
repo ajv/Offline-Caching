@@ -11,7 +11,7 @@ class block_social_activities extends block_list {
     }
 
     function get_content() {
-        global $USER, $CFG, $DB;
+        global $USER, $CFG, $DB, $OUTPUT;
 
         if ($this->content !== NULL) {
             return $this->content;
@@ -52,9 +52,9 @@ class block_social_activities extends block_list {
                             ' href="'.$CFG->wwwroot.'/mod/'.$cm->modname.'/view.php?id='.$cm->id.'">'.$instancename.'</a>';
                         //Accessibility: incidental image - should be empty Alt text
                         if (!empty($cm->icon)) {
-                            $icon = $CFG->pixpath.'/'.$cm->icon;
+                            $icon = $OUTPUT->old_icon_url($cm->icon);
                         } else {
-                            $icon = $CFG->modpixpath.'/'.$cm->modname.'/icon.gif';
+                            $icon = $OUTPUT->mod_icon_url('icon', $cm->modname);
                         }
                         $this->content->icons[] = '<img src="'.$icon.'" class="icon" alt="" />';
                     }
@@ -89,7 +89,7 @@ class block_social_activities extends block_list {
         $editbuttons = '';
 
         if ($ismoving) {
-            $this->content->icons[] = '&nbsp;<img align="bottom" src="'.$CFG->pixpath.'/t/move.gif" class="iconsmall" alt="" />';
+            $this->content->icons[] = '&nbsp;<img align="bottom" src="'.$OUTPUT->old_icon_url('t/move') . '" class="iconsmall" alt="" />';
             $this->content->items[] = $USER->activitycopyname.'&nbsp;(<a href="'.$CFG->wwwroot.'/course/mod.php?cancelcopy=true&amp;sesskey='.sesskey().'">'.$strcancel.'</a>)';
         }
 
@@ -119,7 +119,7 @@ class block_social_activities extends block_list {
                             continue;
                         }
                         $this->content->items[] = '<a title="'.$strmovefull.'" href="'.$CFG->wwwroot.'/course/mod.php?moveto='.$mod->id.'&amp;sesskey='.sesskey().'">'.
-                            '<img style="height:16px; width:80px; border:0px" src="'.$CFG->pixpath.'/movehere.gif" alt="'.$strmovehere.'" /></a>';
+                            '<img style="height:16px; width:80px; border:0px" src="'.$OUTPUT->old_icon_url('movehere') . '" alt="'.$strmovehere.'" /></a>';
                         $this->content->icons[] = '';
                     }
                     $instancename = $modinfo->cms[$modnumber]->name;
@@ -131,9 +131,9 @@ class block_social_activities extends block_list {
                         $extra = '';
                     }
                     if (!empty($modinfo->cms[$modnumber]->icon)) {
-                        $icon = $CFG->pixpath.'/'.$modinfo->cms[$modnumber]->icon;
+                        $icon = $OUTPUT->old_icon_url($modinfo->cms[$modnumber]->icon);
                     } else {
-                        $icon = $CFG->modpixpath.'/'.$mod->modname.'/icon.gif';
+                        $icon = $OUTPUT->mod_icon_url('icon', $mod->modname);
                     }
 
                     if ($mod->modname == 'label') {
@@ -151,7 +151,7 @@ class block_social_activities extends block_list {
 
         if ($ismoving) {
             $this->content->items[] = '<a title="'.$strmovefull.'" href="'.$CFG->wwwroot.'/course/mod.php?movetosection='.$section->id.'&amp;sesskey='.sesskey().'">'.
-                                      '<img style="height:16px; width:80px; border:0px" src="'.$CFG->pixpath.'/movehere.gif" alt="'.$strmovehere.'" /></a>';
+                                      '<img style="height:16px; width:80px; border:0px" src="'.$OUTPUT->old_icon_url('movehere') . '" alt="'.$strmovehere.'" /></a>';
             $this->content->icons[] = '';
         }
 

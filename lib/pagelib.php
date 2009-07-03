@@ -133,6 +133,9 @@ class moodle_page {
      */
     protected $_wherethemewasinitialised = null;
 
+    /** @var xhtml_container_stack tracks XHTML tags on this page that have been opened but not closed. */
+    protected $_opencontainers;
+
     /**
      * Sets the page to refresh after a given delay (in seconds) using meta refresh
      * in {@link standard_head_html()} in outputlib.php
@@ -418,6 +421,18 @@ class moodle_page {
      */
     public function get_periodicrefreshdelay() {
         return $this->_periodicrefreshdelay;
+    }
+
+    /**
+     * Please do not call this method directly use the ->opencontainers syntax. {@link __get()}
+     * @return xhtml_container_stack tracks XHTML tags on this page that have been opened but not closed.
+     *      mainly for internal use by the rendering code.
+     */
+    public function get_opencontainers() {
+        if (is_null($this->_opencontainers)) {
+            $this->_opencontainers = new xhtml_container_stack();
+        }
+        return $this->_opencontainers;
     }
 
     /**
@@ -802,6 +817,8 @@ class moodle_page {
         $this->_theme = theme_config::load($themename);
         if ($this === $PAGE) {
             $THEME = $this->_theme;
+            // Support legacy code.
+            $this->_theme->setup_legacy_pix_paths();
         }
     }
 
@@ -838,26 +855,18 @@ class moodle_page {
     protected function starting_output() {
         global $SITE, $CFG;
 
-        if (during_initial_install()) {
-            $this->_course = new stdClass;
-            $this->_course->id = 1;
-            moodle_setlocale();
-            return;
-        }
-
-        if (!$this->_course) {
-            $this->set_course($SITE);
-        }
-
         $this->initialise_standard_body_classes();
-        $this->blocks->load_blocks();
+
+        if (!during_initial_install()) {
+            $this->blocks->load_blocks();
+        }
 
         // Add any stylesheets required using the horrible legacy mechanism.
         if (!empty($CFG->stylesheets)) {
             debugging('Some code on this page is using the horrible legacy mechanism $CFG->stylesheets to include links to ' .
                     'extra stylesheets. This is deprecated. Please use $PAGE->requires->css(...) instead.', DEBUG_DEVELOPER);
             foreach ($CFG->stylesheets as $stylesheet) {
-                $this->page->requires->css($stylesheet, true);
+                $this->requires->css($stylesheet, true);
             }
         }
 
@@ -879,7 +888,7 @@ class moodle_page {
     public function initialise_theme_and_output() {
         global $OUTPUT, $PAGE, $SITE, $THEME;
 
-        if (!$this->_course) {
+        if (!$this->_course && !during_initial_install()) {
             $this->set_course($SITE);
         }
 
@@ -893,14 +902,9 @@ class moodle_page {
 
         if ($this === $PAGE) {
             $THEME = $this->_theme;
-            $this->_theme->setup_cfg_paths();
-            if (CLI_SCRIPT) {
-                $classname = 'cli_renderer_factory';
-            } else {
-                $classname = $this->_theme->rendererfactory;
-            }
-            $rendererfactory = new $classname($this->_theme, $this);
-            $OUTPUT = $rendererfactory->get_renderer('core');
+            $OUTPUT = $this->_theme->get_renderer('core', $this);
+            // Support legacy code.
+            $this->_theme->setup_legacy_pix_paths();
         }
 
         $this->_wherethemewasinitialised = debug_backtrace();
@@ -1027,27 +1031,22 @@ class moodle_page {
         }
         $this->add_body_class($this->_legacyclass);
 
-        $this->add_body_class('course-' . $this->_course->id);
         $this->add_body_classes(get_browser_version_classes());
         $this->add_body_class('dir-' . get_string('thisdirection'));
         $this->add_body_class('lang-' . current_language());
         $this->add_body_class('yui-skin-sam'); // Make YUI happy, if it is used.
-
         $this->add_body_class($this->url_to_class_name($CFG->wwwroot));
 
-        $this->add_body_class('context-' . $this->context->id);
+        if (!during_initial_install()) {
+            $this->add_body_class('course-' . $this->_course->id);
+            $this->add_body_class('context-' . $this->context->id);
+        }
 
         if (!empty($this->_cm)) {
             $this->add_body_class('cmid-' . $this->_cm->id);
         }
 
-        $this->add_body_class('context-' . $this->context->id);
-
-        if (!empty($this->_cm)) {
-            $this->add_body_class('cmid-' . $this->_cm->id);
-        }
-
-        if ($CFG->allowcategorythemes) {
+        if (!empty($CFG->allowcategorythemes)) {
             $this->ensure_category_loaded();
             foreach ($this->_categories as $catid => $notused) {
                 $this->add_body_class('category-' . $catid);
