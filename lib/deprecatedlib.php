@@ -2159,7 +2159,7 @@ function print_header($title='', $heading='', $navigation='', $focus='',
         $PAGE->requires->js('lib/offline/gears_init.js');
         $PAGE->requires->js('lib/offline/go_offline.js');
         $PAGE->requires->js_function_call('init_offline');
-        $menu = '<span id="serverStatus"></span><span id="offline-message"></span><span id="offline-status"><a href="#" onclick="createStore()">'.get_string('gooffline').'</a></span>'.$menu;
+        $menu = '<span id="serverStatus"></span><span id="offline-message"></span><span id="offline-status"><a href="###" onclick="createStore()">'.get_string('gooffline').'</a></span>'.$menu;
 
     }
 	
