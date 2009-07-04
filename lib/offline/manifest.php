@@ -1,7 +1,10 @@
 <?php
 
 require_once('../../config.php');
-require_once('../../course/lib.php');
+require_once($CFG->dirroot .'/course/lib.php');
+
+//define('MOODLE_INTERNAL', FALSE);
+
 
 header('Content-type: text/plain');
 
@@ -12,7 +15,7 @@ header('Content-type: text/plain');
  * @uses $_SERVER
  * @param string The directory path
  * @return string[] The array of files in the directory
- */
+ */ 
 function get_files_from_dir($dir){
 	$handle = opendir($dir);
 	$files = array();
@@ -20,7 +23,7 @@ function get_files_from_dir($dir){
 	  if (!strchr($file,'.')) {
         $files = array_merge($files, get_files_from_dir($dir.'/'.$file));
 	  }
-      else if ($file != "." && $file != ".." && $file != ".DS_Store" && !strchr($file,'.php')) {
+      else if (strpos($file,'.') != 0 && !strchr($file,'.php')) {
 	    $files[] = $dir.'/'.$file;
 	  }
 	}
@@ -43,36 +46,32 @@ while (false !== ($file = readdir($handle))) {
 // Include homepage, static files and accessible course pages
 $files = array(
 	'.',
-	$CFG->httpswwwroot.'/',
-	$CFG->httpswwwroot.'/index.php',
-	$CFG->httpswwwroot.'/lib/javascript-static.js',
-	$CFG->httpswwwroot.'/lib/javascript-mod.php',
-	$CFG->httpswwwroot.'/lib/overlib/overlib.js',
-	$CFG->httpswwwroot.'/lib/overlib/overlib_cssstyle.js',
-	$CFG->httpswwwroot.'/lib/cookies.js',
-	$CFG->httpswwwroot.'/lib/ufo.js',
-	$CFG->httpswwwroot.'/lib/dropdown.js',
-	$CFG->httpswwwroot.'/lib/offline/go_offline.js',
-	$CFG->httpswwwroot.'/lib/offline/gears_init.js',
+	$CFG->wwwroot.'/',
+	$CFG->wwwroot.'/index.php',
+	$CFG->wwwroot.'/lib/javascript-static.js',
+	$CFG->wwwroot.'/lib/javascript-mod.php',
+	$CFG->wwwroot.'/lib/overlib/overlib.js',
+	$CFG->wwwroot.'/lib/overlib/overlib_cssstyle.js',
+	$CFG->wwwroot.'/lib/cookies.js',
+	$CFG->wwwroot.'/lib/ufo.js',
+	$CFG->wwwroot.'/lib/dropdown.js',
+	$CFG->wwwroot.'/lib/offline/go_offline.js',
+	$CFG->wwwroot.'/lib/offline/gears_init.js',
   );
 
-$usehttps = (int)($CFG->httpswwwroot !== $CFG->wwwroot); 
-$files[] = $CFG->httpswwwroot.'/lib/editor/tinymce/extra/tinymce.js.php?elanguage='.current_language().'&etheme='.current_theme().'&eusehttps='.$usehttps;
+//$use = (int)($CFG->wwwroot !== $CFG->wwwroot); 
+//$files[] = $CFG->wwwroot.'/lib/editor/tinymce/extra/tinymce.js.php?elanguage='.current_language().'&etheme='.current_theme().'&euse='.$use;
 
 $tinymcefiles = get_files_from_dir($CFG->dirroot.'/lib/editor/tinymce');
-$tinymcefiles = str_replace($CFG->libdir.'/editor/tinymce', $CFG->httpswwwroot.'/lib/editor/tinymce', $tinymcefiles);
+$tinymcefiles = str_replace($CFG->dirroot.'/lib/editor/tinymce', $CFG->wwwroot.'/lib/editor/tinymce', $tinymcefiles);
 $yuifiles = get_files_from_dir($CFG->dirroot.'/lib/yui');
-$yuifiles = str_replace($CFG->libdir.'/yui', $CFG->httpswwwroot.'/lib/yui', $yuifiles);
+$yuifiles = str_replace($CFG->dirroot.'/lib/yui', $CFG->wwwroot.'/lib/yui', $yuifiles);
 $pixfiles = get_files_from_dir($CFG->dirroot.'/pix');
-$pixfiles = str_replace($CFG->dirroot,$CFG->httpswwwroot,$pixfiles);
+$pixfiles = str_replace($CFG->dirroot,$CFG->wwwroot,$pixfiles);
 $themefiles = get_files_from_dir($CFG->dirroot.'/theme/'.current_theme());
 $themefiles = str_replace($CFG->dirroot.'/theme',$CFG->themewww,$themefiles);
 
-ob_start();
-style_sheet_setup();
-ob_end_clean();
-
-$files = array_merge($files, $tinymcefiles, $yuifiles, $pixfiles, $themefiles, $CFG->stylesheets);
+$files = array_merge($files, $tinymcefiles, $yuifiles, $pixfiles, $themefiles, $THEME->get_stylesheet_urls());
 
 // accessible courses if logged in as admin
 if (isloggedin() and !has_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM)) and !isguest() and empty($CFG->disablemycourses)) {
@@ -99,11 +98,9 @@ foreach ($courses as $course) {
 	/*	foreach(get_list_of_plugins() as $module){
 			$files[] = $CFG->wwwroot.'/mod/'.$module.'/index.php?id='.$course->id;
 		}
-	*/
+	*/ 
     }
 }
-
-
 
 
 $entries = array();
