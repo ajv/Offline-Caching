@@ -62,6 +62,11 @@ $files = array(
 //$use = (int)($CFG->wwwroot !== $CFG->wwwroot); 
 //$files[] = $CFG->wwwroot.'/lib/editor/tinymce/extra/tinymce.js.php?elanguage='.current_language().'&etheme='.current_theme().'&euse='.$use;
 
+foreach(get_list_of_plugins() as $module){
+    $files[] = $OUTPUT->mod_icon_url('icon', $module);
+}
+
+
 $tinymcefiles = get_files_from_dir($CFG->dirroot.'/lib/editor/tinymce');
 $tinymcefiles = str_replace($CFG->dirroot.'/lib/editor/tinymce', $CFG->wwwroot.'/lib/editor/tinymce', $tinymcefiles);
 $yuifiles = get_files_from_dir($CFG->dirroot.'/lib/yui');
@@ -95,10 +100,9 @@ foreach ($courses as $course) {
     if ($course->visible == 1
         || has_capability('moodle/course:viewhiddencourses',$course->context)) {
         $files[] = $CFG->wwwroot.'/course/view.php?id='.$course->id;
-	/*	foreach(get_list_of_plugins() as $module){
+		foreach(get_list_of_plugins() as $module){
 			$files[] = $CFG->wwwroot.'/mod/'.$module.'/index.php?id='.$course->id;
-		}
-	*/ 
+		}	 
     }
 }
 
