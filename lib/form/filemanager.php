@@ -94,43 +94,41 @@ class MoodleQuickForm_filemanager extends HTML_QuickForm_element {
     }
 
     function _get_draftfiles($draftid, $suffix) {
-        global $USER, $OUTPUT;
-        $html = '';
-        if (!$context = get_context_instance(CONTEXT_USER, $USER->id)) {
-        }
-        $contextid = $context->id;
-        $filearea  = 'user_draft';
+        global $USER, $OUTPUT, $CFG;
 
-        $browser = get_file_browser();
-        $fs      = get_file_storage();
-        $filepath = '/';
-        if (!$directory = $fs->get_file($context->id, 'user_draft', $draftid, $filepath, '.')) {
-            $directory = new virtual_root_file($context->id, 'user_draft', $draftid);
-            $filepath = $directory->get_filepath();
+        $context = get_context_instance(CONTEXT_USER, $USER->id);
+        $fs = get_file_storage();
+
+        $html = '<ul class="file-list" id="draftfiles-'.$suffix.'">';
+
+        if ($files = $fs->get_directory_files($context->id, 'user_draft', $draftid, '/', true)) {
+            foreach ($files as $file) {
+                if ($file->is_directory()) {
+                    continue;
+                }
+                $filename = $file->get_filename();
+                $filepath = $file->get_filepath();
+                $fullname = ltrim($filepath.$filename, '/');
+                $filesize = $file->get_filesize();
+                $filesize = $filesize ? display_size($filesize) : '';
+                $icon     = mimeinfo_from_type('icon', $file->get_mimetype());
+                $icon     = str_replace('.gif', '', $icon); //TODO: temp icon fix
+                $viewurl  = file_encode_url("$CFG->wwwroot/draftfile.php", "/$context->id/user_draft/$draftid".$fullname, false, false);
+                $html .= '<li>';
+                $html .= "<a href=\"$viewurl\"><img src=\"" . $OUTPUT->old_icon_url('f/' . $icon) . "\" class=\"icon\" />&nbsp;".s($fullname)." ($filesize)</a> ";
+                // TODO: maybe better use file->id here - but then make 100% it is from my own draftfiles ;-)
+                //       anyway this does not work for subdirectories
+                $html .= "<a href=\"###\" onclick='rm_file(".$file->get_itemid().", \"".addslashes_js($fullname)."\", this)'><img src=\"" . $OUTPUT->old_icon_url('t/delete') . "\" class=\"iconsmall\" /></a>";;
+                $html .= '</li>';
+            }
         }
-        $files = $fs->get_directory_files($context->id, 'user_draft', $draftid, $directory->get_filepath());
-        $parent = $directory->get_parent_directory();
-        $html .= '<ul class="file-list" id="draftfiles-'.$suffix.'">';
-        foreach ($files as $file) {
-            $filename    = $file->get_filename();
-            $filenameurl = rawurlencode($filename);
-            $filepath    = $file->get_filepath();
-            $filesize    = $file->get_filesize();
-            $filesize    = $filesize ? display_size($filesize) : '';
-            $mimetype = $file->get_mimetype();
-            $icon    = mimeinfo_from_type('icon', $mimetype);
-            $viewurl = file_encode_url("$CFG->wwwroot/draftfile.php", "/$contextid/user_draft/$draftid".$filepath.$filename, false, false);
-            $html .= '<li>';
-            $html .= "<a href=\"$viewurl\"><img src=\"" . $OUTPUT->old_icon_url('f/' . $icon) . "\" class=\"icon\" />&nbsp;".s($filename)." ($filesize)</a> ";
-            $html .= "<a href=\"###\" onclick='rm_file(".$file->get_itemid().", \"".$filename."\", this)'><img src=\"" . $OUTPUT->old_icon_url('t/delete') . "\" class=\"iconsmall\" /></a>";;
-            $html .= '</li>';
-        }
+        
         $html .= '</ul>';
         return $html;
     }
 
     function toHtml() {
-        global $CFG, $USER, $COURSE, $OUTPUT;
+        global $CFG, $USER, $COURSE, $PAGE, $OUTPUT;
         require_once("$CFG->dirroot/repository/lib.php");
 
         $strdelete  = get_string('confirmdeletefile', 'repository');
@@ -176,64 +174,17 @@ class MoodleQuickForm_filemanager extends HTML_QuickForm_element {
         $str .= <<<EOD
 <input value="$draftitemid" name="{$this->_attributes['name']}" type="hidden" />
 <a href="###" id="btnadd-{$client_id}" style="display:none" class="btnaddfile" onclick="return callpicker('$id', '$client_id', '$draftitemid')">$straddfile</a>
-<script type="text/javascript">
-//<![CDATA[
-document.getElementById('btnadd-{$client_id}').style.display="inline";
-//]]>
-</script>
 EOD;
+        $PAGE->requires->yui_lib('dom');
+        $PAGE->requires->js_function_call('YAHOO.util.Dom.setStyle', Array("btnadd-{$client_id}", 'display', 'inline'));
         if (empty($CFG->filemanagerjsloaded)) {
-            $str .= <<<EOD
-<script type="text/javascript">
-//<![CDATA[
-var selected_file = null;
-var rm_cb = {
-    success: function(o) {
-        if(o.responseText){
-            repository_client.files[o.responseText]--;
-            selected_file.parentNode.removeChild(selected_file);
-        }
-    }
-}
-function rm_file(id, name, context) {
-    if (confirm('$strdelete')) {
-        var trans = YAHOO.util.Connect.asyncRequest('POST',
-            '{$CFG->httpswwwroot}/repository/ws.php?action=delete&itemid='+id,
-                rm_cb,
-                'title='+name+'&client_id=$client_id'
-                );
-        selected_file = context.parentNode;
-    }
-}
-function fp_callback(obj) {
-    var list = document.getElementById('draftfiles-'+obj.client_id);
-    var html = '<li><a href="'+obj['url']+'"><img src="'+obj['icon']+'" class="icon" /> '+obj['file']+'</a> ';
-    html += '<a href="###" onclick=\'rm_file('+obj['id']+', "'+obj['file']+'", this)\'><img src="{$OUTPUT->old_icon_url('t/delete')}" class="iconsmall" /></a>';;
-    html += '</li>';
-    list.innerHTML += html;
-}
-function callpicker(el_id, client_id, itemid) {
-    var picker = document.createElement('DIV');
-    picker.id = 'file-picker-'+client_id;
-    picker.className = 'file-picker';
-    document.body.appendChild(picker);
-    var el=document.getElementById(el_id);
-    var params = {};
-    params.env = 'filemanager';
-    params.maxbytes = {$this->_options['maxbytes']};
-    params.maxfiles = {$this->_options['maxfiles']};
-    params.itemid = itemid;
-    params.target = el;
-    params.callback = fp_callback;
-    var fp = open_filepicker(client_id, params);
-    return false;
-}
-//]]>
-</script>
-<noscript>
-<object type="text/html" data="{$CFG->httpswwwroot}/repository/filepicker.php?action=embedded&amp;itemid={$draftitemid}&amp;ctx_id=$context->id" height="300" width="800" style="border:1px solid #000">Error</object>
-</noscript>
-EOD;
+            $jsvars = Array('clientid'   => $client_id,
+                            'strdelete'  => $strdelete,
+                            'maxbytes'   => $this->_options['maxbytes'],
+                            'maxfiles'   => $this->_options['maxfiles'],
+                            'deleteicon' => $OUTPUT->old_icon_url('t/delete'));
+            $str .= $PAGE->requires->data_for_js('filemanager', $jsvars)->asap();
+            $str .= $PAGE->requires->js('lib/form/filemanager.js')->asap();
             $CFG->filemanagerjsloaded = true;
         }
         return $str;
