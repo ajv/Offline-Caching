@@ -3,9 +3,6 @@
 require_once('../../config.php');
 require_once($CFG->dirroot .'/course/lib.php');
 
-//define('MOODLE_INTERNAL', FALSE);
-
-
 header('Content-type: text/plain');
 
 /**
