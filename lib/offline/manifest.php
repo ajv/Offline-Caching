@@ -2,6 +2,8 @@
 
 require_once('../../config.php');
 require_once($CFG->dirroot .'/course/lib.php');
+require_once($CFG->dirroot . '/mod/forum/lib.php');
+//require_once($CFG->libdir . '/rsslib.php');
 
 header('Content-type: text/plain');
 
@@ -13,12 +15,12 @@ header('Content-type: text/plain');
  * @param string The directory path
  * @return string[] The array of files in the directory
  */ 
-function get_files_from_dir($dir){
+function manifest_get_files_from_dir($dir){
 	$handle = opendir($dir);
 	$files = array();
 	while (false !== ($file = readdir($handle))) {
 	  if (!strchr($file,'.')) {
-        $files = array_merge($files, get_files_from_dir($dir.'/'.$file));
+        $files = array_merge($files, manifest_get_files_from_dir($dir.'/'.$file));
 	  }
       else if (strpos($file,'.') != 0 && !strchr($file,'.php')) {
 	    $files[] = $dir.'/'.$file;
@@ -64,13 +66,13 @@ foreach(get_list_of_plugins() as $module){
 }
 
 
-$tinymcefiles = get_files_from_dir($CFG->dirroot.'/lib/editor/tinymce');
+$tinymcefiles = manifest_get_files_from_dir($CFG->dirroot.'/lib/editor/tinymce');
 $tinymcefiles = str_replace($CFG->dirroot.'/lib/editor/tinymce', $CFG->wwwroot.'/lib/editor/tinymce', $tinymcefiles);
-$yuifiles = get_files_from_dir($CFG->dirroot.'/lib/yui');
+$yuifiles = manifest_get_files_from_dir($CFG->dirroot.'/lib/yui');
 $yuifiles = str_replace($CFG->dirroot.'/lib/yui', $CFG->wwwroot.'/lib/yui', $yuifiles);
-$pixfiles = get_files_from_dir($CFG->dirroot.'/pix');
+$pixfiles = manifest_get_files_from_dir($CFG->dirroot.'/pix');
 $pixfiles = str_replace($CFG->dirroot,$CFG->wwwroot,$pixfiles);
-$themefiles = get_files_from_dir($CFG->dirroot.'/theme/'.current_theme());
+$themefiles = manifest_get_files_from_dir($CFG->dirroot.'/theme/'.current_theme());
 $themefiles = str_replace($CFG->dirroot.'/theme',$CFG->themewww,$themefiles);
 
 $files = array_merge($files, $tinymcefiles, $yuifiles, $pixfiles, $themefiles, $THEME->get_stylesheet_urls());
@@ -97,11 +99,37 @@ foreach ($courses as $course) {
     if ($course->visible == 1
         || has_capability('moodle/course:viewhiddencourses',$course->context)) {
         $files[] = $CFG->wwwroot.'/course/view.php?id='.$course->id;
+		
+		//Get all the module main pages
 		foreach(get_list_of_plugins() as $module){
-			$files[] = $CFG->wwwroot.'/mod/'.$module.'/index.php?id='.$course->id;
-		}	 
-    }
+			if($module != 'label') {
+				$files[] = $CFG->wwwroot.'/mod/'.$module.'/index.php?id='.$course->id;
+			}
+		}
+		
+		//Get all the relevant forums
+		$forums = forum_get_readable_forums($USER->id, $course->id);
+		foreach ($forums as $forum) {
+	        $files[] = $CFG->wwwroot.'/mod/forum/view.php?f='.$forum->id;
+    	}
+		$modinfo =& get_fast_modinfo($COURSE);
+	    get_all_mods($course->id, $mods, $modnames, $modnamesplural, $modnamesused);
+		foreach($mods as $mod) {
+	        if ($mod->modname == 'forum') {
+	            $files[] = $CFG->wwwroot.'/mod/forum/view.php?id='.$mod->id;
+				$cm = get_coursemodule_from_id('forum', $mod->id);
+				$discussions = forum_get_discussions($cm);
+				foreach($discussions as $d){ 
+					//print_r($discussion);
+					$files[] = $CFG->wwwroot.'/mod/forum/discuss.php?d='.$d->discussion;
+				}				
+	        }
+	    }
+
+
+	}
 }
+
 
 
 $entries = array();
