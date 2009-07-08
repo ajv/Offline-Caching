@@ -59,9 +59,10 @@ interface renderer_factory {
      *
      * @param string $component name such as 'core', 'mod_forum' or 'qtype_multichoice'.
      * @param moodle_page $page the page the renderer is outputting content for.
+     * @param string $subtype optional subtype such as 'news' resulting to 'mod_forum_news'
      * @return object an object implementing the requested renderer interface.
      */
-    public function get_renderer($component, $page);
+    public function get_renderer($component, $page, $subtype=null);
 }
 
 
@@ -431,8 +432,9 @@ class theme_config {
      * @param string $module the name of part of moodle. E.g. 'core', 'quiz', 'qtype_multichoice'.
      * @param moodle_page $page the page we are rendering
      * @return moodle_renderer_base the requested renderer.
+     * @param string $subtype optional subtype such as 'news' resulting to 'mod_forum_news'
      */
-    public function get_renderer($module, $page) {
+    public function get_renderer($module, $page, $subtype=null) {
         if (is_null($this->rf)) {
             if (CLI_SCRIPT) {
                 $classname = 'cli_renderer_factory';
@@ -442,7 +444,7 @@ class theme_config {
             $this->rf = new $classname($this);
         }
 
-        return $this->rf->get_renderer($module, $page);
+        return $this->rf->get_renderer($module, $page, $subtype);
     }
 
     /**
@@ -882,16 +884,21 @@ abstract class renderer_factory_base implements renderer_factory {
      * the class definition of the default renderer has been loaded.
      *
      * @param string $component name such as 'core', 'mod_forum' or 'qtype_multichoice'.
+     * @param string $subtype optional subtype such as 'news' resulting to 'mod_forum_news'
      * @return string the name of the standard renderer class for that module.
      */
-    protected function standard_renderer_class_for_module($component) {
+    protected function standard_renderer_class_for_module($component, $subtype=null) {
         if ($component != 'core') {
             $pluginrenderer = get_component_directory($component) . '/renderer.php';
             if (file_exists($pluginrenderer)) {
                 include_once($pluginrenderer);
             }
         }
-        $class = 'moodle_' . $component . '_renderer';
+        if (is_null($subtype)) {
+            $class = 'moodle_' . $component . '_renderer';
+        } else {
+            $class = 'moodle_' . $component . '_' . $subtype . '_renderer';
+        }
         if (!class_exists($class)) {
             throw new coding_exception('Request for an unknown renderer class ' . $class);
         }
@@ -910,11 +917,11 @@ abstract class renderer_factory_base implements renderer_factory {
  */
 class standard_renderer_factory extends renderer_factory_base {
     /* Implement the subclass method. */
-    public function get_renderer($module, $page) {
+    public function get_renderer($module, $page, $subtype=null) {
         if ($module == 'core') {
             return new moodle_core_renderer($page);
         } else {
-            $class = $this->standard_renderer_class_for_module($module);
+            $class = $this->standard_renderer_class_for_module($module, $subtype);
             return new $class($page, $this->get_renderer('core', $page));
         }
     }
@@ -930,11 +937,11 @@ class standard_renderer_factory extends renderer_factory_base {
  */
 class cli_renderer_factory extends standard_renderer_factory {
     /* Implement the subclass method. */
-    public function get_renderer($module, $page) {
+    public function get_renderer($module, $page, $subtype=null) {
         if ($module == 'core') {
             return new cli_core_renderer($page);
         } else {
-            parent::get_renderer($module, $page);
+            parent::get_renderer($module, $page, $subtype);
         }
     }
 }
@@ -984,9 +991,13 @@ class theme_overridden_renderer_factory extends standard_renderer_factory {
     }
 
     /* Implement the subclass method. */
-    public function get_renderer($module, $page) {
+    public function get_renderer($module, $page, $subtype=null) {
         foreach ($this->prefixes as $prefix) {
-            $classname = $prefix . $module . '_renderer';
+            if (is_null($subtype)) {
+                $classname = $prefix . $module . '_renderer';
+            } else {
+                $classname = $prefix . $module . '_' . $subtype . '_renderer';
+            }
             if (class_exists($classname)) {
                 if ($module == 'core') {
                     return new $classname($page);
@@ -995,7 +1006,7 @@ class theme_overridden_renderer_factory extends standard_renderer_factory {
                 }
             }
         }
-        return parent::get_renderer($module, $page);
+        return parent::get_renderer($module, $page, $subtype);
     }
 }
 
@@ -1057,18 +1068,21 @@ class template_renderer_factory extends renderer_factory_base {
     }
 
     /* Implement the subclass method. */
-    public function get_renderer($module, $page) {
+    public function get_renderer($module, $page, $subtype=null) {
         // Refine the list of search paths for this module.
         $searchpaths = array();
         foreach ($this->searchpaths as $rootpath) {
             $path = $rootpath . '/' . $module;
+            if (!is_null($subtype)) { 
+                $path .= '/' . $subtype; 
+            }
             if (is_dir($path)) {
                 $searchpaths[] = $path;
             }
         }
 
         // Create a template_renderer that copies the API of the standard renderer.
-        $copiedclass = $this->standard_renderer_class_for_module($module);
+        $copiedclass = $this->standard_renderer_class_for_module($module, $subtype);
         return new template_renderer($copiedclass, $searchpaths, $page);
     }
 }
@@ -1569,17 +1583,18 @@ class moodle_core_renderer extends moodle_renderer_base {
         $this->page->requires->js('lib/overlib/overlib.js')->in_head();
         $this->page->requires->js('lib/overlib/overlib_cssstyle.js')->in_head();
         $this->page->requires->js('lib/cookies.js')->in_head();
-        $this->page->requires->js('lib/ufo.js')->in_head();
-        $this->page->requires->js('lib/dropdown.js')->in_head();
         $this->page->requires->js_function_call('setTimeout', Array('fix_column_widths()', 20));
 
         $focus = $this->page->focuscontrol;
         if (!empty($focus)) {
-            $pos = strpos($focus, '.');
-            if($pos !== false) {
+            if(preg_match("#forms\['([a-zA-Z0-9]+)'\].elements\['([a-zA-Z0-9]+)'\]#", $focus, $matches)) {
+                // This is a horrifically bad way to handle focus but it is passed in
+                // through messy formslib::moodleform
+                $this->page->requires->js_function_call('old_onload_focus', Array($matches[1], $matches[2]));
+            } else if (strpos($focus, '.')!==false) {
                 // Old style of focus, bad way to do it
-                debugging('This code is using the old style focus event, Please update this code to focus on an element id', DEBUG_DEVELOPER);
-                $this->page->requires->js_function_call('old_onload_focus', Array(substr($focus, 0, $pos), substr($focus, $pos)));
+                debugging('This code is using the old style focus event, Please update this code to focus on an element id or the moodleform focus method.', DEBUG_DEVELOPER);
+                $this->page->requires->js_function_call('old_onload_focus', explode('.', $focus, 2));
             } else {
                 // Focus element with given id
                 $this->page->requires->js_function_call('focuscontrol', Array($focus));
