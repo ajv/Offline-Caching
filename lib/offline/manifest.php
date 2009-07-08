@@ -32,8 +32,7 @@ function manifest_get_files_from_dir($dir){
  *
  * @return object The list of links and names
  */
-function getLinks($link) {
-    
+function manifest_get_page_links($link) {
     $ret = array();
     $dom = new domDocument;
 
@@ -41,11 +40,9 @@ function getLinks($link) {
     $dom->preserveWhiteSpace = false;
     $links = $dom->getElementsByTagName('a');
 
-    foreach ($links as $tag)
-    {
+    foreach ($links as $tag) {
         $ret[$tag->getAttribute('href')] = $tag->childNodes->item(0)->nodeValue;
     }
-
     return $ret;
 }
 
@@ -95,7 +92,7 @@ $themefiles = str_replace($CFG->dirroot.'/theme',$CFG->themewww,$themefiles);
 
 $files = array_merge($files, $tinymcefiles, $yuifiles, $pixfiles, $themefiles, $THEME->get_stylesheet_urls());
 
-// accessible courses if logged in as admin
+// get all accessible courses
 if (isloggedin() and !has_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM)) and !isguest() and empty($CFG->disablemycourses)) {
     $courses  = get_my_courses($USER->id, 'visible DESC,sortorder ASC', array('summary'));
 } else if ((!has_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM)) and !isguest()) or ($DB->count_records('course') <= FRONTPAGECOURSELIMIT)) {
@@ -113,7 +110,7 @@ if (isloggedin() and !has_capability('moodle/site:config', get_context_instance(
     unset($categories);
 }
 
-// all visible courses
+// make sure the course is visible and retrieve other modules and main course pages
 foreach ($courses as $course) {
     if ($course->visible == 1
         || has_capability('moodle/course:viewhiddencourses',$course->context)) {
@@ -143,14 +140,13 @@ foreach ($courses as $course) {
                 }               
             }
         }
-
-
     }
 }
 
 
 
 $entries = array();
+$files = str_replace('&amp;','&', $files);
 foreach ($files as $file) {
     /*if(strchr($file,'php') || strchr($file,'htm')){
         $links = getLinks($file);
