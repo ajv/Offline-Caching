@@ -2162,21 +2162,22 @@ function print_header($title='', $heading='', $navigation='', $focus='',
     // TODO $navigation
     // TODO $menu
 
-	$gears = TRUE;
-	if($gears && isloggedin()){
+    $gears = TRUE;
+    if($gears && isloggedin()){
         $lang_string = array();
         $lang_string['gooffline'] = get_string('gooffline');
         $lang_string['goonline'] = get_string('goonline');
         $lang_string['pleasewait'] = get_string('pleasewait');
         $PAGE->requires->data_for_js('js_lang_string', $lang_string);
-
         $PAGE->requires->js('lib/offline/gears_init.js');
         $PAGE->requires->js('lib/offline/go_offline.js');
         $PAGE->requires->js_function_call('init_offline');
-        $menu = '<span id="serverStatus"></span><span id="offline-message"></span><span id="offline-status"><a href="###" onclick="createStore()">'.get_string('gooffline').'</a></span>'.$menu;
-
+        $menu = '<span id="offline-message"></span><span id="offline-status"><a href="###" onclick="createStore()">'.get_string('gooffline').'</a></span>'.$menu;
+        if(debugging()) {
+            //$menu = '<span id="serverStatus"></span><span id="pings"></span>'.$menu;
+        }
     }
-	
+    
     if ($meta) {
         throw new coding_exception('The $meta parameter to print_header is no longer supported. '.
                 'You should be able to do everything you want with $PAGE->requires and other such mechanisms.');
@@ -2188,7 +2189,7 @@ function print_header($title='', $heading='', $navigation='', $focus='',
         throw new coding_exception('The $bodytags parameter to print_header is no longer supported.');
     }
 
-	$output = $OUTPUT->header($navigation, $menu);
+    $output = $OUTPUT->header($navigation, $menu);
 
     if ($return) {
         return $output;

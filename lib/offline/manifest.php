@@ -3,7 +3,6 @@
 require_once('../../config.php');
 require_once($CFG->dirroot .'/course/lib.php');
 require_once($CFG->dirroot . '/mod/forum/lib.php');
-//require_once($CFG->libdir . '/rsslib.php');
 
 header('Content-type: text/plain');
 
@@ -11,55 +10,74 @@ header('Content-type: text/plain');
  * Retrieve recursively all the files in a directory, except
  * .php and system files
  *
- * @uses $_SERVER
  * @param string The directory path
  * @return string[] The array of files in the directory
  */ 
 function manifest_get_files_from_dir($dir){
-	$handle = opendir($dir);
-	$files = array();
-	while (false !== ($file = readdir($handle))) {
-	  if (!strchr($file,'.')) {
+    $handle = opendir($dir);
+    $files = array();
+    while (false !== ($file = readdir($handle))) {
+      if (!strchr($file,'.')) {
         $files = array_merge($files, manifest_get_files_from_dir($dir.'/'.$file));
-	  }
+      }
       else if (strpos($file,'.') != 0 && !strchr($file,'.php')) {
-	    $files[] = $dir.'/'.$file;
-	  }
-	}
-	return $files;
+        $files[] = $dir.'/'.$file;
+      }
+    }
+    return $files;
 }
+
+/**
+ * Get all the links in a given URL
+ *
+ * @return object The list of links and names
+ */
+function getLinks($link) {
+    
+    $ret = array();
+    $dom = new domDocument;
+
+    @$dom->loadHTML(file_get_contents($link));
+    $dom->preserveWhiteSpace = false;
+    $links = $dom->getElementsByTagName('a');
+
+    foreach ($links as $tag)
+    {
+        $ret[$tag->getAttribute('href')] = $tag->childNodes->item(0)->nodeValue;
+    }
+
+    return $ret;
+}
+
 
 // Determine the manifest version
 $version = 0;
 $dir = dirname($_SERVER['SCRIPT_FILENAME']);
 $handle = opendir($dir);
 while (false !== ($file = readdir($handle))) {
-  	if (file_exists("$dir/$file")) {
-    	$v = filemtime("$dir/$file");
-    	if ($v > $version) {
-      		$version = $v;
-    	}
-  	}
+    if (file_exists("$dir/$file")) {
+        $v = filemtime("$dir/$file");
+        if ($v > $version) {
+            $version = $v;
+        }
+    }
 }
 
 // Include homepage, static files and accessible course pages
 $files = array(
-	'.',
-	$CFG->wwwroot.'/',
-	$CFG->wwwroot.'/index.php',
-	$CFG->wwwroot.'/lib/javascript-static.js',
-	$CFG->wwwroot.'/lib/javascript-mod.php',
-	$CFG->wwwroot.'/lib/overlib/overlib.js',
-	$CFG->wwwroot.'/lib/overlib/overlib_cssstyle.js',
-	$CFG->wwwroot.'/lib/cookies.js',
-	$CFG->wwwroot.'/lib/ufo.js',
-	$CFG->wwwroot.'/lib/dropdown.js',
-	$CFG->wwwroot.'/lib/offline/go_offline.js',
-	$CFG->wwwroot.'/lib/offline/gears_init.js',
+    '.',
+    $CFG->wwwroot.'/',
+    $CFG->wwwroot.'/index.php',
+    $CFG->wwwroot.'/lib/javascript-static.js',
+    $CFG->wwwroot.'/lib/javascript-mod.php',
+    $CFG->wwwroot.'/lib/overlib/overlib.js',
+    $CFG->wwwroot.'/lib/overlib/overlib_cssstyle.js',
+    $CFG->wwwroot.'/lib/cookies.js',
+    $CFG->wwwroot.'/lib/ufo.js',
+    $CFG->wwwroot.'/lib/dropdown.js',
+    $CFG->wwwroot.'/lib/offline/go_offline.js',
+    $CFG->wwwroot.'/lib/offline/gears_init.js',
   );
-
-//$use = (int)($CFG->wwwroot !== $CFG->wwwroot); 
-//$files[] = $CFG->wwwroot.'/lib/editor/tinymce/extra/tinymce.js.php?elanguage='.current_language().'&etheme='.current_theme().'&euse='.$use;
 
 foreach(get_list_of_plugins() as $module){
     $files[] = $OUTPUT->mod_icon_url('icon', $module);
@@ -94,47 +112,56 @@ if (isloggedin() and !has_capability('moodle/site:config', get_context_instance(
     }
     unset($categories);
 }
+
 // all visible courses
 foreach ($courses as $course) {
     if ($course->visible == 1
         || has_capability('moodle/course:viewhiddencourses',$course->context)) {
         $files[] = $CFG->wwwroot.'/course/view.php?id='.$course->id;
-		
-		//Get all the module main pages
-		foreach(get_list_of_plugins() as $module){
-			if($module != 'label') {
-				$files[] = $CFG->wwwroot.'/mod/'.$module.'/index.php?id='.$course->id;
-			}
-		}
-		
-		//Get all the relevant forums
-		$forums = forum_get_readable_forums($USER->id, $course->id);
-		foreach ($forums as $forum) {
-	        $files[] = $CFG->wwwroot.'/mod/forum/view.php?f='.$forum->id;
-    	}
-		$modinfo =& get_fast_modinfo($COURSE);
-	    get_all_mods($course->id, $mods, $modnames, $modnamesplural, $modnamesused);
-		foreach($mods as $mod) {
-	        if ($mod->modname == 'forum') {
-	            $files[] = $CFG->wwwroot.'/mod/forum/view.php?id='.$mod->id;
-				$cm = get_coursemodule_from_id('forum', $mod->id);
-				$discussions = forum_get_discussions($cm);
-				foreach($discussions as $d){ 
-					//print_r($discussion);
-					$files[] = $CFG->wwwroot.'/mod/forum/discuss.php?d='.$d->discussion;
-				}				
-	        }
-	    }
+        
+        //Get all the module main pages
+        foreach(get_list_of_plugins() as $module){
+            if($module != 'label') {
+                $files[] = $CFG->wwwroot.'/mod/'.$module.'/index.php?id='.$course->id;
+            }
+        }
+        
+        //Get all the relevant forums
+        $forums = forum_get_readable_forums($USER->id, $course->id);
+        foreach ($forums as $forum) {
+            $files[] = $CFG->wwwroot.'/mod/forum/view.php?f='.$forum->id;
+        }
+        $modinfo =& get_fast_modinfo($COURSE);
+        get_all_mods($course->id, $mods, $modnames, $modnamesplural, $modnamesused);
+        foreach($mods as $mod) {
+            if ($mod->modname == 'forum') {
+                $files[] = $CFG->wwwroot.'/mod/forum/view.php?id='.$mod->id;
+                $cm = get_coursemodule_from_id('forum', $mod->id);
+                $discussions = forum_get_discussions($cm);
+                foreach($discussions as $d){ 
+                    $files[] = $CFG->wwwroot.'/mod/forum/discuss.php?d='.$d->discussion;
+                }               
+            }
+        }
 
 
-	}
+    }
 }
 
 
 
 $entries = array();
 foreach ($files as $file) {
-  array_push($entries, "    {\"url\": \"$file\"}");
+    /*if(strchr($file,'php') || strchr($file,'htm')){
+        $links = getLinks($file);
+        if(sizeof($links) > 0) {
+            foreach($links as $key=>$value) {
+                echo $key . ' - '. $value . '\n';
+            }
+        }
+    }*/
+    
+    array_push($entries, "    {\"url\": \"$file\"}");
 }
 ?>
 {
