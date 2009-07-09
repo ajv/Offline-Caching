@@ -1168,13 +1168,14 @@ function xmldb_main_upgrade($oldversion) {
 
     /// Changes to modinfo mean we need to rebuild course cache
         require_once($CFG->dirroot . '/course/lib.php');
-        rebuild_course_cache(0,true);
+        rebuild_course_cache(0, true);
 
     /// For developer upgrades, turn on the conditional activities and completion
     /// features automatically (to gain more testing)
-        if(debugging('',DEBUG_DEVELOPER)) {
-            set_config('enableavailability',1);
-            set_config('enablecompletion',1);
+//TODO: remove before 2.0 final!
+        if (debugging('', DEBUG_DEVELOPER)) {
+            set_config('enableavailability', 1);
+            set_config('enablecompletion', 1);
         }
 
     /// Main savepoint reached
@@ -2291,3 +2292,5 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
     return $result;
 }
 
+//TODO: before 2.0 release
+// 1/ remove the automatic enabling of completion lib if debug enabled
