@@ -17,12 +17,12 @@ function manifest_get_files_from_dir($dir){
     $handle = opendir($dir);
     $files = array();
     while (false !== ($file = readdir($handle))) {
-      if (!strchr($file,'.')) {
-        $files = array_merge($files, manifest_get_files_from_dir($dir.'/'.$file));
-      }
-      else if (strpos($file,'.') != 0 && !strchr($file,'.php')) {
-        $files[] = $dir.'/'.$file;
-      }
+        if (!strchr($file,'.')) {
+            $files = array_merge($files, manifest_get_files_from_dir($dir.'/'.$file));
+        }
+        else if (strpos($file,'.') != 0 && !strchr($file,'.php')) {
+            $files[] = $dir.'/'.$file;
+        }
     }
     return $files;
 }
@@ -77,7 +77,7 @@ $files = array(
   );
 
 foreach(get_list_of_plugins() as $module){
-    $files[] = $OUTPUT->mod_icon_url('icon', $module);
+    $files[] = $CFG->wwwroot.'/mod/'.$module.'/icon.gif';
 }
 
 
