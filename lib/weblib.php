@@ -1298,7 +1298,7 @@ function popup_form($baseurl, $options, $formid, $selected='', $nothing='choose'
     }
     $output .= '<input type="submit" value="'.$submitvalue.'" '.$disabled.' />';
     if (!$showbutton) {
-        $output .= $PAGE->requires->js_function_call('hide_item', Array('noscript'.$formid))->asap();
+        $PAGE->requires->js_function_call('hide_item', Array('noscript'.$formid));
         $output .= '</div>';
     }
     $output .= '</div></form>';
@@ -4941,6 +4941,8 @@ function redirect($url, $message='', $delay=-1) {
         //302 might not work for POST requests, 303 is ignored by obsolete clients.
         @header($_SERVER['SERVER_PROTOCOL'] . ' 303 See Other');
         @header('Location: '.$url);
+        echo bootstrap_renderer::plain_redirect_message($encodedurl);
+        exit;
     }
 
     // Include a redirect message, even with a HTTP redirect, because that is recommended practice.

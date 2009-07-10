@@ -3,11 +3,7 @@
 
     require_once("../config.php");
 
-/// check if major upgrade needed - also present in /index.php
-    if ((int)$CFG->version < 2009011900) { //1.9 or older
-        @require_logout();
-        redirect("$CFG->wwwroot/$CFG->admin/");
-    }
+    redirect_if_major_upgrade_required();
 
     $loginguest  = optional_param('loginguest', 0, PARAM_BOOL); // determines whether visitors are logged in as guest automatically
     $testcookies = optional_param('testcookies', 0, PARAM_BOOL); // request cookie test
