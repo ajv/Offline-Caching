@@ -2161,22 +2161,6 @@ function print_header($title='', $heading='', $navigation='', $focus='',
 
     // TODO $navigation
     // TODO $menu
-
-    $gears = TRUE;
-    if($gears && isloggedin()){
-        $lang_string = array();
-        $lang_string['gooffline'] = get_string('gooffline');
-        $lang_string['goonline'] = get_string('goonline');
-        $lang_string['pleasewait'] = get_string('pleasewait');
-        $PAGE->requires->data_for_js('js_lang_string', $lang_string);
-        $PAGE->requires->js('lib/offline/gears_init.js');
-        $PAGE->requires->js('lib/offline/go_offline.js');
-        $PAGE->requires->js_function_call('init_offline');
-        $menu = '<span id="offline-message"></span><span id="offline-status"><a href="###" onclick="createStore()">'.get_string('gooffline').'</a></span>'.$menu;
-        if(debugging()) {
-            //$menu = '<span id="serverStatus"></span><span id="pings"></span>'.$menu;
-        }
-    }
     
     if ($meta) {
         throw new coding_exception('The $meta parameter to print_header is no longer supported. '.
