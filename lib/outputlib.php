@@ -2818,10 +2818,12 @@ function output_css_for_css_edit($files, $toreplace) {
  */
 function output_offline_mode($menu) {
 	
-	global $PAGE;
+	global $PAGE, $CFG;
 	
 	$PAGE->requires->string_for_js('gooffline', 'moodle');
+	$PAGE->requires->string_for_js('goofflinetitle', 'moodle');
 	$PAGE->requires->string_for_js('goonline', 'moodle');
+	$PAGE->requires->string_for_js('goonlinetitle', 'moodle');
 	$PAGE->requires->string_for_js('pleasewait', 'moodle');
 	$PAGE->requires->string_for_js('cantdetectconnection', 'moodle');
 	$PAGE->requires->string_for_js('mustinstallgears', 'moodle');
@@ -2831,9 +2833,6 @@ function output_offline_mode($menu) {
 	$PAGE->requires->js('lib/offline/gears_init.js');
 	$PAGE->requires->js('lib/offline/go_offline.js');
 	$PAGE->requires->js_function_call('init_offline');
-	$menu = '<span id="offline-message"></span><span id="offline-status"><a href="###" onclick="createStore()">'.get_string('gooffline').'</a></span>'.$menu;
-	if(debugging()) {
-		//$menu = '<span id="serverStatus"></span><span id="pings"></span>'.$menu;
-	}
+	$menu = '<span id="offline-message"></span><span id="offline-img"></span> <span id="offline-status"><a href="###" onclick="createStore()" title="'.get_string('goofflinetitle').'">'.get_string('gooffline').'</a></span>'.$menu;
 	return $menu;
 }
