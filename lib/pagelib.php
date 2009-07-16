@@ -335,9 +335,11 @@ class moodle_page {
      */
     public function get_url() {
         if (is_null($this->_url)) {
-            debugging('This page did no call $PAGE->set_url(...). Realying on a guess.', DEBUG_DEVELOPER);
+            debugging('This page did no call $PAGE->set_url(...). Relaying on a guess.', DEBUG_DEVELOPER);
             global $FULLME;
-            return new moodle_url($FULLME);
+            $this->_url = new moodle_url($FULLME);
+            // Make sure the guessed URL cannot lead to dangerous redirects.
+            $this->_url->remove_params('sesskey');
         }
         return new moodle_url($this->_url); // Return a clone for safety.
     }
@@ -716,6 +718,23 @@ class moodle_page {
     }
 
     /**
+     * Make sure page URL does not contain the given URL parameter.
+     *
+     * This should not be necessary if the script has called set_url properly.
+     * However, in some situations like the block editing actions; when the URL
+     * has been guessed, it will contain dangerous block-related actions.
+     * Therefore, the blocks code calls this function to clean up such parameters
+     * before doing any redirect.
+     * 
+     * @param string $param the name of the parameter to make sure is not in the
+     * page URL.
+     */
+    public function ensure_param_not_in_url($param) {
+        $discard = $this->url; // Make sure $this->url is lazy-loaded;
+        $this->_url->remove_params($param);
+    }
+
+    /**
      * There can be alternate versions of some pages (for example an RSS feed version).
      * If such other version exist, call this method, and a link to the alternate
      * version will be included in the <head> of the page.
@@ -853,13 +872,31 @@ class moodle_page {
      * state. This is our last change to initialise things.
      */
     protected function starting_output() {
-        global $SITE, $CFG;
-
-        $this->initialise_standard_body_classes();
+        global $CFG;
 
         if (!during_initial_install()) {
             $this->blocks->load_blocks();
+            if (empty($this->_block_actions_done) && block_process_url_actions($this)) {
+                $this->_block_actions_done = true;
+                redirect($this->url->out(false, array(), false));
+            }
         }
+
+        // If maintenance mode is on, change the page header.
+        if (!empty($CFG->maintenance_enabled)) {
+            $this->set_button('<a href="' . $CFG->wwwroot . '/' . $CFG->admin .
+                    '/settings.php?section=maintenancemode">' . get_string('maintenancemode', 'admin') .
+                    '</a> ' . $this->button);
+
+            $title = $this->title;
+            if ($title) {
+                $title .= ' - ';
+            }
+            $this->set_title($title . get_string('maintenancemode', 'admin'));
+        }
+
+        // Show the messaging popup, if there are messages.
+        message_popup_window();
 
         // Add any stylesheets required using the horrible legacy mechanism.
         if (!empty($CFG->stylesheets)) {
@@ -875,6 +912,8 @@ class moodle_page {
         foreach ($stylesheets as $stylesheet) {
             $this->requires->css($stylesheet, true);
         }
+
+        $this->initialise_standard_body_classes();
     }
 
     /**

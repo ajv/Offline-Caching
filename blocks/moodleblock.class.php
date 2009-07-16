@@ -1,4 +1,19 @@
-<?php  // $Id$
+<?php
+
+// This file is part of Moodle - http://moodle.org/ 
+// 
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
  * This file contains the parent class for moodle blocks, block_base.
@@ -355,20 +370,26 @@ class block_base {
         if (!$this->hide_header()) {
             $bc->title = $this->title;
         }
-        $bc->content = $this->formatted_contents($output);
-        if (!empty($this->content->footer)) {
-            $bc->footer = $this->content->footer;
+
+        if ($this->instance->visible) {
+            $bc->content = $this->formatted_contents($output);
+            if (!empty($this->content->footer)) {
+                $bc->footer = $this->content->footer;
+            }
+        } else {
+            $bc->add_class('invisible');
+        }
+
+        if ($this->page->user_is_editing()) {
+            $bc->controls = block_edit_controls($this, $this->page);
         }
 
         if ($this->is_empty() && !$bc->controls) {
             return null;
         }
 
-        if ($this->page->user_is_editing()) {
-            $bc->controls = $this->get_edit_controls($output);
-        }
-
-        if (empty($CFG->allowuserblockhiding)) {
+        if (empty($CFG->allowuserblockhiding) ||
+                (empty($bc->content) && empty($bc->footer))) {
             $bc->collapsible = block_contents::NOT_HIDEABLE;
         } else if (get_user_preferences('block' . $bc->blockinstanceid . 'hidden', false)) {
             $bc->collapsible = block_contents::HIDDEN;
@@ -400,63 +421,6 @@ class block_base {
         } else {
             return '';
         }
-    }
-
-    /**
-     * Get the appropriate list of editing icons for this block. This is used
-     * to set {@link block_contents::$controls} in {@link get_contents_for_output()}.
-     *
-     * @param $output The core_renderer to use when generating the output. (Need to get icon paths.)
-     * @return an array in the format for {@link block_contents::$controls}
-     * @since Moodle 2.0.
-     */
-    protected function get_edit_controls($output) {
-        global $CFG;
-
-        $returnurlparam = '&amp;returnurl=' . urlencode($this->page->url->out_returnurl());
-        $actionurl = $CFG->wwwroot.'/blocks/action.php?block=' . $this->instance->id .
-                '&amp;sesskey=' . sesskey() . $returnurlparam;
-
-        $controls = array();
-
-        // Assign roles icon.
-        if (has_capability('moodle/role:assign', $this->context)) {
-            $controls[] = array('url' => $CFG->wwwroot.'/'.$CFG->admin.'/roles/assign.php?contextid='.$this->context->id,
-                    'icon' => $output->old_icon_url('i/roles'), 'caption' => get_string('assignroles', 'role'));
-        }
-
-        if ($this->user_can_edit() && $this->page->user_can_edit_blocks()) {
-            // Show/hide icon.
-            if ($this->instance->visible) {
-                $controls[] = array('url' => $actionurl . '&amp;action=hide',
-                        'icon' => $output->old_icon_url('t/hide'), 'caption' => get_string('hide'));
-            } else {
-                $controls[] = array('url' => $actionurl . '&amp;action=show',
-                        'icon' => $output->old_icon_url('t/show'), 'caption' => get_string('show'));
-            }
-
-            // Edit config icon.
-            if ($this->instance_allow_multiple() || $this->instance_allow_config()) {
-                $editurl = $CFG->wwwroot . '/blocks/edit.php?block=' . $this->instance->id;
-                if (!empty($this->instance->blockpositionid)) {
-                    $editurl .= '&amp;positionid=' . $this->instance->blockpositionid;
-                }
-                $controls[] = array('url' => $editurl . $returnurlparam,
-                        'icon' => $output->old_icon_url('t/edit'), 'caption' => get_string('configuration'));
-            }
-
-            // Delete icon.
-            if ($this->user_can_addto($this->page)) {
-                $controls[] = array('url' => $actionurl . 'action=delete',
-                    'icon' => $output->old_icon_url('t/delete'), 'caption' => get_string('deletet'));
-            }
-
-            // Move icon.
-            $controls[] = array('url' => $this->page->url->out(false, array('moveblockid' => $this->instance->id)),
-                    'icon' => $output->old_icon_url('t/move'), 'caption' => get_string('move'));
-        }
-
-        return $controls;
     }
 
     /**
@@ -514,25 +478,6 @@ class block_base {
         return false;
     }
 
-    /**
-     * Default behavior: print the config_global.html file
-     * You don't need to override this if you're satisfied with the above
-     *
-     * @return boolean
-     */
-    function config_print() {
-        // Default behavior: print the config_global.html file
-        // You don't need to override this if you're satisfied with the above
-        if (!$this->has_config()) {
-            return false;
-        }
-        global $CFG;
-        print_simple_box_start('center', '', '', 5, 'blockconfigglobal');
-        include($CFG->dirroot.'/blocks/'. $this->name() .'/config_global.html');
-        print_simple_box_end();
-        return true;
-    }
-    
     /**
      * Default behavior: save all variables as $CFG properties
      * You don't need to override this if you 're satisfied with the above
@@ -716,7 +661,7 @@ class block_base {
      * @return boolean
      * @todo finish documenting this function
      */
-    function user_can_addto(&$page) {
+    function user_can_addto($page) {
         return true;
     }
 
@@ -763,6 +708,10 @@ class block_base {
                 'should not have been calling it anyway.');
     }
 
+    /** @deprecated since Moodle 2.0. */
+    function config_print() {
+        throw new coding_exception('config_print() can no longer be used. Blocks should use a settings.php file.');
+    }
 }
 
 /**

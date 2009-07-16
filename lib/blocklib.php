@@ -67,8 +67,8 @@ class block_not_on_page_exception extends moodle_exception {
     public function __construct($instanceid, $page) {
         $a = new stdClass;
         $a->instanceid = $instanceid;
-        $a->url = $page->url;
-        parent::__construct('blockdoesnotexistonpage', '', $page->url, $a);
+        $a->url = $page->url->out();
+        parent::__construct('blockdoesnotexistonpage', '', $page->url->out(), $a);
     }
 }
 
@@ -99,8 +99,8 @@ class block_manager {
 
     /**
      * @var array blocks that this user can add to this page. Will be a subset
-     * of $allblocks. Access this via the {@link get_addable_blocks()} method
-     * to ensure it is lazy-loaded.
+     * of $allblocks, but with array keys block->name. Access this via the
+     * {@link get_addable_blocks()} method to ensure it is lazy-loaded.
      */
     protected $addableblocks = null;
 
@@ -171,7 +171,7 @@ class block_manager {
     /**
      * The list of block types that may be added to this page.
      *
-     * @return array block id => record from block table.
+     * @return array block name => record from block table.
      */
     public function get_addable_blocks() {
         $this->check_is_loaded();
@@ -192,8 +192,9 @@ class block_manager {
         foreach($allblocks as $block) {
             if ($block->visible &&
                     (block_method_result($block->name, 'instance_allow_multiple') || !$this->is_block_present($block->id)) &&
-                    blocks_name_allowed_in_format($block->name, $pageformat)) {
-                $this->addableblocks[$block->id] = $block;
+                    blocks_name_allowed_in_format($block->name, $pageformat) &&
+                    block_method_result($block->name, 'user_can_addto', $this->page)) {
+                $this->addableblocks[$block->name] = $block;
             }
         }
 
@@ -353,9 +354,12 @@ class block_manager {
     /**
      * This method actually loads the blocks for our page from the database.
      *
-     * @param bool|null $includeinvisible
+     * @param boolean|null $includeinvisible
+     *      null (default) - load hidden blocks if $this->page->user_is_editing();
+     *      true - load hidden blocks.
+     *      false - don't load hidden blocks.
      */
-    public function load_blocks($includeinvisible = NULL) {
+    public function load_blocks($includeinvisible = null) {
         global $DB, $CFG;
         if (!is_null($this->birecordsbyregion)) {
             // Already done.
@@ -382,9 +386,9 @@ class block_manager {
             $includeinvisible = $this->page->user_is_editing();
         }
         if ($includeinvisible) {
-            $visiblecheck = 'AND (bp.visible = 1 OR bp.visible IS NULL)';
-        } else {
             $visiblecheck = '';
+        } else {
+            $visiblecheck = 'AND (bp.visible = 1 OR bp.visible IS NULL)';
         }
 
         $context = $this->page->context;
@@ -417,6 +421,8 @@ class block_manager {
                     bi.showinsubcontexts,
                     bi.pagetypepattern,
                     bi.subpagepattern,
+                    bi.defaultregion,
+                    bi.defaultweight,
                     COALESCE(bp.visible, 1) AS visible,
                     COALESCE(bp.region, bi.defaultregion) AS region,
                     COALESCE(bp.weight, bi.defaultweight) AS weight,
@@ -508,10 +514,36 @@ class block_manager {
         }
     }
 
+    public function add_block_at_end_of_default_region($blockname) {
+        $defaulregion = $this->get_default_region();
+
+        $lastcurrentblock = end($this->birecordsbyregion[$defaulregion]);
+        if ($lastcurrentblock) {
+            $weight = $lastcurrentblock->weight + 1;
+        } else {
+            $weight = 0;
+        }
+
+        if ($this->page->subpage) {
+            $subpage = $this->page->subpage;
+        } else {
+            $subpage = null;
+        }
+
+        // Special case. Course view page type include the course format, but we
+        // want to add the block non-format-specifically.
+        $pagetypepattern = $this->page->pagetype;
+        if (strpos($pagetypepattern, 'course-view') === 0) {
+            $pagetypepattern = 'course-view-*';
+        }
+
+        $this->add_block($blockname, $defaulregion, $weight, false, $pagetypepattern, $subpage);
+    }
+
     /**
      * Convenience method, calls add_block repeatedly for all the blocks in $blocks.
      *
-     * @param array $blocks array with arrray keys the region names, and values an array of block names.
+     * @param array $blocks array with array keys the region names, and values an array of block names.
      * @param string $pagetypepattern optional. Passed to @see add_block()
      * @param string $subpagepattern optional. Passed to @see add_block()
      */
@@ -669,46 +701,6 @@ class block_manager {
     }
 
     /**
-     * Return a {@link block_contents} representing the add a new block UI, if
-     * this user is allowed to see it.
-     *
-     * @return block_contents an appropriate block_contents, or null if the user
-     * cannot add any blocks here.
-     */
-    function add_block_ui($output) {
-        global $CFG;
-        if (!$this->page->user_is_editing() || !$this->page->user_can_edit_blocks()) {
-            return null;
-        }
-
-        $bc = new block_contents();
-        $bc->title = get_string('addblock');
-        $bc->add_class('block_adminblock');
-
-        $missingblocks = array_keys($this->get_addable_blocks());
-        if (empty($missingblocks)) {
-            $bc->title = get_string('noblockstoaddhere');
-            return $bc;
-        }
-
-        $menu = array();
-        foreach ($missingblocks as $blockid) {
-            $block = blocks_get_record($blockid);
-            $blockobject = block_instance($block->name);
-            if ($blockobject !== false && $blockobject->user_can_addto($page)) {
-                $menu[$block->id] = $blockobject->get_title();
-            }
-        }
-        asort($menu, SORT_LOCALE_STRING);
-
-        // TODO convert to $OUTPUT.
-        $returnurlparam = '&amp;returnurl=' . urlencode($this->page->url->out_returnurl());
-        $actionurl = $CFG->wwwroot . '/blocks/add.php?sesskey=' . sesskey() . $returnurlparam . '&amp;blocktype=';
-        $bc->content = popup_form($actionurl, $menu, 'add_block', '', get_string('adddots'), '', '', true);
-        return $bc;
-    }
-
-    /**
      * Ensure block instances exist for a given region
      * 
      * @param string $region Check for bi's with the instance with this name
@@ -735,7 +727,7 @@ class block_manager {
             }
             $contents = array_merge($contents, $this->create_block_contents($this->blockinstances[$region], $output));
             if ($region == $this->defaultregion) {
-                $addblockui = $this->add_block_ui($output);
+                $addblockui = block_add_block_ui($this->page, $output);
                 if ($addblockui) {
                     $contents[] = $addblockui;
                 }
@@ -811,10 +803,216 @@ function block_load_class($blockname) {
     return class_exists($classname);
 }
 
-/// Functions that have been deprecated by block_manager =======================
+/// Functions update the blocks if required by the request parameters ==========
 
 /**
- * @deprecated since Moodle 2.0 - use $page->blocks->get
+ * Return a {@link block_contents} representing the add a new block UI, if
+ * this user is allowed to see it.
+ *
+ * @return block_contents an appropriate block_contents, or null if the user
+ * cannot add any blocks here.
+ */
+function block_add_block_ui($page, $output) {
+    global $CFG;
+    if (!$page->user_is_editing() || !$page->user_can_edit_blocks()) {
+        return null;
+    }
+
+    $bc = new block_contents();
+    $bc->title = get_string('addblock');
+    $bc->add_class('block_adminblock');
+
+    $missingblocks = $page->blocks->get_addable_blocks();
+    if (empty($missingblocks)) {
+        $bc->content = get_string('noblockstoaddhere');
+        return $bc;
+    }
+
+    $menu = array();
+    foreach ($missingblocks as $block) {
+        $blockobject = block_instance($block->name);
+        if ($blockobject !== false && $blockobject->user_can_addto($page)) {
+            $menu[$block->name] = $blockobject->get_title();
+        }
+    }
+    asort($menu, SORT_LOCALE_STRING);
+
+    // TODO convert to $OUTPUT.
+    $actionurl = $page->url->out_action() . '&amp;bui_addblock=';
+    $bc->content = popup_form($actionurl, $menu, 'add_block', '', get_string('adddots'), '', '', true);
+    return $bc;
+}
+
+/**
+ * Get the appropriate list of editing icons for a block. This is used
+ * to set {@link block_contents::$controls} in {@link block_base::get_contents_for_output()}.
+ *
+ * @param $output The core_renderer to use when generating the output. (Need to get icon paths.)
+ * @return an array in the format for {@link block_contents::$controls}
+ * @since Moodle 2.0.
+ */
+function block_edit_controls($block, $page) {
+    global $CFG;
+
+    $controls = array();
+    $actionurl = $page->url->out_action();
+    $returnurlparam = '&amp;returnurl=' . urlencode($page->url->out_returnurl());
+
+    // Assign roles icon.
+    if (has_capability('moodle/role:assign', $block->context)) {
+        $controls[] = array('url' => $CFG->wwwroot . '/' . $CFG->admin .
+                '/roles/assign.php?contextid=' . $block->context->id . $returnurlparam,
+                'icon' => 'i/roles', 'caption' => get_string('assignroles', 'role'));
+    }
+
+    if ($block->user_can_edit() && $page->user_can_edit_blocks()) {
+        // Show/hide icon.
+        if ($block->instance->visible) {
+            $controls[] = array('url' => $actionurl . '&amp;bui_hideid=' . $block->instance->id,
+                    'icon' => 't/hide', 'caption' => get_string('hide'));
+        } else {
+            $controls[] = array('url' => $actionurl . '&amp;bui_showid=' . $block->instance->id,
+                    'icon' => 't/show', 'caption' => get_string('show'));
+        }
+
+        // Edit config icon.
+        if ($block->instance_allow_multiple() || $block->instance_allow_config()) {
+            $editurl = $CFG->wwwroot . '/blocks/edit.php?block=' . $block->instance->id;
+            if (!empty($block->instance->blockpositionid)) {
+                $editurl .= '&amp;positionid=' . $block->instance->blockpositionid;
+            }
+            $controls[] = array('url' => $editurl . $returnurlparam,
+                    'icon' => 't/edit', 'caption' => get_string('configuration'));
+        }
+
+        // Delete icon.
+        if ($block->user_can_addto($page)) {
+            $controls[] = array('url' => $actionurl . '&amp;bui_deleteid=' . $block->instance->id,
+                'icon' => 't/delete', 'caption' => get_string('delete'));
+        }
+
+        // Move icon.
+        $controls[] = array('url' => $page->url->out(false, array('moveblockid' => $block->instance->id)),
+                'icon' => 't/move', 'caption' => get_string('move'));
+    }
+
+    return $controls;
+}
+
+/**
+ * Process any block actions that were specified in the URL.
+ * 
+ * This can only be done given a valid $page object.
+ *
+ * @param moodle_page $page the page to add blocks to.
+ * @return boolean true if anything was done. False if not.
+ */
+function block_process_url_actions($page) {
+    return block_process_url_add($page) ||
+        block_process_url_delete($page) ||
+        block_process_url_show_hide($page);
+}
+
+/**
+ * Handle adding a block.
+ * @param moodle_page $page the page to add blocks to.
+ * @return boolean true if anything was done. False if not.
+ */
+function block_process_url_add($page) {
+    $blocktype = optional_param('bui_addblock', null, PARAM_SAFEDIR);
+    if (!$blocktype) {
+        return false;
+    }
+
+    confirm_sesskey();
+
+    if (!$page->user_is_editing() && !$page->user_can_edit_blocks()) {
+        throw new moodle_exception('nopermissions', '', $page->url->out(), get_string('addblock'));
+    }
+
+    if (!array_key_exists($blocktype, $page->blocks->get_addable_blocks())) {
+        throw new moodle_exception('cannotaddthisblocktype', '', $page->url->out(), $blocktype);
+    }
+
+    $page->blocks->add_block_at_end_of_default_region($blocktype);
+
+    // If the page URL was a guses, it will contain the bui_... param, so we must make sure it is not there.
+    $page->ensure_param_not_in_url('bui_addblock');
+
+    return true;
+}
+
+/**
+ * Handle deleting a block.
+ * @param moodle_page $page the page to add blocks to.
+ * @return boolean true if anything was done. False if not.
+ */
+function block_process_url_delete($page) {
+    $blockid = optional_param('bui_deleteid', null, PARAM_INTEGER);
+    if (!$blockid) {
+        return false;
+    }
+
+    confirm_sesskey();
+
+    $block = $page->blocks->find_instance($blockid);
+
+    if (!$block->user_can_edit() || !$page->user_can_edit_blocks() || !$block->user_can_addto($page)) {
+        throw new moodle_exception('nopermissions', '', $page->url->out(), get_string('deleteablock'));
+    }
+
+    blocks_delete_instance($block->instance);
+
+    // If the page URL was a guses, it will contain the bui_... param, so we must make sure it is not there.
+    $page->ensure_param_not_in_url('bui_deleteid');
+
+    return true;
+}
+
+/**
+ * Handle showing or hiding a block.
+ * @param moodle_page $page the page to add blocks to.
+ * @return boolean true if anything was done. False if not.
+ */
+function block_process_url_show_hide($page) {
+    if ($blockid = optional_param('bui_hideid', null, PARAM_INTEGER)) {
+        $newvisibility = 0;
+    } else if ($blockid = optional_param('bui_showid', null, PARAM_INTEGER)) {
+        $newvisibility = 1;
+    } else {
+        return false;
+    }
+
+    confirm_sesskey();
+
+    $block = $page->blocks->find_instance($blockid);
+
+    if (!$block->user_can_edit() || !$page->user_can_edit_blocks()) {
+        throw new moodle_exception('nopermissions', '', $page->url->out(), get_string('hideshowblocks'));
+    }
+
+    blocks_set_visibility($block->instance, $page, $newvisibility);
+
+    // If the page URL was a guses, it will contain the bui_... param, so we must make sure it is not there.
+    $page->ensure_param_not_in_url('bui_hideid');
+    $page->ensure_param_not_in_url('bui_showid');
+
+    return true;
+}
+
+///**
+// * Handle deleting a block.
+// * @param moodle_page $page the page to add blocks to.
+// * @return boolean true if anything was done. False if not.
+// */
+//function block_process_url_delete($page) {
+//    
+//}
+
+// Functions that have been deprecated by block_manager =======================
+
+/**
+ * @deprecated since Moodle 2.0 - use $page->blocks->get_addable_blocks();
  *
  * This function returns an array with the IDs of any blocks that you can add to your page.
  * Parameters are passed by reference for speed; they are not modified at all.
@@ -824,7 +1022,13 @@ function block_load_class($blockname) {
  * @return array of block type ids.
  */
 function blocks_get_missing(&$page, &$blockmanager) {
-    return array_keys($page->blocks->get_addable_blocks());
+    debugging('blocks_get_missing is deprecated. Please use $page->blocks->get_addable_blocks() instead.', DEBUG_DEVELOPER);
+    $blocks = $page->blocks->get_addable_blocks();
+    $ids = array();
+    foreach ($blocks as $block) {
+        $ids[] = $block->id;
+    }
+    return $ids;
 }
 
 /**
@@ -851,7 +1055,7 @@ function blocks_remove_inappropriate($course) {
         foreach($region as $instance) {
             $block = blocks_get_record($instance->blockid);
             if(!blocks_name_allowed_in_format($block->name, $pageformat)) {
-               blocks_delete_instance($instance);
+               blocks_delete_instance($instance->instance);
             }
         }
     }
@@ -913,13 +1117,43 @@ function blocks_delete_instance($instance, $nolongerused = false, $skipblockstab
  */
 function blocks_delete_all_for_context($contextid) {
     global $DB;
-    $instances = $DB->get_recordset('block_instances', array('contextid' => $contextid));
+    $instances = $DB->get_recordset('block_instances', array('parentcontextid' => $contextid));
     foreach ($instances as $instance) {
         blocks_delete_instance($instance, true);
     }
     $instances->close();
     $DB->delete_records('block_instances', array('parentcontextid' => $contextid));
     $DB->delete_records('block_positions', array('contextid' => $contextid));
+}
+
+/**
+ * Set a block to be visible or hidden on a particular page.
+ *
+ * @param object $instance a row from the block_instances, preferably LEFT JOINed with the
+ *      block_positions table as return by block_manager.
+ * @param moodle_page $page the back to set the visibility with respect to.
+ * @param integer $newvisibility 1 for visible, 0 for hidden.
+ */
+function blocks_set_visibility($instance, $page, $newvisibility) {
+    global $DB;
+    if (!empty($instance->blockpositionid)) {
+        // Already have local information on this page.
+        $DB->set_field('block_positions', 'visible', $newvisibility, array('id' => $instance->blockpositionid));
+        return;
+    }
+
+    // Create a new block_positions record.
+    $bp = new stdClass;
+    $bp->blockinstanceid = $instance->id;
+    $bp->contextid = $page->context->id;
+    $bp->pagetype = $page->pagetype;
+    if ($page->subpage) {
+        $bp->subpage = $page->subpage;
+    }
+    $bp->visible = $newvisibility;
+    $bp->region = $instance->defaultregion;
+    $bp->weight = $instance->defaultweight;
+    $DB->insert_record('block_positions', $bp);
 }
 
 /**

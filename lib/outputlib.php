@@ -1823,7 +1823,6 @@ class moodle_core_renderer extends moodle_renderer_base {
     // TODO remove $navigation and $menu arguments - replace with $PAGE->navigation
         global $USER, $CFG;
 
-        output_starting_hook();
         $this->page->set_state(moodle_page::STATE_PRINTING_HEADER);
 
         // Find the appropriate page template, based on $this->page->generaltype.
@@ -1938,7 +1937,7 @@ class moodle_core_renderer extends moodle_renderer_base {
         echo '<table id="layout-table"><tr>';
         foreach ($lt as $column) {
             if ($column == 'left' && $this->page->blocks->region_has_content(BLOCK_POS_LEFT)) {
-                echo '<td id="left-column" style="width: ' . $preferredwidthright . 'px; vertical-align: top;">';
+                echo '<td id="left-column" class="block-region" style="width: ' . $preferredwidthright . 'px; vertical-align: top;">';
                 echo $this->container_start();
                 echo $this->blocks_for_region(BLOCK_POS_LEFT);
                 echo $this->container_end();
@@ -1953,7 +1952,7 @@ class moodle_core_renderer extends moodle_renderer_base {
                 echo '</td>';
 
             } else if ($column == 'right' && $this->page->blocks->region_has_content(BLOCK_POS_RIGHT)) {
-                echo '<td id="right-column" style="width: ' . $preferredwidthright . 'px; vertical-align: top;">';
+                echo '<td id="right-column" class="block-region" style="width: ' . $preferredwidthright . 'px; vertical-align: top;">';
                 echo $this->container_start();
                 echo $this->blocks_for_region(BLOCK_POS_RIGHT);
                 echo $this->container_end();
@@ -2013,7 +2012,7 @@ class moodle_core_renderer extends moodle_renderer_base {
         foreach ($controls as $control) {
             $controlshtml[] = $this->output_tag('a', array('class' => 'icon',
                     'title' => $control['caption'], 'href' => $control['url']),
-                    $this->output_empty_tag('img',  array('src' => $control['icon'],
+                    $this->output_empty_tag('img',  array('src' => $this->old_icon_url($control['icon']),
                     'alt' => $control['caption'])));
         }
         return $this->output_tag('div', array('class' => 'commands'), implode('', $controlshtml));
@@ -2754,7 +2753,8 @@ class block_contents extends moodle_html_component {
 
     /**
      * A (possibly empty) array of editing controls. Each element of this array
-     * should be an array('url' => $url, 'icon' => $icon, 'caption' => $caption)
+     * should be an array('url' => $url, 'icon' => $icon, 'caption' => $caption).
+     * $icon is the icon name. Fed to $OUTPUT->old_icon_url.
      * @var array
      */
     public $controls = array();
