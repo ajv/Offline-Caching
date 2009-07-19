@@ -37,6 +37,7 @@ $PAGE->set_context($context);
 $PAGE->set_title('To-do checker');
 $PAGE->set_heading('To-do checker');
 
+$thirdparty = load_third_party_lib_list();
 $extensionstotest = array('php');
 $extensionsregex = '/\.(?:' . implode('|', $extensionstotest) . ')$/';
 $patterntofind = 'TO' . 'DO'; // Make it not match the regex.
@@ -48,7 +49,7 @@ echo $OUTPUT->heading('To-do checker', 2);
 echo $OUTPUT->box_start();
 echo 'Checking code ...';
 flush();
-recurseFolders($CFG->dirroot, 'check_to_dos', $extensionsregex);
+recurseFolders($CFG->dirroot, 'check_to_dos', $extensionsregex, false, array_keys($thirdparty));
 echo ' done.';
 echo $OUTPUT->box_end();
 
@@ -74,14 +75,16 @@ if (empty($found)) {
                 $issueurl = 'http://tracker.moodle.org/browse/' . $issueid;
 
                 // Make sure the issue is still open.
-                if (issue_open($issueid)) {
+                list($issueopen, $issuesummary) = issue_info($issueid);
+                if ($issueopen) {
                     $issuename = $issueid;
                 } else {
                     $issuename = '<strike>' . $issueid . '</strike>';
                     $error = 'The associated tracker issue is Resolved.';
                 }
 
-                $line = str_replace($issueid, '<a href="' . $issueurl . '">' . $issuename . '</a>', htmlspecialchars($line));
+                $line = str_replace($issueid, '<a href="' . $issueurl . '" title="' . s($issuesummary) .
+                        '">' . $issuename . '</a>', htmlspecialchars($line));
             } else {
                 $line = htmlspecialchars($line);
                 $error = 'No associated tracker issue.';
@@ -100,11 +103,14 @@ if (empty($found)) {
 echo $OUTPUT->footer();
 
 function check_to_dos($filepath) {
-    global $CFG, $found;
+    global $CFG, $found, $thirdparty;
+    if (isset($thirdparty[$filepath])) {
+        return; // Skip this file.
+    }
     $lines = file($filepath);
     $matchesinfile = array();
     foreach ($lines as $lineno => $line) {
-        if (preg_match('/\bTODO\b/', $line)) {
+        if (preg_match('/(?<!->|\$)\bTODO\b/i', $line)) {
             $matchesinfile[$lineno] = $line;
         }
     }
@@ -114,7 +120,7 @@ function check_to_dos($filepath) {
     }
 }
 
-function issue_open($issueid) {
+function issue_info($issueid) {
     static $cache = array();
     if (array_key_exists($issueid, $cache)) {
         return $cache[$issueid];
@@ -122,8 +128,27 @@ function issue_open($issueid) {
 
     $xmlurl = 'http://tracker.moodle.org/si/jira.issueviews:issue-xml/' . $issueid . '/' . $issueid . '.xml';
     $content = download_file_content($xmlurl);
-    $result = preg_match('/Unresolved<\/resolution>/', $content);
 
-    $cache[$issueid] = $result;
-    return $result;
+    // Get the status.
+    $open = preg_match('/Unresolved<\/resolution>/', $content);
+
+    // Get the summary.
+    $matches = array();
+    preg_match('/<title>\[' . $issueid . '\]\s+(.*?)<\/title>/', $content, $matches);
+    $summary = $matches[1];
+    preg_match('/<assignee[^>]*>(.*?)<\/assignee>/', $content, $matches);
+    $summary .= ' - Assignee: ' . $matches[1];
+
+    $cache[$issueid] = array($open, $summary);
+    return $cache[$issueid];
+}
+
+function load_third_party_lib_list() {
+    global $CFG;
+    $libs = array();
+    $xml = simplexml_load_file($CFG->libdir . '/thirdpartylibs.xml');
+    foreach ($xml->library as $libobject) {
+        $libs[$CFG->libdir . '/' . $libobject->location] = 1;
+    }
+    return $libs;
 }
