@@ -1823,6 +1823,11 @@ class moodle_core_renderer extends moodle_renderer_base {
     // TODO remove $navigation and $menu arguments - replace with $PAGE->navigation
         global $USER, $CFG;
 
+        $gears = TRUE;
+        if($gears && isloggedin()){
+            $menu = output_offline_mode($menu);
+        }
+
         $this->page->set_state(moodle_page::STATE_PRINTING_HEADER);
 
         // Find the appropriate page template, based on $this->page->generaltype.
@@ -1908,12 +1913,7 @@ class moodle_core_renderer extends moodle_renderer_base {
             $menu = $loggedinas;
         }
 		
-		$gears = TRUE;
-	    if($gears && isloggedin()){
-	    	$menu = output_offline_mode($menu);
-	    }
-
-        if (!empty($this->page->theme->layouttable)) {
+		if (!empty($this->page->theme->layouttable)) {
             $lt = $this->page->theme->layouttable;
         } else {
             $lt = array('left', 'middle', 'right');
