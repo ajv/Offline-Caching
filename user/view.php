@@ -30,6 +30,13 @@
         redirect($CFG->wwwroot .'/'. $CFG->admin .'/index.php');
     }
 
+/// Set up page URL for blocks etc
+    if ($course->id == SITEID) {
+        $PAGE->set_url('user/view.php', array('id' => $user->id));
+    } else {
+        $PAGE->set_url('user/view.php', array('id' => $user->id, 'course' => $course->id));
+    }
+
 /// Make sure the current user is allowed to see this user
 
     if (empty($USER->id)) {
@@ -44,6 +51,8 @@
         $coursecontext = get_context_instance(CONTEXT_COURSE, $course->id);   // Course context
     }
     $usercontext   = get_context_instance(CONTEXT_USER, $user->id);       // User context
+
+    $PAGE->context = $usercontext;
 
     if (!empty($CFG->forcelogin) || $course->id != SITEID) {
         // do not force parents to enrol
