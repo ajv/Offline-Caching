@@ -16,7 +16,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Form for editing HTML block instances.
+ * Form for editing tag block instances.
  *
  * @package   moodlecore
  * @copyright 2009 Tim Hunt
@@ -24,21 +24,25 @@
  */
 
 /**
- * Form for editing HTML block instances.
+ * Form for editing tag block instances.
  *
  * @copyright 2009 Tim Hunt
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class block_html_edit_form extends block_edit_form {
+class block_tags_edit_form extends block_edit_form {
     protected function specific_definition($mform) {
         // Fields for editing HTML block title and contents.
         $mform->addElement('header', 'configheader', get_string('blocksettings', 'block'));
 
-        $mform->addElement('text', 'config_title', get_string('configtitle', 'block_html'));
+        $mform->addElement('text', 'config_title', get_string('blocktagstitle', 'tag'));
         $mform->setType('config_title', PARAM_MULTILANG);
+        $mform->setDefault('config_title', get_string('blocktagstitle', 'tag'));
 
-        // TODO MDL-19844 should use the new editor field type.
-        $mform->addElement('htmleditor', 'config_text', get_string('configcontent', 'block_html'));
-        $mform->setType('config_text', PARAM_RAW); // no XSS prevention here, users must be trusted
+        $numberoftags = array();
+        for ($i = 1; $i <= 200; $i++) {
+            $numberoftags[$i] = $i;
+        }
+        $mform->addElement('select', 'config_numberoftags', get_string('numberoftags', 'blog'), $numberoftags);
+        $mform->setDefault('config_numberoftags', 80);
     }
 }
