@@ -65,32 +65,7 @@ $files = array(
     '.',
     $CFG->wwwroot.'/',
     $CFG->wwwroot.'/index.php',
-    $CFG->wwwroot.'/lib/javascript-static.js',
-    $CFG->wwwroot.'/lib/javascript-mod.php',
-    $CFG->wwwroot.'/lib/overlib/overlib.js',
-    $CFG->wwwroot.'/lib/overlib/overlib_cssstyle.js',
-    $CFG->wwwroot.'/lib/cookies.js',
-    $CFG->wwwroot.'/lib/ufo.js',
-    $CFG->wwwroot.'/lib/dropdown.js',
-    $CFG->wwwroot.'/lib/offline/go_offline.js',
-    $CFG->wwwroot.'/lib/offline/gears_init.js',
   );
-
-foreach(get_list_of_plugins() as $module){
-    $files[] = $CFG->wwwroot.'/mod/'.$module.'/icon.gif';
-}
-
-
-$tinymcefiles = manifest_get_files_from_dir($CFG->dirroot.'/lib/editor/tinymce');
-$tinymcefiles = str_replace($CFG->dirroot.'/lib/editor/tinymce', $CFG->wwwroot.'/lib/editor/tinymce', $tinymcefiles);
-$yuifiles = manifest_get_files_from_dir($CFG->dirroot.'/lib/yui');
-$yuifiles = str_replace($CFG->dirroot.'/lib/yui', $CFG->wwwroot.'/lib/yui', $yuifiles);
-$pixfiles = manifest_get_files_from_dir($CFG->dirroot.'/pix');
-$pixfiles = str_replace($CFG->dirroot,$CFG->wwwroot,$pixfiles);
-$themefiles = manifest_get_files_from_dir($CFG->dirroot.'/theme/'.current_theme());
-$themefiles = str_replace($CFG->dirroot.'/theme',$CFG->themewww,$themefiles);
-
-$files = array_merge($files, $tinymcefiles, $yuifiles, $pixfiles, $themefiles, $THEME->get_stylesheet_urls());
 
 // get all accessible courses
 if (isloggedin() and !has_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM)) and !isguest() and empty($CFG->disablemycourses)) {
