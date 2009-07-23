@@ -87,7 +87,7 @@ class page_requirements_manager {
     const WHEN_AT_END = 20;
     const WHEN_ON_DOM_READY = 30;
 
-    protected $linkedrequiremets = array();
+    protected $linkedrequirements = array();
     protected $stringsforjs = array();
     protected $requiredjscode = array();
 
@@ -127,10 +127,10 @@ class page_requirements_manager {
         } else {
             $url = $jsfile;
         }
-        if (!isset($this->linkedrequiremets[$url])) {
-            $this->linkedrequiremets[$url] = new required_js($this, $url);
+        if (!isset($this->linkedrequirements[$url])) {
+            $this->linkedrequirements[$url] = new required_js($this, $url);
         }
-        return $this->linkedrequiremets[$url];
+        return $this->linkedrequirements[$url];
     }
 
     /**
@@ -156,10 +156,10 @@ class page_requirements_manager {
      */
     public function yui_lib($libname) {
         $key = 'yui:' . $libname;
-        if (!isset($this->linkedrequiremets[$key])) {
-            $this->linkedrequiremets[$key] = new required_yui_lib($this, $libname);
+        if (!isset($this->linkedrequirements[$key])) {
+            $this->linkedrequirements[$key] = new required_yui_lib($this, $libname);
         }
-        return $this->linkedrequiremets[$key];
+        return $this->linkedrequirements[$key];
     }
 
     /**
@@ -193,8 +193,8 @@ class page_requirements_manager {
         } else {
             $url = $stylesheet;
         }
-        if (!isset($this->linkedrequiremets[$url])) {
-            $this->linkedrequiremets[$url] = new required_css($this, $url);
+        if (!isset($this->linkedrequirements[$url])) {
+            $this->linkedrequirements[$url] = new required_css($this, $url);
         }
     }
 
@@ -214,8 +214,8 @@ class page_requirements_manager {
      * @param $linktext The text to use for the skip link. Normally get_string('skipto', 'access', ...);
      */
     public function skip_link_to($target, $linktext) {
-        if (!isset($this->linkedrequiremets[$target])) {
-            $this->linkedrequiremets[$target] = new required_skip_link($this, $target, $linktext);
+        if (!isset($this->linkedrequirements[$target])) {
+            $this->linkedrequirements[$target] = new required_skip_link($this, $target, $linktext);
         }
     }
 
@@ -353,6 +353,21 @@ class page_requirements_manager {
         $this->variablesinitialised[$variable] = 1;
         return $requirement;
     }
+    
+    /**
+     * Creates a YUI event handler.
+     *
+     * @param string $id The id of the DOM element that will be listening for the event
+     * @param string $event A valid DOM event (click, mousedown, change etc.)
+     * @param string $function The name of the function to call
+     * @param array  $arguments An optional array of argument parameters to pass to the function
+     * @return required_event_handler The event_handler object
+     */
+    public function event_handler($id, $event, $function, $arguments=array()) {
+        $requirement = new required_event_handler($id, $event, $function, $arguments);
+        $this->requiredjscode[] = $requirement;
+        return $requirement;
+    }
 
     /**
      * Get the code for the linked resources that need to appear in a particular place.
@@ -361,7 +376,7 @@ class page_requirements_manager {
      */
     protected function get_linked_resources_code($when) {
         $output = '';
-        foreach ($this->linkedrequiremets as $requirement) {
+        foreach ($this->linkedrequirements as $requirement) {
             if (!$requirement->is_done() && $requirement->get_when() == $when) {
                 $output .= $requirement->get_html();
                 $requirement->mark_done();
@@ -412,7 +427,7 @@ class page_requirements_manager {
      * @return string the HTML code to go at the start of the <body> tag.
      */
     public function get_top_of_body_code() {
-        $output = $this->get_linked_resources_code(self::WHEN_TOP_OF_BODY);
+        $output = '<div class="skiplinks">' . $this->get_linked_resources_code(self::WHEN_TOP_OF_BODY) . '</div>';
         $js = "document.body.className += ' jsenabled';\n";
         $js .= $this->get_javascript_code(self::WHEN_TOP_OF_BODY);
         $output .= ajax_generate_script_tag($js);
@@ -874,15 +889,26 @@ abstract class required_js_code extends requirement_base {
      *     echo $PAGE->requires->js(...)->asap();
      * </pre>
      *
-     * @return string The HTML required to include this JavaScript file. The caller
+     * @return string The HTML for the script tag. The caller
      * is responsible for outputting this HTML promptly.
      */
     public function asap() {
-        if ($this->is_done()) {
-            return;
-        }
-        if (!$this->manager->is_head_done()) {
+        if ($this->manager->is_head_done()) {
+            return $this->now();
+        } else {
             $this->in_head();
+            return '';
+        }
+    }
+
+    /**
+     * Return the required JavaScript immediately, so it can be included in some
+     * HTML that is being built.
+     * @return string The HTML for the script tag. The caller
+     * is responsible for making sure it is output.
+     */
+    public function now() {
+        if ($this->is_done()) {
             return '';
         }
         $js = $this->get_js_code();
@@ -1040,6 +1066,50 @@ class required_data_for_js extends required_js_code {
     }
 }
 
+/**
+ * This class represents a Javascript event handler, listening for a 
+ * specific Event to occur on a DOM element identified by a given id.
+ * By default the data will be output at the end of the page, but you 
+ * can change that using the {@link asap()}, {@link in_head()}, etc. methods.
+ *
+ * @copyright 2009 Nicolas Connault
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since Moodle 2.0
+ */
+class required_event_handler extends required_js_code {
+    protected $id;
+    protected $event;
+    protected $function;
+    protected $args = array();
+
+    /**
+     * Constructor. Normally the class and its subclasses should not be created directly.
+     * Client code should create them via the page_requirements_manager
+     * method {@link page_requirements_manager::data_for_js()}.
+     *
+     * @param page_requirements_manager $manager the page_requirements_manager we are associated with.
+     * @param string $id The id of the DOM element that will be listening for the event
+     * @param string $event A valid DOM event (click, mousedown, change etc.)
+     * @param string $function The name of the function to call
+     * @param array  $arguments An optional array of argument parameters to pass to the function
+     */
+    public function __construct(page_requirements_manager $manager, $id, $event, $function, $args=array()) {
+        $manager->requires->yui_lib('event');
+        parent::__construct($manager);
+        $this->id = $id;
+        $this->event = $event;
+        $this->function = $function;
+        $this->args = $args;
+    }
+
+    public function get_js_code() {
+        $output = "YAHOO.util.Event.addListener($this->id, '$this->event', $this->function";
+        if (!empty($this->args)) {
+            $output .= ', ' . json_encode($this->args);
+        }
+        return $output . ");\n";
+    }
+}
 
 /**
  * Generate a script tag containing the the specified code.
