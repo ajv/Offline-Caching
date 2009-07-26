@@ -1979,7 +1979,8 @@ class moodle_core_renderer extends moodle_renderer_base {
 
         $gears = TRUE;
         if($gears && isloggedin()){
-            $menu = output_offline_mode($menu);
+			include($CFG->libdir .'/offline/lib.php');
+            $menu = offline_output_menu($menu);
         }
 
         $this->page->set_state(moodle_page::STATE_PRINTING_HEADER);
@@ -3413,32 +3414,4 @@ function output_css_for_css_edit($files, $toreplace) {
         }
         echo "/* @end */\n\n";
     }
-}
-
-
-/**
- * This output function will display a menu for offline mode.
- *
- * @param string $menu The original menu 
- * @return string $menu The modified menu with the offline option
- */
-function output_offline_mode($menu) {
-    
-    global $PAGE, $CFG;
-    
-    $PAGE->requires->string_for_js('gooffline', 'moodle');
-    $PAGE->requires->string_for_js('goofflinetitle', 'moodle');
-    $PAGE->requires->string_for_js('goonline', 'moodle');
-    $PAGE->requires->string_for_js('goonlinetitle', 'moodle');
-    $PAGE->requires->string_for_js('pleasewait', 'moodle');
-    $PAGE->requires->string_for_js('cantdetectconnection', 'moodle');
-    $PAGE->requires->string_for_js('mustinstallgears', 'moodle');
-    $PAGE->requires->string_for_js('unavailableextlink', 'moodle');
-    $PAGE->requires->string_for_js('unavailablefeature', 'moodle');
-    
-    $PAGE->requires->js('lib/offline/gears_init.js');
-    $PAGE->requires->js('lib/offline/go_offline.js');
-    $PAGE->requires->js_function_call('init_offline');
-    $menu = '<span id="offline-message"></span><span id="offline-img"></span> <span id="offline-status"><a href="###" onclick="createStore()" title="'.get_string('goofflinetitle').'">'.get_string('gooffline').'</a></span>'.$menu;
-    return $menu;
 }
