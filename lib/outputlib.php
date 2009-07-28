@@ -1382,7 +1382,7 @@ class moodle_renderer_base {
      * @param moodle_html_component $component
      * @return void;
      */
-    public function prepare_event_handlers(&$component) {
+    protected function prepare_event_handlers(&$component) {
         $actions = $component->get_actions();
         if (!empty($actions) && is_array($actions) && $actions[0] instanceof component_action) {
             foreach ($actions as $action) {
@@ -1391,6 +1391,28 @@ class moodle_renderer_base {
                 }
             }
         }
+    }
+
+    /**
+     * Given a moodle_html_component with height and/or width set, translates them
+     * to appropriate CSS rules.
+     *
+     * @param moodle_html_component $component
+     * @return string CSS rules
+     */
+    protected function prepare_legacy_width_and_height($component) {
+        $output = '';
+        if (!empty($component->height)) {
+            // We need a more intelligent way to handle these warnings. If $component->height have come from
+            // somewhere in deprecatedlib.php, then there is no point outputting a warning here.
+            // debugging('Explicit height given to moodle_html_component leads to inline css. Use a proper CSS class instead.', DEBUG_DEVELOPER);
+            $output .= "height: {$component->height}px;";
+        }
+        if (!empty($component->width)) {
+            // debugging('Explicit width given to moodle_html_component leads to inline css. Use a proper CSS class instead.', DEBUG_DEVELOPER);
+            $output .= "width: {$component->width}px;";
+        }
+        return $output;
     }
 }
 
@@ -2534,7 +2556,8 @@ class moodle_core_renderer extends moodle_renderer_base {
 
         $icon->prepare();
 
-        $icon->link->add_action_object(new popup_action('click', $icon->link->url));
+        $popup = new popup_action('click', $icon->link->url);
+        $icon->link->add_action($popup);
 
         $image = null;
 
@@ -2620,7 +2643,7 @@ class moodle_core_renderer extends moodle_renderer_base {
         $image->prepare();
 
         $attributes = array('class' => $image->get_classes_string(),
-                            'style' => prepare_legacy_width_and_height($image),
+                            'style' => $this->prepare_legacy_width_and_height($image),
                             'src' => prepare_url($image->src),
                             'alt' => $image->alt,
                             'title' => $image->title);
@@ -2674,7 +2697,7 @@ class moodle_core_renderer extends moodle_renderer_base {
                 $link = new html_link();
                 $link->url = $userpic->url;
                 $link->text = fullname($userpic->user);
-                $link->add_action_object($actions[0]);
+                $link->add_action($actions[0]);
                 $output = $this->link_to_popup($link);
             } else {
                 $output = $this->link(prepare_url($userpic->url), $output);
@@ -2743,7 +2766,7 @@ class moodle_core_renderer extends moodle_renderer_base {
     public function select_menu($selectmenu) {
         $selectmenu = clone($selectmenu);
         $selectmenu->prepare();
-    
+
         $this->prepare_event_handlers($selectmenu);
 
         if ($selectmenu->nothinglabel) {
@@ -2778,7 +2801,7 @@ class moodle_core_renderer extends moodle_renderer_base {
                 $attributes['multiple'] = 'multiple';
             }
         }
-        
+
         $html = '';
 
         if (!empty($selectmenu->label)) {
@@ -2786,13 +2809,42 @@ class moodle_core_renderer extends moodle_renderer_base {
         }
 
         $html .= $this->output_start_tag('select', $attributes) . "\n";
-        foreach ($selectmenu->options as $value => $label) {
-            $attributes = array('value' => $value);
-            if ((string) $value == (string) $selectmenu->selectedvalue ||
-                    (is_array($selectmenu->selectedvalue) && in_array($value, $selectmenu->selectedvalue))) {
-                $attributes['selected'] = 'selected';
+
+        if ($selectmenu->nested) {
+            foreach ($selectmenu->options as $section => $values) {
+                $html .= $this->output_start_tag('optgroup', array('label' => $section));
+                if (!is_array($values)) {
+                    var_dump($values);
+                }
+                foreach ($values as $value => $label) {
+                    $attributes = array('value' => $value);
+
+                    if ((string) $value == (string) $selectmenu->selectedvalue ||
+                            (is_array($selectmenu->selectedvalue) && in_array($value, $selectmenu->selectedvalue))) {
+                        $attributes['selected'] = 'selected';
+                    }
+
+                    $html .= $this->output_start_tag('option', $attributes);
+
+                    if ($label === '') {
+                        $html .= $value;
+                    } else {
+                        $html .= $label;
+                    }
+
+                    $html .= $this->output_end_tag('option');
+                }
+                $html .= $this->output_end_tag('optgroup');
             }
-            $html .= '    ' . $this->output_tag('option', $attributes, s($label)) . "\n";
+        } else {
+            foreach ($selectmenu->options as $value => $label) {
+                $attributes = array('value' => $value);
+                if ((string) $value == (string) $selectmenu->selectedvalue ||
+                        (is_array($selectmenu->selectedvalue) && in_array($value, $selectmenu->selectedvalue))) {
+                    $attributes['selected'] = 'selected';
+                }
+                $html .= '    ' . $this->output_tag('option', $attributes, s($label)) . "\n";
+            }
         }
         $html .= $this->output_end_tag('select') . "\n";
 
@@ -2909,7 +2961,7 @@ class moodle_core_renderer extends moodle_renderer_base {
     }
 
     /**
-     * Print a continue button that goes to a particular URL.
+     * Prints a single paging bar to provide access to other pages  (usually in a search)
      *
      * @param string|moodle_url $link The url the button goes to.
      * @return string the HTML to output.
@@ -3265,7 +3317,7 @@ class moodle_html_component {
     /**
      * Adds a JS action to this component.
      * Note: the JS function you write must have only two arguments: (string)event and (object|array)args
-     * If you want to add an instantiated component_action (or one of its subclasses), use $component->add_action_object($action)
+     * If you want to add an instantiated component_action (or one of its subclasses), give the object as the only parameter
      *
      * @param mixed  $event a DOM event (click, mouseover etc.) or a component_action object
      * @param string $jsfunction The name of the JS function to call. required if argument 1 is a string (event)
@@ -3273,35 +3325,18 @@ class moodle_html_component {
      * @return void
      */
     public function add_action($event, $jsfunction=null, $jsfunctionargs=array()) {
+        if (empty($this->id) || in_array($this->id, moodle_html_component::$generated_ids)) {
+            $this->generate_id();
+        }
+
         if ($event instanceof component_action) {
             $this->actions[] = $event;
         } else {
             if (empty($jsfunction)) {
                 throw new coding_exception('moodle_html_component::add_action requires a JS function argument if the first argument is a string event');
             }
-            while (empty($this->id) || !in_array($this->id, moodle_html_component::$generated_ids)) {
-                $this->generate_id();
-            }
             $this->actions[] = new component_action($event, $jsfunction, $jsfunctionargs);
         }
-    }
-
-    /**
-     * Adds an instantiated component_action to this component.
-     * Note: the JS function you write must have only two arguments: (string)event and (object|array)args
-     *
-     * @param component_action $action An instantiated component_action or one of its subclasses
-     * @return void
-     */
-    public function add_action_object($action) {
-        if (!($action instanceof component_action)) {
-            throw new coding_exception('moodle_html_component::add_action_object($action) only takes an instance of component_action.');
-        }
-
-        while (empty($this->id) && !in_array($this->id, moodle_html_component::$generated_ids)) {
-            $this->generate_id();
-        }
-        $this->actions[] = $action;
     }
 
     /**
@@ -3309,8 +3344,10 @@ class moodle_html_component {
      * @return void;
      */
     protected function generate_id() {
-        $this->id = get_class($this) . '-' . substr(sha1(microtime() * rand(0, 500)), 0, 5);
-        if (!in_array($this->id, moodle_html_component::$generated_ids)) {
+        $this->id = get_class($this) . '-' . substr(sha1(microtime() * rand(0, 500)), 0, 6);
+        if (in_array($this->id, moodle_html_component::$generated_ids)) {
+            $this->generate_id();
+        } else {
             moodle_html_component::$generated_ids[] = $this->id;
         }
     }
@@ -3394,6 +3431,10 @@ class moodle_select_menu extends moodle_html_component {
      * @var boolean if true, allow multiple selection. Only used if $listbox is true.
      */
     public $multiple = false;
+    /**
+     * @var boolean $nested if true, uses $options' keys as option headings (optgroup)
+     */
+    public $nested = false;
 
     /**
      * @see moodle_html_component::prepare()
@@ -3410,7 +3451,14 @@ class moodle_select_menu extends moodle_html_component {
         if (is_null($this->nothinglabel)) {
             $this->nothinglabel = get_string('choosedots');
         }
+
+        // If nested is on, remove the default Choose option
+        if ($this->nested) {
+            $this->nothinglabel = '';
+        }
+
         $this->add_class('select');
+
         parent::prepare();
     }
 
@@ -4097,8 +4145,8 @@ class user_picture extends moodle_html_component {
                 $needrec = true;
             } else {
                 $userobj = new StdClass; // fake it to save DB traffic
-                $userobj->id = $user;
-                $userobj->picture = $picture;
+                $userobj->id = $this->user;
+                $userobj->picture = $this->image->src;
                 $this->user = clone($userobj);
                 unset($userobj);
             }
@@ -4123,9 +4171,14 @@ class user_picture extends moodle_html_component {
             $file = 'f2';
         }
 
+        if (!empty($this->size)) {
+            $this->image->width = $this->size;
+            $this->image->height = $this->size;
+        }
+
         $this->add_class('userpicture');
 
-        if (empty($this->image->src)) {
+        if (empty($this->image->src) && !empty($this->user->picture)) {
             $this->image->src = $this->user->picture;
         }
 
@@ -4461,7 +4514,7 @@ class html_list extends moodle_html_component {
     }
 
     /**
-     * Adds a html_list_item or html_list to this list. 
+     * Adds a html_list_item or html_list to this list.
      * If the param is a string, a html_list_item will be added.
      * @param mixed $item String, html_list or html_list_item object
      * @return void
@@ -4827,24 +4880,4 @@ function output_css_for_css_edit($files, $toreplace) {
         }
         echo "/* @end */\n\n";
     }
-}
-
-/**
- * Given a moodle_html_component with height and/or width set, translates them
- * to appropriate CSS rules.
- *
- * @param moodle_html_component $component
- * @return string CSS rules
- */
-function prepare_legacy_width_and_height($component) {
-    $output = '';
-    if (!empty($component->height)) {
-        debugging('Explicit height given to moodle_html_component leads to inline css. Use a proper CSS class instead.', DEBUG_DEVELOPER);
-        $output = "height: {$component->height}px;";
-    }
-    if (!empty($component->width)) {
-        debugging('Explicit width given to moodle_html_component leads to inline css. Use a proper CSS class instead.', DEBUG_DEVELOPER);
-        $output .= "width: {$component->width}px;";
-    }
-    return $output;
 }

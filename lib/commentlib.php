@@ -184,7 +184,7 @@ EOD;
         $PAGE->requires->yui_lib('connection')->in_head();
         $PAGE->requires->js('comment/comment.js')->in_head();
         $PAGE->requires->string_for_js('addcomment', 'moodle');
-        $PAGE->requires->string_for_js('delete', 'moodle');
+        $PAGE->requires->string_for_js('deletecomment', 'moodle');
     }
 
     private function _setup_course($courseid) {
@@ -396,6 +396,7 @@ EOD;
                 $userpic->user = $user;
                 $userpic->courseid = $this->course->id;
                 $userpic->link = true;
+                $userpic->size = 18;
                 $userpic->alttext = true;
                 $c->avatar = $OUTPUT->user_picture($userpic);
                 if (($USER->id == $c->userid) || !empty($candelete)) {

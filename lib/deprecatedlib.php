@@ -2305,7 +2305,7 @@ function blocks_have_content(&$blockmanager, $region) {
 
 /**
  * This was used by old code to print the blocks in a region.
- * 
+ *
  * We don't ever want old code to print blocks, so this is now a no-op.
  * The function only exists to avoid fatal errors in old code.
  *
@@ -2345,6 +2345,68 @@ function blocks_setup(&$page, $pinned = BLOCKS_PINNED_FALSE) {
 function blocks_preferred_width($instances) {
     debugging('The function blocks_print_group should no longer be used. Blocks are now printed by the theme.');
     $width = 210;
+}
+
+/**
+ * @deprecated since Moodle 2.0. See the replacements in blocklib.php.
+ *
+ * @param object $page The page object
+ * @param object $blockmanager The block manager object
+ * @param string $blockaction One of [config, add, delete]
+ * @param int|object $instanceorid The instance id or a block_instance object
+ * @param bool $pinned
+ * @param bool $redirect To redirect or not to that is the question but you should stick with true
+ */
+function blocks_execute_action($page, &$blockmanager, $blockaction, $instanceorid, $pinned=false, $redirect=true) {
+    throw new coding_exception('blocks_execute_action is no longer used. The way blocks work has been changed. See the new code in blocklib.php.');
+}
+
+/**
+ * You can use this to get the blocks to respond to URL actions without much hassle
+ *
+ * @deprecated since Moodle 2.0. Blocks have been changed. {@link block_manager::process_url_actions} is the closest replacement.
+ *
+ * @param object $PAGE
+ * @param object $blockmanager
+ * @param bool $pinned
+ */
+function blocks_execute_url_action(&$PAGE, &$blockmanager,$pinned=false) {
+    throw new coding_exception('blocks_execute_url_action is no longer used. It has been replaced by methods of block_manager.');
+}
+
+/**
+ * This shouldn't be used externally at all, it's here for use by blocks_execute_action()
+ * in order to reduce code repetition.
+ *
+ * @deprecated since Moodle 2.0. See the replacements in blocklib.php.
+ *
+ * @param $instance
+ * @param $newpos
+ * @param string|int $newweight
+ * @param bool $pinned
+ */
+function blocks_execute_repositioning(&$instance, $newpos, $newweight, $pinned=false) {
+    throw new coding_exception('blocks_execute_repositioning is no longer used. The way blocks work has been changed. See the new code in blocklib.php.');
+}
+
+
+/**
+ * Moves a block to the new position (column) and weight (sort order).
+ *
+ * @deprecated since Moodle 2.0. See the replacements in blocklib.php.
+ *
+ * @param object $instance The block instance to be moved.
+ * @param string $destpos BLOCK_POS_LEFT or BLOCK_POS_RIGHT. The destination column.
+ * @param string $destweight The destination sort order. If NULL, we add to the end
+ *                    of the destination column.
+ * @param bool $pinned Are we moving pinned blocks? We can only move pinned blocks
+ *                to a new position withing the pinned list. Likewise, we
+ *                can only moved non-pinned blocks to a new position within
+ *                the non-pinned list.
+ * @return boolean success or failure
+ */
+function blocks_move_block($page, &$instance, $destpos, $destweight=NULL, $pinned=false) {
+    throw new coding_exception('blocks_move_block is no longer used. The way blocks work has been changed. See the new code in blocklib.php.');
 }
 
 /**
@@ -2421,7 +2483,7 @@ function link_to_popup_window ($url, $name=null, $linkname=null,
 
     // Parse the $options string
     $popupparams = array();
-    if (!empty($options)) { 
+    if (!empty($options)) {
         $optionsarray = explode(',', $options);
         foreach ($optionsarray as $option) {
             if (strstr($option, '=')) {
@@ -2438,7 +2500,7 @@ function link_to_popup_window ($url, $name=null, $linkname=null,
     }
 
     $popupaction = new popup_action('click', $url, $name, $popupparams);
-    $link->add_action_object($popupaction);
+    $link->add_action($popupaction);
 
     // Call the output method
     $output = $OUTPUT->link_to_popup($link);
@@ -2446,7 +2508,7 @@ function link_to_popup_window ($url, $name=null, $linkname=null,
     if ($return) {
         return $output;
     } else {
-        echo $output; 
+        echo $output;
     }
 }
 
@@ -2494,7 +2556,7 @@ function button_to_popup_window ($url, $name=null, $linkname=null,
 
     // Parse the $options string
     $popupparams = array();
-    if (!empty($options)) { 
+    if (!empty($options)) {
         $optionsarray = explode(',', $options);
         foreach ($optionsarray as $option) {
             if (strstr($option, '=')) {
@@ -2518,13 +2580,13 @@ function button_to_popup_window ($url, $name=null, $linkname=null,
     }
 
     $popupaction = new popup_action('click', $url, $name, $popupparams);
-    $button->add_action_object($popupaction);
+    $button->add_action($popupaction);
     $output = $OUTPUT->button($button);
 
     if ($return) {
         return $output;
     } else {
-        echo $output; 
+        echo $output;
     }
 }
 
@@ -2564,7 +2626,7 @@ function print_single_button($link, $options, $label='OK', $method='get', $notus
 
     if ($jsconfirmmessage) {
         $confirmaction = new component_action('click', 'confirm_dialog', array($jsconfirmmessage));
-        $form->button->add_action_object($confirmaction);
+        $form->button->add_action($confirmaction);
     }
 
     $output = $OUTPUT->button($form);
@@ -2657,7 +2719,7 @@ function print_user_picture($user, $courseid, $picture=NULL, $size=0, $return=fa
 
     if (!empty($target)) {
         $popupaction = new popup_action('click', new moodle_url($target));
-        $userpic->add_action_object($popupaction);
+        $userpic->add_action($popupaction);
     }
 
     $output = $OUTPUT->user_picture($userpic);
@@ -2958,16 +3020,14 @@ function notice_yesno($message, $linkyes, $linkno, $optionsyes=NULL, $optionsno=
 
     $formcontinue = new html_form();
     $formcontinue->url = new moodle_url($linkyes, $optionsyes);
-    $formcontinue->button = new html_button();
     $formcontinue->button->label = get_string('yes');
     $formcontinue->method = $methodyes;
 
     $formcancel = new html_form();
     $formcancel->url = new moodle_url($linkno, $optionsno);
-    $formcancel->button = new html_button();
     $formcancel->button->label = get_string('no');
     $formcancel->method = $methodno;
-    
+
     echo $OUTPUT->confirm($message, $formcontinue, $formcancel);
 }
 
@@ -3012,9 +3072,13 @@ function print_scale_menu() {
 function choose_from_menu ($options, $name, $selected='', $nothing='choose', $script='',
                            $nothingvalue='0', $return=false, $disabled=false, $tabindex=0,
                            $id='', $listbox=false, $multiple=false, $class='') {
-    
+
     global $OUTPUT;
     // debugging('choose_from_menu() has been deprecated. Please change your code to use $OUTPUT->select_menu($selectmenu).');
+
+    if ($script) {
+        debugging('The $script parameter has been deprecated. You must use component_actions instead', DEBUG_DEVELOPER);
+    }
     $selectmenu = new moodle_select_menu();
     $selectmenu->options = $options;
     $selectmenu->name = $name;
@@ -3028,20 +3092,107 @@ function choose_from_menu ($options, $name, $selected='', $nothing='choose', $sc
     $selectmenu->multiple = $multiple;
     $selectmenu->add_classes($class);
 
-    if (!empty($script)) {
-        $onchange = new component_action('change', $script);
-        $selectmenu->add_action($onchange);
-    }
-
     if ($nothing == 'choose') {
         $selectmenu->nothinglabel = '';
     }
-    
+
     $output = $OUTPUT->select_menu($selectmenu);
-    
+
     if ($return) {
         return $output;
     } else {
         echo $output;
     }
 }
+
+/**
+ * Choose value 0 or 1 from a menu with options 'No' and 'Yes'.
+ * Other options like choose_from_menu.
+ *
+ * @deprecated since Moodle 2.0
+ *
+ * Calls {@link choose_from_menu()} with preset arguments
+ * @see choose_from_menu()
+ *
+ * @param string $name the name of this form control, as in &lt;select name="..." ...
+ * @param string $selected the option to select initially, default none.
+ * @param string $script if not '', then this is added to the &lt;select> element as an onchange handler.
+ * @param boolean $return Whether this function should return a string or output it (defaults to false)
+ * @param boolean $disabled (defaults to false)
+ * @param int $tabindex
+ * @return string|void If $return=true returns string, else echo's and returns void
+ */
+function choose_from_menu_yesno($name, $selected, $script = '',
+        $return = false, $disabled = false, $tabindex = 0) {
+    // debugging('choose_from_menu_yesno() has been deprecated. Please change your code to use $OUTPUT->select_menu($selectmenu).');
+    global $OUTPUT;
+
+    if ($script) {
+        debugging('The $script parameter has been deprecated. You must use component_actions instead', DEBUG_DEVELOPER);
+    }
+
+    $selectmenu = moodle_select_menu::make_yes_no($name, $selected);
+    $selectmenu->disabled = $disabled;
+    $selectmenu->tabindex = $tabindex;
+    $output = $OUTPUT->select_menu($select_menu);
+
+    if ($return) {
+        return $output;
+    } else {
+        echo $output;
+    }
+}
+
+/**
+ * Just like choose_from_menu, but takes a nested array (2 levels) and makes a dropdown menu
+ * including option headings with the first level.
+ *
+ * @deprecated since Moodle 2.0
+ *
+ * This function is very similar to {@link choose_from_menu_yesno()}
+ * and {@link choose_from_menu()}
+ *
+ * @todo Add datatype handling to make sure $options is an array
+ *
+ * @param array $options An array of objects to choose from
+ * @param string $name The XHTML field name
+ * @param string $selected The value to select by default
+ * @param string $nothing The label for the 'nothing is selected' option.
+ *                        Defaults to get_string('choose').
+ * @param string $script If not '', then this is added to the &lt;select> element
+ *                       as an onchange handler.
+ * @param string $nothingvalue The value for the first `nothing` option if $nothing is set
+ * @param bool $return Whether this function should return a string or output
+ *                     it (defaults to false)
+ * @param bool $disabled Is the field disabled by default
+ * @param int|string $tabindex Override the tabindex attribute [numeric]
+ * @return string|void If $return=true returns string, else echo's and returns void
+ */
+function choose_from_menu_nested($options,$name,$selected='',$nothing='choose',$script = '',
+                                 $nothingvalue=0,$return=false,$disabled=false,$tabindex=0) {
+
+    // debugging('choose_from_menu_nested() has been deprecated. Please change your code to use $OUTPUT->select_menu($selectmenu).');
+    global $OUTPUT;
+
+    if ($script) {
+        debugging('The $script parameter has been deprecated. You must use component_actions instead', DEBUG_DEVELOPER);
+    }
+    $selectmenu = moodle_select_menu::make($options, $name, $selected);
+    $selectmenu->tabindex = $tabindex;
+    $selectmenu->disabled = $disabled;
+    $selectmenu->nothingvalue = $nothingvalue;
+    $selectmenu->nested = true;
+
+    if ($nothing == 'choose') {
+        $selectmenu->nothinglabel = '';
+    }
+
+    $output = $OUTPUT->select_menu($selectmenu);
+
+    if ($return) {
+        return $output;
+    } else {
+        echo $output;
+    }
+}
+
