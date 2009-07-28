@@ -3,6 +3,8 @@
 require_once('../../config.php');
 require_once($CFG->dirroot .'/course/lib.php');
 require_once($CFG->libdir .'/offline/lib.php');
+require_once($CFG->libdir .'/ajax/ajaxlib.php');
+
 
 header('Content-type: text/plain');
 
@@ -11,15 +13,15 @@ $version = offline_get_manifest_version(0);
 
 // Include static JavaScript files
 $files = array(
-    $CFG->wwwroot.'/lib/javascript-static.js',
+    //$CFG->wwwroot.'/lib/offline/go_offline.js',
+    $CFG->wwwroot.'/lib/offline/gears_init.js',
+	$CFG->wwwroot.'/lib/javascript-static.js',
     $CFG->wwwroot.'/lib/javascript-mod.php',
     $CFG->wwwroot.'/lib/overlib/overlib.js',
     $CFG->wwwroot.'/lib/overlib/overlib_cssstyle.js',
     $CFG->wwwroot.'/lib/cookies.js',
     $CFG->wwwroot.'/lib/ufo.js',
     $CFG->wwwroot.'/lib/dropdown.js',
-    $CFG->wwwroot.'/lib/offline/go_offline.js',
-    $CFG->wwwroot.'/lib/offline/gears_init.js',
   );
 
 foreach(get_list_of_plugins() as $module){

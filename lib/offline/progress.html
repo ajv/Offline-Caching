@@ -1,0 +1,39 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<title>Progress Bar</title>
+<!-- css -->
+<link rel="stylesheet" type="text/css" href="progressbar.css">
+<!-- js -->
+<script type="text/javascript"  src="http://127.0.0.1/moodle/lib/yui/yahoo/yahoo-debug.js"></script>
+<script type="text/javascript"  src="http://127.0.0.1/moodle/lib/yui/dom/dom-debug.js"></script>
+<script type="text/javascript"  src="http://127.0.0.1/moodle/lib/yui/event/event-debug.js"></script>
+<script type="text/javascript"  src="http://127.0.0.1/moodle/lib/yui/animation/animation-debug.js"></script>
+<script type="text/javascript"  src="http://127.0.0.1/moodle/lib/yui/element/element-debug.js"></script>
+
+
+<script type="text/javascript" src="progressbar-debug.js"></script>
+
+</head>
+<body >
+<input id="newValue" value="50" maxlength="3" size="3" /><button id="setValue">Set</button>
+<span id="pb" style="inline">This is the progress bar.</span>This<span id="pbb"></span>
+
+<script  type="text/javascript">
+	var Dom = YAHOO.util.Dom, 
+		Event = YAHOO.util.Event,
+		pb;
+
+	YAHOO.util.Event.onAvailable('pb', function () {
+		pb = new YAHOO.widget.ProgressBar({height:'30px', width: 300, barColor:'green',backColor:'orange',border:'thin solid black'});
+		pb.render('pb');
+		
+		Event.on('setValue','click',function() {
+			var newVal = parseInt(Dom.get('newValue').value,10);
+			pb.set('value',newVal);
+		});
+
+	});
+</script>
+</body>
+</html>

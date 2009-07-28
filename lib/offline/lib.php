@@ -74,6 +74,15 @@ function offline_output_menu($menu) {
     
     global $PAGE, $CFG;
 
+    $PAGE->requires->yui_lib('animation')->in_head();
+    $PAGE->requires->yui_lib('element')->in_head();
+    $PAGE->requires->yui_lib('container')->in_head();
+    $PAGE->requires->yui_lib('connection')->in_head();
+
+    $PAGE->requires->js('lib/offline/progressbar-debug.js')->in_head();
+    $PAGE->requires->css('lib/offline/progressbar.css');
+
+
     $PAGE->requires->string_for_js('gooffline', 'moodle');
     $PAGE->requires->string_for_js('goofflinetitle', 'moodle');
     $PAGE->requires->string_for_js('goonline', 'moodle');
@@ -83,11 +92,12 @@ function offline_output_menu($menu) {
     $PAGE->requires->string_for_js('mustinstallgears', 'moodle');
     $PAGE->requires->string_for_js('unavailableextlink', 'moodle');
     $PAGE->requires->string_for_js('unavailablefeature', 'moodle');
-    
+
+    $menu = '<div id="content" style="visibility:hidden"></div><div id="pb" style="float:left;margin-top:5px;margin-right:0em;"></div><font size="-1"><span id="pb-percentage"></span></font> <span id="offline-message"></span> <span id="offline-img"></span> <span id="offline-status"><a href="###" onclick="createStore()" title="'.get_string('goofflinetitle').'" id="offline-link">'.get_string('gooffline').'</a></span>'.$menu;
+
     $PAGE->requires->js('lib/offline/gears_init.js');
     $PAGE->requires->js('lib/offline/go_offline.js');
     $PAGE->requires->js_function_call('init_offline');
-    $menu = '<span id="offline-message"></span><span id="offline-img"></span> <span id="offline-status"><a href="###" onclick="createStore()" title="'.get_string('goofflinetitle').'">'.get_string('gooffline').'</a></span>'.$menu;
 
     return $menu;
 }
