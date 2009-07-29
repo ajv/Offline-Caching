@@ -2445,11 +2445,11 @@ class moodle_core_renderer extends moodle_renderer_base {
             throw new coding_exception('The 3rd param to $OUTPUT->confirm must be either a URL (string/moodle_url) or a html_form object.');
         }
 
-        if (empty($continue->button->label)) {
-            $continue->button->label = get_string('yes');
+        if (empty($continue->button->text)) {
+            $continue->button->text = get_string('yes');
         }
-        if (empty($cancel->button->label)) {
-            $cancel->button->label = get_string('no');
+        if (empty($cancel->button->text)) {
+            $cancel->button->text = get_string('no');
         }
 
         $output = $this->box_start('generalbox', 'notice');
@@ -2476,7 +2476,7 @@ class moodle_core_renderer extends moodle_renderer_base {
 
         $buttonattributes = array('class' => $form->button->get_classes_string(),
                                   'type' => 'submit',
-                                  'value' => $form->button->label,
+                                  'value' => $form->button->text,
                                   'disabled' => $form->button->disabled,
                                   'id' => $form->button->id);
 
@@ -2728,7 +2728,7 @@ class moodle_core_renderer extends moodle_renderer_base {
 
         foreach ($list->items as $listitem) {
             if ($listitem instanceof html_list) {
-                $output .= $this->output_start_tag('li');
+                $output .= $this->output_start_tag('li', array());
                 $output .= $this->htmllist($listitem);
                 $output .= $this->output_end_tag('li');
             } else if ($listitem instanceof html_list_item) {
@@ -2805,7 +2805,7 @@ class moodle_core_renderer extends moodle_renderer_base {
         $html = '';
 
         if (!empty($selectmenu->label)) {
-            $html .= $this->output_tag('label', array('for' => $selectmenu->name), $selectmenu->label);
+            $html .= $this->label($selectmenu->label);
         }
 
         $html .= $this->output_start_tag('select', $attributes) . "\n";
@@ -2816,7 +2816,7 @@ class moodle_core_renderer extends moodle_renderer_base {
                 if (!is_array($values)) {
                     var_dump($values);
                 }
-                foreach ($values as $value => $label) {
+                foreach ($values as $value => $display) {
                     $attributes = array('value' => $value);
 
                     if ((string) $value == (string) $selectmenu->selectedvalue ||
@@ -2826,10 +2826,10 @@ class moodle_core_renderer extends moodle_renderer_base {
 
                     $html .= $this->output_start_tag('option', $attributes);
 
-                    if ($label === '') {
+                    if ($display === '') {
                         $html .= $value;
                     } else {
-                        $html .= $label;
+                        $html .= $display;
                     }
 
                     $html .= $this->output_end_tag('option');
@@ -2837,13 +2837,13 @@ class moodle_core_renderer extends moodle_renderer_base {
                 $html .= $this->output_end_tag('optgroup');
             }
         } else {
-            foreach ($selectmenu->options as $value => $label) {
+            foreach ($selectmenu->options as $value => $display) {
                 $attributes = array('value' => $value);
                 if ((string) $value == (string) $selectmenu->selectedvalue ||
                         (is_array($selectmenu->selectedvalue) && in_array($value, $selectmenu->selectedvalue))) {
                     $attributes['selected'] = 'selected';
                 }
-                $html .= '    ' . $this->output_tag('option', $attributes, s($label)) . "\n";
+                $html .= '    ' . $this->output_tag('option', $attributes, s($display)) . "\n";
             }
         }
         $html .= $this->output_end_tag('select') . "\n";
@@ -2851,7 +2851,16 @@ class moodle_core_renderer extends moodle_renderer_base {
         return $html;
     }
 
-    // TODO choose_from_menu_nested
+    /**
+     * Outputs a <label> element.
+     * @param html_label $label A html_label object
+     * @return HTML fragment
+     */
+    public function label($label) {
+        $label->prepare();
+        $this->prepare_event_handlers($label);
+        return $this->output_tag('label', array('for' => $label->for, 'class' => $label->get_classes_string()), $label->text);
+    }
 
     // TODO choose_from_radio
 
@@ -2954,7 +2963,7 @@ class moodle_core_renderer extends moodle_renderer_base {
         $form = new html_form();
         $form->url = $link;
         $form->values = $link->params();
-        $form->button->label = get_string('continue');
+        $form->button->text = get_string('continue');
         $form->method = 'get';
 
         return $this->output_tag('div', array('class' => 'continuebutton') , $this->button($form));
@@ -3380,7 +3389,7 @@ class moodle_html_component {
  */
 class moodle_select_menu extends moodle_html_component {
     /**
-     * @var array the choices to show in the menu. An array $value => $label.
+     * @var array the choices to show in the menu. An array $value => $display.
      */
     public $options;
     /**
@@ -3389,7 +3398,7 @@ class moodle_select_menu extends moodle_html_component {
      */
     public $name;
     /**
-     * @var string $label The label for that component
+     * @var mixed $label The label for that component. String or html_label object
      */
     public $label;
     /**
@@ -3457,6 +3466,13 @@ class moodle_select_menu extends moodle_html_component {
             $this->nothinglabel = '';
         }
 
+        if (!($this->label instanceof html_label)) {
+            $label = new html_label();
+            $label->text = $this->label;
+            $label->for = $this->name;
+            $this->label = $label;
+        }
+
         $this->add_class('select');
 
         parent::prepare();
@@ -3487,8 +3503,92 @@ class moodle_select_menu extends moodle_html_component {
     public static function make_yes_no($name, $selected) {
         return self::make(array(0 => get_string('no'), 1 => get_string('yes')), $name, $selected);
     }
+
+    /**
+     * This is a shortcut for making an hour selector menu.
+     * @param string $type The type of selector (years, months, days, hours, minutes)
+     * @param string $name fieldname
+     * @param int $currenttime A default timestamp in GMT
+     * @param int $step minute spacing
+     * @return moodle_select_menu A menu initialised with hour options.
+     */
+    public static function make_time_selector($type, $name, $currenttime=0, $step=5) {
+
+        if (!$currenttime) {
+            $currenttime = time();
+        }
+        $currentdate = usergetdate($currenttime);
+        $userdatetype = $type;
+
+        switch ($type) {
+            case 'years':
+                for ($i=1970; $i<=2020; $i++) {
+                    $timeunits[$i] = $i;
+                }
+                $userdatetype = 'year';
+                break;
+            case 'months':
+                for ($i=1; $i<=12; $i++) {
+                    $timeunits[$i] = userdate(gmmktime(12,0,0,$i,15,2000), "%B");
+                }
+                $userdatetype = 'month';
+                break;
+            case 'days':
+                for ($i=1; $i<=31; $i++) {
+                    $timeunits[$i] = $i;
+                }
+                $userdatetype = 'mday';
+                break;
+            case 'hours':
+                for ($i=0; $i<=23; $i++) {
+                    $timeunits[$i] = sprintf("%02d",$i);
+                }
+                break;
+            case 'minutes':
+                if ($step != 1) {
+                    $currentdate['minutes'] = ceil($currentdate['minutes']/$step)*$step;
+                }
+
+                for ($i=0; $i<=59; $i+=$step) {
+                    $timeunits[$i] = sprintf("%02d",$i);
+                }
+                break;
+            default:
+                throw new coding_exception("Time type $type is not supported by moodle_select_menu::make_time_selector().");
+        }
+
+        $timerselector = self::make($timeunits, $name, $currentdate[$userdatetype]);
+        $timerselector->label = new html_label();
+        $timerselector->label->text = get_string(substr($type, -1), 'form');
+        $timerselector->label->for = "menu$timerselector->name";
+        $timerselector->label->add_class('accesshide');
+        $timerselector->nothinglabel = '';
+
+        return $timerselector;
+    }
 }
 
+/**
+ * This class represents how a block appears on a page.
+ *
+ * @copyright 2009 Nicolas Connault
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since     Moodle 2.0
+ */
+class html_label extends moodle_html_component {
+    /**
+     * @var string $text The text to display in the label
+     */
+    public $text;
+    /**
+     * @var string $for The name of the form field this label is associated with
+     */
+    public $for;
+
+    public function prepare() {
+        parent::prepare();
+    }
+}
 
 /**
  * This class represents how a block appears on a page.
@@ -3943,6 +4043,19 @@ class help_icon extends moodle_html_component {
 
         parent::prepare();
     }
+
+    public static function make_scale_menu($courseid, $scale) {
+        $helpbutton = new help_button();
+        $strscales = get_string('scales');
+        $helpbutton->image->alt = $scale->name;
+        $helpbutton->link->url = new moodle_url('/course/scales.php', array('id' => $courseid, 'list' => true, 'scaleid' => $scale->id));
+        $popupaction = new popup_action('click', $helpbutton->url, 'ratingscale', $popupparams);
+        $popupaction->width = 500;
+        $popupaction->height = 400;
+        $helpbutton->link->add_action($popupaction);
+        $helpbutton->link->title = $scale->name;
+        return $helpbutton;
+    }
 }
 
 
@@ -3957,9 +4070,9 @@ class help_icon extends moodle_html_component {
  */
 class html_button extends moodle_html_component {
     /**
-     * @var string $label
+     * @var string $text
      */
-    public $label;
+    public $text;
 
     /**
      * @var boolean $disabled Whether or not this button is disabled
@@ -3973,8 +4086,8 @@ class html_button extends moodle_html_component {
     public function prepare() {
         $this->add_class('singlebutton');
 
-        if (empty($this->label)) {
-            throw new coding_exception('A html_button must have a label value!');
+        if (empty($this->text)) {
+            throw new coding_exception('A html_button must have a text value!');
         }
 
         if ($this->disabled) {
@@ -4297,7 +4410,7 @@ class html_form extends moodle_html_component {
         $this->button = new html_button();
         if (!isset($go)) {
             $go = get_string('go');
-            $this->button->label = $go;
+            $this->button->text = $go;
         }
     }
 

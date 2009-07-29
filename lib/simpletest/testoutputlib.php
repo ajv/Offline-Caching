@@ -910,7 +910,7 @@ class moodle_core_renderer_test extends UnitTestCase {
         // Empty link object: link MUST have a text value
         $link = new html_link();
         $popupaction = new popup_action('click', 'http://test.com', 'my_popup');
-        $link->add_action_object($popupaction);
+        $link->add_action($popupaction);
         $this->expectException();
         $html = $this->renderer->link_to_popup($link);
     }
@@ -921,7 +921,7 @@ class moodle_core_renderer_test extends UnitTestCase {
         $link->url = 'http://test.com';
         $link->title = 'Popup window';
         $popupaction = new popup_action('click', 'http://test.com', 'my_popup');
-        $link->add_action_object($popupaction);
+        $link->add_action($popupaction);
 
         $html = $this->renderer->link_to_popup($link);
         $expectedattributes = array('title' => 'Popup window', 'href' => 'http://test.com');
@@ -948,7 +948,7 @@ class moodle_core_renderer_test extends UnitTestCase {
     public function test_button() {
         global $CFG;
         $originalform = new html_form();
-        $originalform->button->label = 'Click Here';
+        $originalform->button->text = 'Click Here';
         $originalform->url = '/index.php';
 
         $form = clone($originalform);
@@ -998,7 +998,7 @@ class moodle_core_renderer_test extends UnitTestCase {
         // Add a few classes to the link object
         $link->add_classes('cool blue');
         $html = $this->renderer->link($link);
-        $this->assert(new ContainsTagWithAttributes('a', array('title' => 'Link to resource 1', 'class' => 'link cool blue', 'href' => 'http://test.com')), $html);
+        $this->assert(new ContainsTagWithAttributes('a', array('title' => 'Link to resource 1', 'class' => 'cool blue', 'href' => 'http://test.com')), $html);
         $this->assert(new ContainsTagWithContents('a', 'Resource 1'), $html);
 
         // Simple use of link() without a html_link object
@@ -1011,9 +1011,9 @@ class moodle_core_renderer_test extends UnitTestCase {
         $this->expectException();
         $html = $this->renderer->link($link->url->out());
     }
-    
+
     /**
-     * NOTE: consider the degree of detail in which we test HTML output, because 
+     * NOTE: consider the degree of detail in which we test HTML output, because
      * the unit tests may be run under a different theme, with different HTML
      * renderers. Maybe we should limit unit tests to standardwhite.
      */
@@ -1035,7 +1035,7 @@ class moodle_core_renderer_test extends UnitTestCase {
         $this->assert(new ContainsTagWithAttributes('input', array('type' => 'hidden', 'name' => 'cancel', 'value' => 1)), $html);
         $this->assert(new ContainsTagWithAttributes('input', array('type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey())), $html);
         $this->assert(new ContainsTagWithAttributes('input', array('type' => 'submit', 'value' => get_string('no'), 'class' => 'singlebutton')), $html);
-        
+
         // Use html_forms with default values, should produce exactly the same output as above
         $formcontinue = new html_form();
         $formcancel = new html_form();
@@ -1053,23 +1053,23 @@ class moodle_core_renderer_test extends UnitTestCase {
         $this->assert(new ContainsTagWithAttributes('input', array('type' => 'hidden', 'name' => 'cancel', 'value' => 1)), $html);
         $this->assert(new ContainsTagWithAttributes('input', array('type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey())), $html);
         $this->assert(new ContainsTagWithAttributes('input', array('type' => 'submit', 'value' => get_string('no'), 'class' => 'singlebutton')), $html);
-        
+
         // Give the buttons some different labels
         $formcontinue = new html_form();
         $formcancel = new html_form();
         $formcontinue->url = new moodle_url($continueurl);
         $formcancel->url = new moodle_url($cancelurl);
-        $formcontinue->button->label = 'Continue anyway';
-        $formcancel->button->label = 'Wow OK, I get it, backing out!';
+        $formcontinue->button->text = 'Continue anyway';
+        $formcancel->button->text = 'Wow OK, I get it, backing out!';
         $html = $this->renderer->confirm($message, $formcontinue, $formcancel);
         $this->assert(new ContainsTagWithAttributes('form', array('method' => 'post', 'action' => 'http://www.test.com/index.php')), $html);
         $this->assert(new ContainsTagWithAttributes('input', array('type' => 'hidden', 'name' => 'continue', 'value' => 1)), $html);
         $this->assert(new ContainsTagWithAttributes('input', array('type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey())), $html);
-        $this->assert(new ContainsTagWithAttributes('input', array('type' => 'submit', 'value' => $formcontinue->button->label, 'class' => 'singlebutton')), $html);
+        $this->assert(new ContainsTagWithAttributes('input', array('type' => 'submit', 'value' => $formcontinue->button->text, 'class' => 'singlebutton')), $html);
         $this->assert(new ContainsTagWithAttributes('input', array('type' => 'hidden', 'name' => 'cancel', 'value' => 1)), $html);
         $this->assert(new ContainsTagWithAttributes('input', array('type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey())), $html);
-        $this->assert(new ContainsTagWithAttributes('input', array('type' => 'submit', 'value' => $formcancel->button->label, 'class' => 'singlebutton')), $html);
-        
+        $this->assert(new ContainsTagWithAttributes('input', array('type' => 'submit', 'value' => $formcancel->button->text, 'class' => 'singlebutton')), $html);
+
         // Change the method and add extra variables
         $formcontinue = new html_form();
         $formcancel = new html_form();
