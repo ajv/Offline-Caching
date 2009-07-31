@@ -1077,8 +1077,24 @@ function xmldb_main_upgrade($oldversion) {
         $table = new xmldb_table('course_request');
         $field = new xmldb_field('shortname', XMLDB_TYPE_CHAR, '100', null, XMLDB_NOTNULL, null, null, 'fullname');
 
+    /// Before changing the field, drop dependent indexes
+    /// Define index shortname (not unique) to be dropped form course_request
+        $index = new xmldb_index('shortname', XMLDB_INDEX_NOTUNIQUE, array('shortname'));
+    /// Conditionally launch drop index shortname
+        if ($dbman->index_exists($table, $index)) {
+            $dbman->drop_index($table, $index);
+        }
+
     /// Launch change of precision for field shortname
         $dbman->change_field_precision($table, $field);
+
+    /// After changing the field, recreate dependent indexes
+    /// Define index shortname (not unique) to be added to course_request
+        $index = new xmldb_index('shortname', XMLDB_INDEX_NOTUNIQUE, array('shortname'));
+    /// Conditionally launch add index shortname
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
 
     /// Main savepoint reached
         upgrade_main_savepoint($result, 2008120700);
@@ -2208,8 +2224,9 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
         // standardizing plugin names
         if ($configs = $DB->get_records_select('config_plugins', "plugin LIKE 'quizreport_%'")) {
             foreach ($configs as $config) {
+                $result = $result && unset_config($config->name, $config->plugin); /// unset old config
                 $config->plugin = str_replace('quizreport_', 'quiz_', $config->plugin);
-                $DB->update_record('config_plugins', $config);
+                $result = $result && set_config($config->name, $config->value, $config->plugin); /// set new config
             }
         }
         unset($configs);
@@ -2220,8 +2237,9 @@ WHERE gradeitemid IS NOT NULL AND grademax IS NOT NULL");
         // standardizing plugin names
         if ($configs = $DB->get_records_select('config_plugins', "plugin LIKE 'assignment_type_%'")) {
             foreach ($configs as $config) {
+                $result = $result && unset_config($config->name, $config->plugin); /// unset old config
                 $config->plugin = str_replace('assignment_type_', 'assignment_', $config->plugin);
-                $DB->update_record('config_plugins', $config);
+                $result = $result && set_config($config->name, $config->value, $config->plugin); /// set new config
             }
         }
         unset($configs);

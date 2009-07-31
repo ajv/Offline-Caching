@@ -35,7 +35,6 @@ require_once($CFG->libdir . '/formslib.php');
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class block_edit_form extends moodleform {
-    const MAX_WEIGHT = 10;
     /**
      * The block instance we are editing.
      * @var block_base
@@ -66,13 +65,13 @@ class block_edit_form extends moodleform {
         // If the current weight of the block is out-of-range, add that option in.
         $blockweight = $this->block->instance->weight;
         $weightoptions = array();
-        if ($blockweight < -self::MAX_WEIGHT) {
+        if ($blockweight < -block_manager::MAX_WEIGHT) {
             $weightoptions[$blockweight] = $blockweight;
         }
-        for ($i = -self::MAX_WEIGHT; $i <= self::MAX_WEIGHT; $i++) {
+        for ($i = -block_manager::MAX_WEIGHT; $i <= block_manager::MAX_WEIGHT; $i++) {
             $weightoptions[$i] = $i;
         }
-        if ($blockweight > self::MAX_WEIGHT) {
+        if ($blockweight > block_manager::MAX_WEIGHT) {
             $weightoptions[$blockweight] = $blockweight;
         }
         $first = reset($weightoptions);
@@ -121,10 +120,26 @@ class block_edit_form extends moodleform {
 
         $mform->addElement('select', 'bui_weight', get_string('weight', 'block'), $weightoptions);
 
+        $pagefields = array('bui_visible', 'bui_region', 'bui_weight');
+        if (!$this->block->user_can_edit()) {
+            $mform->hardFreezeAllVisibleExcept($pagefields);
+        }
+        if (!$this->page->user_can_edit_blocks()) {
+            $mform->hardFreeze($pagefields);
+        }
+
         $this->add_action_buttons();
     }
 
     function set_data($defaults) {
+        // Prefix bui_ on all the core field names.
+        $blockfields = array('showinsubcontexts', 'pagetypepattern', 'subpagepattern',
+                'defaultregion', 'defaultweight', 'visible', 'region', 'weight');
+        foreach ($blockfields as $field) {
+            $newname = 'bui_' . $field;
+            $defaults->$newname = $defaults->$field;
+        }
+
         // Copy block config into config_ fields.
         if (!empty($this->block->config)) {
             foreach ($this->block->config as $field => $value) {
@@ -134,8 +149,8 @@ class block_edit_form extends moodleform {
         }
 
         // Munge ->subpagepattern becuase HTML selects don't play nicely with NULLs.
-        if (empty($defaults->subpagepattern)) {
-            $defaults->subpagepattern = '%@NULL@%';
+        if (empty($defaults->bui_subpagepattern)) {
+            $defaults->bui_subpagepattern = '%@NULL@%';
         }
 
         parent::set_data($defaults);

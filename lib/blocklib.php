@@ -82,6 +82,11 @@ class block_not_on_page_exception extends moodle_exception {
  * @since     Moodle 2.0
  */
 class block_manager {
+    /**
+     * The UI normally only shows block weights between -MAX_WEIGHT and MAX_WEIGHT,
+     * although other weights are valid.
+     */
+    const MAX_WEIGHT = 10;
 
 /// Field declarations =========================================================
 
@@ -130,6 +135,17 @@ class block_manager {
      * @var array
      */
     protected $extracontent = array();
+
+    /**
+     * Used by the block move id, to track whether a block is cuurently being moved.
+     *
+     * Whe you click on the move icon of a block, first the page needs to reload with
+     * extra UI for chooseing a new position for a particular block. In that situation
+     * this field holds the id of the block being moved.
+     *
+     * @var integer|null
+     */
+    protected $movingblock = null;
 
 /// Constructor ================================================================
 
@@ -258,6 +274,18 @@ class block_manager {
         $this->check_is_loaded();
         $this->ensure_content_created($region, $output);
         return $this->visibleblockcontent[$region];
+    }
+
+    /**
+     * Helper method used by get_content_for_region.
+     * @param string $region region name
+     * @param float $weight weight. May be fractional, since you may want to move a block
+     * between ones with weight 2 and 3, say ($weight would be 2.5).
+     * @return string URL for moving block $this->movingblock to this position.
+     */
+    protected function get_move_target_url($region, $weight) {
+        return $this->page->url->out(false, array('bui_moveid' => $this->movingblock,
+                'bui_newregion' => $region, 'bui_newweight' => $weight, 'sesskey' => sesskey()), false);
     }
 
     /**
@@ -392,7 +420,6 @@ class block_manager {
             }
         }
 
-        // The code here needs to be consistent with the code in block_load_for_page.
         if (is_null($includeinvisible)) {
             $includeinvisible = $this->page->user_is_editing();
         }
@@ -570,6 +597,67 @@ class block_manager {
     }
 
     /**
+     * Move a block to a new position on this page.
+     *
+     * If this block cannot appear on any other pages, then we change defaultposition/weight
+     * in the block_instances table. Otherwise we just set the postition on this page.
+     *
+     * @param $blockinstanceid the block instance id.
+     * @param $newregion the new region name.
+     * @param $newweight the new weight.
+     */
+    public function reposition_block($blockinstanceid, $newregion, $newweight) {
+        global $DB;
+
+        $this->check_region_is_known($newregion);
+        $inst = $this->find_instance($blockinstanceid);
+
+        $bi = $inst->instance;
+        if ($bi->weight == $bi->defaultweight && $bi->region == $bi->defaultregion &&
+                !$bi->showinsubcontexts && strpos($bi->pagetypepattern, '*') === false &&
+                (!$this->page->subpage || $bi->subpagepattern)) {
+
+            // Set default position
+            $newbi = new stdClass;
+            $newbi->id = $bi->id;
+            $newbi->defaultregion = $newregion;
+            $newbi->defaultweight = $newweight;
+            $DB->update_record('block_instances', $newbi);
+
+            if ($bi->blockpositionid) {
+                $bp = new stdClass;
+                $bp->id = $bi->blockpositionid;
+                $bp->region = $newregion;
+                $bp->weight = $newweight;
+                $DB->update_record('block_positions', $bp);
+            }
+
+        } else {
+            // Just set position on this page.
+            $bp = new stdClass;
+            $bp->region = $newregion;
+            $bp->weight = $newweight;
+
+            if ($bi->blockpositionid) {
+                $bp->id = $bi->blockpositionid;
+                $DB->update_record('block_positions', $bp);
+
+            } else {
+                $bp->blockinstanceid = $bi->id;
+                $bp->contextid = $this->page->context->id;
+                $bp->pagetype = $this->page->pagetype;
+                if ($this->page->subpage) {
+                    $bp->subpage = $this->page->subpage;
+                } else {
+                    $bp->subpage = '';
+                }
+                $bp->visible = $bi->visible;
+                $DB->insert_record('block_positions', $bp);
+            }
+        }
+    }
+
+    /**
      * Find a given block by its instance id
      *
      * @param integer $instanceid
@@ -683,19 +771,59 @@ class block_manager {
     }
 
     /**
-     * Return an array of content vars from a set of block instances
+     * Return an array of content objects from a set of block instances
      *
      * @param array $instances An array of block instances
-     * @return array An array of content vars
+     * @param moodle_renderer_base The renderer to use.
+     * @param string $region the region name.
+     * @return array An array of block_content (and possibly block_move_target) objects.
      */
-    protected function create_block_contents($instances, $output) {
+    protected function create_block_contents($instances, $output, $region) {
         $results = array();
+
+        $lastweight = 0;
+        $lastblock = 0;
+        if ($this->movingblock) {
+            $first = reset($instances);
+            if ($first) {
+                $lastweight = $first->instance->weight - 2;
+            }
+
+            $strmoveblockhere = get_string('moveblockhere', 'block');
+        }
+
         foreach ($instances as $instance) {
             $content = $instance->get_content_for_output($output);
-            if (!empty($content)) {
-                $results[] = $content;
+            if (empty($content)) {
+                continue;
             }
+
+            if ($this->movingblock && $lastweight != $instance->instance->weight &&
+                    $content->blockinstanceid != $this->movingblock && $lastblock != $this->movingblock) {
+                $bmt = new block_move_target();
+                $bmt->text = $strmoveblockhere;
+                $bmt->url = $this->get_move_target_url($region, ($lastweight + $instance->instance->weight)/2);
+                $results[] = $bmt;
+            }
+
+            if ($content->blockinstanceid == $this->movingblock) {
+                $content->add_class('beingmoved');
+                $content->annotation .= get_string('movingthisblockcancel', 'block',
+                        $output->link($this->page->url, get_string('cancel')));
+            }
+
+            $results[] = $content;
+            $lastweight = $instance->instance->weight;
+            $lastblock = $instance->instance->id;
         }
+
+        if ($this->movingblock && $lastblock != $this->movingblock) {
+            $bmt = new block_move_target();
+            $bmt->text = $strmoveblockhere;
+            $bmt->url = $this->get_move_target_url($region, $lastweight + 1);
+            $results[] = $bmt;
+        }
+
         return $results;
     }
 
@@ -724,7 +852,7 @@ class block_manager {
             if (array_key_exists($region, $this->extracontent)) {
                 $contents = $this->extracontent[$region];
             }
-            $contents = array_merge($contents, $this->create_block_contents($this->blockinstances[$region], $output));
+            $contents = array_merge($contents, $this->create_block_contents($this->blockinstances[$region], $output, $region));
             if ($region == $this->defaultregion) {
                 $addblockui = block_add_block_ui($this->page, $output);
                 if ($addblockui) {
@@ -738,6 +866,58 @@ class block_manager {
 /// Process actions from the URL ===============================================
 
     /**
+     * Get the appropriate list of editing icons for a block. This is used
+     * to set {@link block_contents::$controls} in {@link block_base::get_contents_for_output()}.
+     *
+     * @param $output The core_renderer to use when generating the output. (Need to get icon paths.)
+     * @return an array in the format for {@link block_contents::$controls}
+     */
+    public function edit_controls($block) {
+        global $CFG;
+
+        $controls = array();
+        $actionurl = $this->page->url->out(false, array('sesskey'=> sesskey()), false);
+
+        // Assign roles icon.
+        if (has_capability('moodle/role:assign', $block->context)) {
+            $controls[] = array('url' => $CFG->wwwroot . '/' . $CFG->admin .
+                    '/roles/assign.php?contextid=' . $block->context->id . '&returnurl=' . urlencode($this->page->url->out_returnurl()),
+                    'icon' => 'i/roles', 'caption' => get_string('assignroles', 'role'));
+        }
+
+        if ($this->page->user_can_edit_blocks()) {
+            // Show/hide icon.
+            if ($block->instance->visible) {
+                $controls[] = array('url' => $actionurl . '&bui_hideid=' . $block->instance->id,
+                        'icon' => 't/hide', 'caption' => get_string('hide'));
+            } else {
+                $controls[] = array('url' => $actionurl . '&bui_showid=' . $block->instance->id,
+                        'icon' => 't/show', 'caption' => get_string('show'));
+            }
+        }
+
+        if ($this->page->user_can_edit_blocks() || $block->user_can_edit()) {
+            // Edit config icon - always show - needed for positioning UI.
+            $controls[] = array('url' => $actionurl . '&bui_editid=' . $block->instance->id,
+                    'icon' => 't/edit', 'caption' => get_string('configuration'));
+        }
+
+        if ($this->page->user_can_edit_blocks() && $block->user_can_edit() && $block->user_can_addto($this->page)) {
+            // Delete icon.
+            $controls[] = array('url' => $actionurl . '&bui_deleteid=' . $block->instance->id,
+                    'icon' => 't/delete', 'caption' => get_string('delete'));
+        }
+
+        if ($this->page->user_can_edit_blocks()) {
+            // Move icon.
+            $controls[] = array('url' => $actionurl . '&bui_moveid=' . $block->instance->id,
+                    'icon' => 't/move', 'caption' => get_string('move'));
+        }
+
+        return $controls;
+    }
+
+    /**
      * Process any block actions that were specified in the URL.
      *
      * This can only be done given a valid $page object.
@@ -746,8 +926,12 @@ class block_manager {
      * @return boolean true if anything was done. False if not.
      */
     public function process_url_actions() {
+        if (!$this->page->user_is_editing()) {
+            return false;
+        }
         return $this->process_url_add() || $this->process_url_delete() ||
-            $this->process_url_show_hide() || $this->process_url_edit();
+            $this->process_url_show_hide() || $this->process_url_edit() ||
+            $this->process_url_move();
     }
 
     /**
@@ -762,7 +946,7 @@ class block_manager {
 
         confirm_sesskey();
 
-        if (!$page->user_is_editing() && !$this->page->user_can_edit_blocks()) {
+        if (!$this->page->user_can_edit_blocks()) {
             throw new moodle_exception('nopermissions', '', $this->page->url->out(), get_string('addblock'));
         }
 
@@ -792,7 +976,7 @@ class block_manager {
 
         $block = $this->page->blocks->find_instance($blockid);
 
-        if (!$block->user_can_edit() || !$this->page->user_can_edit_blocks() || !$block->user_can_addto($page)) {
+        if (!$block->user_can_edit() || !$this->page->user_can_edit_blocks() || !$block->user_can_addto($this->page)) {
             throw new moodle_exception('nopermissions', '', $this->page->url->out(), get_string('deleteablock'));
         }
 
@@ -821,7 +1005,7 @@ class block_manager {
 
         $block = $this->page->blocks->find_instance($blockid);
 
-        if (!$block->user_can_edit() || !$this->page->user_can_edit_blocks()) {
+        if (!$this->page->user_can_edit_blocks()) {
             throw new moodle_exception('nopermissions', '', $this->page->url->out(), get_string('hideshowblocks'));
         }
 
@@ -852,14 +1036,14 @@ class block_manager {
 
         $block = $this->find_instance($blockid);
 
-        if (!$block->user_can_edit() || !$this->page->user_can_edit_blocks()) {
+        if (!$block->user_can_edit() && !$this->page->user_can_edit_blocks()) {
             throw new moodle_exception('nopermissions', '', $this->page->url->out(), get_string('editblock'));
         }
 
         $editpage = new moodle_page();
         $editpage->set_generaltype('form');
         $editpage->set_course($this->page->course);
-        $editpage->set_context($this->page->context);
+        $editpage->set_context($block->context);
         $editurlbase = str_replace($CFG->wwwroot . '/', '', $this->page->url->out(true));
         $editurlparams = $this->page->url->params();
         $editurlparams['bui_editid'] = $blockid;
@@ -897,7 +1081,11 @@ class block_manager {
             $bi->defaultweight = $data->bui_defaultweight;
             $DB->update_record('block_instances', $bi);
 
-            $config = clone($block->config);
+            if (!empty($block->config)) {
+                $config = clone($block->config);
+            } else {
+                $config = new stdClass;
+            }
             foreach ($data as $configfield => $value) {
                 if (strpos($configfield, 'config_') !== 0) {
                     continue;
@@ -923,12 +1111,12 @@ class block_manager {
 
             } else if ($needbprecord) {
                 $bp->blockinstanceid = $block->instance->id;
-                $bp->contextid = $this->page->contextid;
+                $bp->contextid = $this->page->context->id;
                 $bp->pagetype = $this->page->pagetype;
                 if ($this->page->subpage) {
                     $bp->subpage = $this->page->subpage;
                 } else {
-                    $bp->subpage = null;
+                    $bp->subpage = '';
                 }
                 $DB->insert_record('block_positions', $bp);
             }
@@ -952,6 +1140,100 @@ class block_manager {
             exit;
         }
     }
+
+    /**
+     * Handle showing/processing the submission from the block editing form.
+     * @return boolean true if the form was submitted and the new config saved. Does not
+     *      return if the editing form was displayed. False otherwise.
+     */
+    public function process_url_move() {
+        global $CFG, $DB, $PAGE;
+
+        $blockid = optional_param('bui_moveid', null, PARAM_INTEGER);
+        if (!$blockid) {
+            return false;
+        }
+
+        confirm_sesskey();
+
+        $block = $this->find_instance($blockid);
+
+        if (!$this->page->user_can_edit_blocks()) {
+            throw new moodle_exception('nopermissions', '', $this->page->url->out(), get_string('editblock'));
+        }
+
+        $newregion = optional_param('bui_newregion', '', PARAM_ALPHANUMEXT);
+        $newweight = optional_param('bui_newweight', null, PARAM_FLOAT);
+        if (!$newregion || is_null($newweight)) {
+            // Don't have a valid target position yet, must be just starting the move.
+            $this->movingblock = $blockid;
+            $this->page->ensure_param_not_in_url('bui_moveid');
+            return false;
+        }
+
+        if (!$this->is_known_region($newregion)) {
+            throw new moodle_exception('unknownblockregion', '', $this->page->url, $newregion);
+        }
+
+        // Move this block. This may involve moving other nearby blocks.
+        $blocks = $this->birecordsbyregion[$newregion];
+
+        // First we find the nearest gap in the list of weights.
+        $spareweights = array();
+        $usedweights = array();
+        for ($i = -self::MAX_WEIGHT; $i <= self::MAX_WEIGHT; $i++) {
+            $spareweights[$i] = $i;
+            $usedweights[$i] = array();
+        }
+        foreach ($blocks as $bi) {
+            if ($bi->id == $block->instance->id) {
+                continue;
+            }
+            unset($spareweights[$bi->weight]);
+            $usedweights[$bi->weight][] = $bi->id;
+        }
+
+        $bestdistance = max(abs($newweight - self::MAX_WEIGHT), abs($newweight + self::MAX_WEIGHT)) + 1;
+        $bestgap = null;
+        foreach ($spareweights as $spareweight) {
+            if (abs($newweight - $spareweight) < $bestdistance) {
+                $bestdistance = abs($newweight - $spareweight);
+                $bestgap = $spareweight;
+            }
+        }
+
+        // If there is no gap, we have to go outside -self::MAX_WEIGHT .. self::MAX_WEIGHT.
+        if (is_null($bestgap)) {
+            $bestgap = self::MAX_WEIGHT + 1;
+            while (!empty($usedweights[$bestgap])) {
+                $bestgap++;
+            }
+        }
+
+        // Now we know the gap we are aiming for, so move all the blocks along.
+        if ($bestgap < $newweight) {
+            $newweight = floor($newweight);
+            for ($weight = $bestgap + 1; $weight <= $newweight; $weight++) {
+                foreach ($usedweights[$weight] as $biid) {
+                    $this->reposition_block($biid, $newregion, $weight - 1);
+                }
+            }
+            $this->reposition_block($block->instance->id, $newregion, $newweight);
+        } else {
+            $newweight = ceil($newweight);
+            for ($weight = $bestgap - 1; $weight >= $newweight; $weight--) {
+                foreach ($usedweights[$weight] as $biid) {
+                    $this->reposition_block($biid, $newregion, $weight + 1);
+                }
+            }
+            $this->reposition_block($block->instance->id, $newregion, $newweight);
+        }
+
+        $this->page->ensure_param_not_in_url('bui_moveid');
+        $this->page->ensure_param_not_in_url('bui_newregion');
+        $this->page->ensure_param_not_in_url('bui_newweight');
+        return true;
+    }
 }
 
 /// Helper functions for working with block classes ============================
@@ -969,66 +1251,6 @@ function block_method_result($blockname, $method, $param = NULL) {
         return NULL;
     }
     return call_user_func(array('block_'.$blockname, $method), $param);
-}
-
-/**
- * Load a block instance, with position information about where that block appears
- * on a given page.
- *
- * @param integer$blockid the block_instance.id.
- * @param moodle_page $page the page the block is appearing on.
- * @return block_base the requested block.
- */
-function block_load_for_page($blockid, $page) {
-    global $DB;
-
-    // The code here needs to be consistent with the code in block_manager::load_blocks.
-    $params = array(
-        'blockinstanceid' => $blockid,
-        'subpage' => $page->subpage,
-        'contextid' => $page->context->id,
-        'pagetype' => $page->pagetype,
-        'contextblock' => CONTEXT_BLOCK,
-    );
-    $sql = "SELECT
-                bi.id,
-                bp.id AS blockpositionid,
-                bi.blockname,
-                bi.parentcontextid,
-                bi.showinsubcontexts,
-                bi.pagetypepattern,
-                bi.subpagepattern,
-                bi.defaultregion,
-                bi.defaultweight,
-                COALESCE(bp.visible, 1) AS visible,
-                COALESCE(bp.region, bi.defaultregion) AS region,
-                COALESCE(bp.weight, bi.defaultweight) AS weight,
-                bi.configdata,
-                ctx.id AS ctxid,
-                ctx.path AS ctxpath,
-                ctx.depth AS ctxdepth,
-                ctx.contextlevel AS ctxlevel
-
-            FROM {block_instances} bi
-            JOIN {block} b ON bi.blockname = b.name
-            LEFT JOIN {block_positions} bp ON bp.blockinstanceid = bi.id
-                                              AND bp.contextid = :contextid
-                                              AND bp.pagetype = :pagetype
-                                              AND bp.subpage = :subpage
-            JOIN {context} ctx ON ctx.contextlevel = :contextblock
-                                  AND ctx.instanceid = bi.id
-
-            WHERE
-            bi.id = :blockinstanceid
-            AND b.visible = 1
-
-            ORDER BY
-                COALESCE(bp.region, bi.defaultregion),
-                COALESCE(bp.weight, bi.defaultweight),
-                bi.id";
-    $bi = $DB->get_record_sql($sql, $params, MUST_EXIST);
-    $bi = make_context_subobj($bi);
-    return block_instance($bi->blockname, $bi, $page);
 }
 
 /**
@@ -1143,55 +1365,6 @@ function block_add_block_ui($page, $output) {
     $actionurl = $page->url->out_action() . '&amp;bui_addblock=';
     $bc->content = popup_form($actionurl, $menu, 'add_block', '', get_string('adddots'), '', '', true);
     return $bc;
-}
-
-/**
- * Get the appropriate list of editing icons for a block. This is used
- * to set {@link block_contents::$controls} in {@link block_base::get_contents_for_output()}.
- *
- * @param $output The core_renderer to use when generating the output. (Need to get icon paths.)
- * @return an array in the format for {@link block_contents::$controls}
- * @since Moodle 2.0.
- */
-function block_edit_controls($block, $page) {
-    global $CFG;
-
-    $controls = array();
-    $actionurl = $page->url->out_action();
-
-    // Assign roles icon.
-    if (has_capability('moodle/role:assign', $block->context)) {
-        $controls[] = array('url' => $CFG->wwwroot . '/' . $CFG->admin .
-                '/roles/assign.php?contextid=' . $block->context->id . '&amp;returnurl=' . urlencode($page->url->out_returnurl()),
-                'icon' => 'i/roles', 'caption' => get_string('assignroles', 'role'));
-    }
-
-    if ($block->user_can_edit() && $page->user_can_edit_blocks()) {
-        // Show/hide icon.
-        if ($block->instance->visible) {
-            $controls[] = array('url' => $actionurl . '&amp;bui_hideid=' . $block->instance->id,
-                    'icon' => 't/hide', 'caption' => get_string('hide'));
-        } else {
-            $controls[] = array('url' => $actionurl . '&amp;bui_showid=' . $block->instance->id,
-                    'icon' => 't/show', 'caption' => get_string('show'));
-        }
-
-        // Edit config icon - always show - needed for positioning UI.
-        $controls[] = array('url' => $actionurl . '&amp;bui_editid=' . $block->instance->id,
-                'icon' => 't/edit', 'caption' => get_string('configuration'));
-
-        // Delete icon.
-        if ($block->user_can_addto($page)) {
-            $controls[] = array('url' => $actionurl . '&amp;bui_deleteid=' . $block->instance->id,
-                'icon' => 't/delete', 'caption' => get_string('delete'));
-        }
-
-        // Move icon.
-        $controls[] = array('url' => $page->url->out(false, array('moveblockid' => $block->instance->id)),
-                'icon' => 't/move', 'caption' => get_string('move'));
-    }
-
-    return $controls;
 }
 
 // Functions that have been deprecated by block_manager =======================

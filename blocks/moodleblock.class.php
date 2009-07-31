@@ -381,7 +381,7 @@ class block_base {
         }
 
         if ($this->page->user_is_editing()) {
-            $bc->controls = block_edit_controls($this, $this->page);
+            $bc->controls = $this->page->blocks->edit_controls($this);
         }
 
         if ($this->is_empty() && !$bc->controls) {
@@ -649,7 +649,7 @@ class block_base {
      * @return boolean
      */
     function user_can_edit() {
-        return true;
+        return has_capability('moodle/block:edit', $this->context);
     }
 
     /**
@@ -660,11 +660,11 @@ class block_base {
      * @return boolean
      */
     function user_can_addto($page) {
-        return true;
+        return has_capability('moodle/block:edit', $page->context);
     }
 
     function get_extra_capabilities() {
-        return array('moodle/block:view');
+        return array('moodle/block:view', 'moodle/block:edit');
     }
 
     // Methods deprecated in Moodle 2.0 ========================================
