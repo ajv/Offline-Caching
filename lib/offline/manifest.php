@@ -15,18 +15,19 @@ $files = array(
     '.',
     $CFG->wwwroot.'/',
     $CFG->wwwroot.'/index.php',
+    $CFG->wwwroot.'/lib/offline/go_offline.js',
   );
 
 // get all accessible courses
 if (isloggedin() and !has_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM)) 
-	and !isguest() and empty($CFG->disablemycourses)) {
+    and !isguest() and empty($CFG->disablemycourses)) {
     
-	$courses  = get_my_courses($USER->id, 'visible DESC,sortorder ASC', array('summary'));
-	
+    $courses  = get_my_courses($USER->id, 'visible DESC,sortorder ASC', array('summary'));
+    
 } else if ((!has_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM)) 
-	and !isguest()) or ($DB->count_records('course') <= FRONTPAGECOURSELIMIT)) {
+    and !isguest()) or ($DB->count_records('course') <= FRONTPAGECOURSELIMIT)) {
     
-	$categories = get_child_categories(0);  
+    $categories = get_child_categories(0);  
     if (is_array($categories) && count($categories) == 1) {
         $category   = array_shift($categories);
         $courses    = get_courses_wmanagers($category->id,
@@ -53,7 +54,7 @@ foreach ($courses as $course) {
             }
         }
         
-		require_once($CFG->dirroot . '/mod/forum/lib.php');
+        require_once($CFG->dirroot . '/mod/forum/lib.php');
         //Get all the relevant forums
         $forums = forum_get_readable_forums($USER->id, $course->id);
         foreach ($forums as $forum) {

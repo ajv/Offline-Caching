@@ -72,14 +72,14 @@ function offline_get_manifest_version($version) {
  */
 function offline_output_menu($menu) {
     
-    global $PAGE, $CFG;
+    global $PAGE, $CFG, $USER;
 
-    $PAGE->requires->yui_lib('animation')->in_head();
-    $PAGE->requires->yui_lib('element')->in_head();
-    $PAGE->requires->yui_lib('container')->in_head();
-    $PAGE->requires->yui_lib('connection')->in_head();
+    $PAGE->requires->yui_lib('animation');
+    $PAGE->requires->yui_lib('element');
+    $PAGE->requires->yui_lib('container');
+    $PAGE->requires->yui_lib('connection');
 
-    $PAGE->requires->js('lib/offline/progressbar-debug.js')->in_head();
+    $PAGE->requires->js('lib/offline/progressbar-debug.js');
     $PAGE->requires->css('lib/offline/progressbar.css');
 
 
@@ -93,11 +93,22 @@ function offline_output_menu($menu) {
     $PAGE->requires->string_for_js('unavailableextlink', 'moodle');
     $PAGE->requires->string_for_js('unavailablefeature', 'moodle');
 
-    $menu = '<div id="content" style="visibility:hidden"></div><div id="pb" style="float:left;margin-top:5px;margin-right:0em;"></div><font size="-1"><span id="pb-percentage"></span></font> <span id="offline-message"></span> <span id="offline-img"></span> <span id="offline-status"><a href="###" onclick="createStore()" title="'.get_string('goofflinetitle').'" id="offline-link">'.get_string('gooffline').'</a></span>'.$menu;
-
+    $menu = '<div id="content" style="visibility:hidden"></div><div id="pb" style="float:left; margin-top:5px; margin-right:0em;"></div><font size="-1"><span id="pb-percentage"></span></font> <span id="offline-message"></span> <span id="offline-img"></span> <span id="offline-status"></span>'.$menu;
+    
     $PAGE->requires->js('lib/offline/gears_init.js');
     $PAGE->requires->js('lib/offline/go_offline.js');
-    $PAGE->requires->js_function_call('init_offline');
+    $PAGE->requires->js_function_call('offline_init')->on_dom_ready();
 
     return $menu;
 }
+
+/**
+ */
+function offline_send_log_data($data) {
+    
+    global $PAGE;
+
+    $PAGE->requires->data_for_js('logdata', $data);
+
+}
+
