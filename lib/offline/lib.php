@@ -76,8 +76,8 @@ function offline_output_menu($menu) {
 
     $PAGE->requires->yui_lib('animation');
     $PAGE->requires->yui_lib('element');
-    $PAGE->requires->yui_lib('container');
     $PAGE->requires->yui_lib('connection');
+	//$PAGE->requires->yui_lib('container');
 
     $PAGE->requires->js('lib/offline/progressbar-debug.js');
     $PAGE->requires->css('lib/offline/progressbar.css');
@@ -100,15 +100,5 @@ function offline_output_menu($menu) {
     $PAGE->requires->js_function_call('offline_init')->on_dom_ready();
 
     return $menu;
-}
-
-/**
- */
-function offline_send_log_data($data) {
-    
-    global $PAGE;
-
-    $PAGE->requires->data_for_js('logdata', $data);
-
 }
 
