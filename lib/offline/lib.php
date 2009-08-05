@@ -77,7 +77,7 @@ function offline_output_menu($menu) {
     $PAGE->requires->yui_lib('animation');
     $PAGE->requires->yui_lib('element');
     $PAGE->requires->yui_lib('connection');
-	//$PAGE->requires->yui_lib('container');
+    //$PAGE->requires->yui_lib('container');
 
     $PAGE->requires->js('lib/offline/progressbar-debug.js');
     $PAGE->requires->css('lib/offline/progressbar.css');
