@@ -3339,21 +3339,21 @@ function popup_form($baseurl, $options, $formid, $selected='', $nothing='choose'
 
     // debugging('popup_form() has been deprecated. Please change your code to use $OUTPUT->select($dateselector).');
 
-    if (!empty($optionsextra)) {
-        debugging('the optionsextra param has been deprecated in popup_form, it will be ignored.', DEBUG_DEVELOPER);
-    }
-
     if (empty($options)) {
         return '';
     }
-    $select = moodle_select::make_popup_form($baseurl, $options, $formid, $submitvalue, $selected);
-    $select->disabled = $disabled;
 
-    // Extract the last param of the baseurl for the name of the select
-    if (preg_match('/([a-z_]*)=$/', $baseurl, $matches)) {
-        $select->name = $matches[1];
-        $select->form->url->remove_params(array($matches[1]));
+    foreach ($options as $var => $val) {
+        $url = new moodle_url($baseurl . $var);
+        if (!empty($optionsextra[$var])) {
+            new moodle_url($baseurl . $var . $optionsextra[$var]);
+        }
+        $options[$url->out(false, array(), false)] = $val;
+        unset($options[$var]);
     }
+
+    $select = moodle_select::make_popup_form($options, $formid, $submitvalue, $selected);
+    $select->disabled = $disabled;
 
     if ($nothing == 'choose') {
         $select->nothinglabel = '';
@@ -3505,3 +3505,56 @@ function print_textfield ($name, $value, $alt = '',$size=50,$maxlength=0, $retur
 
 }
 
+
+/**
+ * Centered heading with attached help button (same title text)
+ * and optional icon attached
+ *
+ * @deprecated since Moodle 2.0
+ *
+ * @param string $text The text to be displayed
+ * @param string $helppage The help page to link to
+ * @param string $module The module whose help should be linked to
+ * @param string $icon Image to display if needed
+ * @param bool $return If set to true output is returned rather than echoed, default false
+ * @return string|void String if return=true nothing otherwise
+ */
+function print_heading_with_help($text, $helppage, $module='moodle', $icon=false, $return=false) {
+
+    // debugging('print_heading_with_help() has been deprecated. Please change your code to use $OUTPUT->textfield($field).');
+
+    global $OUTPUT;
+
+    $helpicon = new help_icon();
+    $helpicon->page = $helppage;
+    $helpicon->text = $text;
+    $helpicon->module = $module;
+    
+    // Extract the src from $icon if it exists
+    if (preg_match('/src="([^"]*)"/', $icon, $matches)) {
+        $icon = $matches[1];
+    }
+
+    $output = $OUTPUT->heading_with_help($helpicon, $icon);
+
+    if ($return) {
+        return $output;
+    } else {
+        echo $output;
+    }
+}
+
+/**
+ * Returns a turn edit on/off button for course in a self contained form.
+ * Used to be an icon, but it's now a simple form button
+ *
+ * @deprecated since Moodle 2.0
+ *
+ * @global object
+ * @global object
+ * @param int $courseid The course  to update by id as found in 'course' table
+ * @return string
+ */
+function update_mymoodle_icon() {
+    throw new coding_exception('update_mymoodle_icon() has been completely deprecated.');
+}

@@ -2256,30 +2256,6 @@ function build_navigation($extranavlinks, $cm = null) {
 }
 
 /**
- * Centered heading with attached help button (same title text)
- * and optional icon attached
- *
- * @param string $text The text to be displayed
- * @param string $helppage The help page to link to
- * @param string $module The module whose help should be linked to
- * @param string $icon Image to display if needed
- * @param bool $return If set to true output is returned rather than echoed, default false
- * @return string|void String if return=true nothing otherwise
- */
-function print_heading_with_help($text, $helppage, $module='moodle', $icon='', $return=false) {
-    $output = '<div class="heading-with-help">';
-    $output .= '<h2 class="main help">'.$icon.$text.'</h2>';
-    $output .= helpbutton($helppage, $text, $module, true, false, '', true);
-    $output .= '</div>';
-
-    if ($return) {
-        return $output;
-    } else {
-        echo $output;
-    }
-}
-
-/**
  * Print (or return) a collapisble region, that has a caption that can
  * be clicked to expand or collapse the region.
  *
@@ -2787,33 +2763,6 @@ function switchroles_form($courseid) {
     return '';
 }
 
-
-/**
- * Returns a turn edit on/off button for course in a self contained form.
- * Used to be an icon, but it's now a simple form button
- *
- * @global object
- * @global object
- * @param int $courseid The course  to update by id as found in 'course' table
- * @return string
- */
-function update_mymoodle_icon() {
-
-    global $CFG, $USER;
-
-    if (!empty($USER->editing)) {
-        $string = get_string('updatemymoodleoff');
-        $edit = '0';
-    } else {
-        $string = get_string('updatemymoodleon');
-        $edit = '1';
-    }
-
-    return "<form $CFG->frametarget method=\"get\" action=\"$CFG->wwwroot/my/index.php\">".
-           "<div>".
-           "<input type=\"hidden\" name=\"edit\" value=\"$edit\" />".
-           "<input type=\"submit\" value=\"$string\" /></div></form>";
-}
 
 /**
  * Returns a turn edit on/off button for tag in a self contained form.
