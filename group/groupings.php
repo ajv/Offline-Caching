@@ -37,7 +37,7 @@ print_header_simple($strgroupings, ': '.$strgroupings, $navigation, '', '', true
 $currenttab = 'groupings';
 require('tabs.php');
 
-print_heading($strgroupings);
+echo $OUTPUT->heading($strgroupings);
 
 $data = array();
 if ($groupings = $DB->get_records('groupings', array('courseid'=>$course->id), 'name')) {
@@ -79,6 +79,6 @@ echo '<div class="buttons">';
 print_single_button('grouping.php', array('courseid'=>$courseid), $srtnewgrouping);
 echo '</div>';
 
-print_footer($course);
+echo $OUTPUT->footer();
 
 ?>

@@ -119,18 +119,18 @@
         if (!optional_param('confirm', '', PARAM_BOOL)) {
             $title = get_string('deletefilterareyousure', 'admin', $filtername);
             admin_externalpage_print_header();
-            print_heading($title);
+            echo $OUTPUT->heading($title);
             notice_yesno(get_string('deletefilterareyousuremessage', 'admin', $filtername), $returnurl .
                     '?action=delete&amp;filterpath=' . $filterpath . '&amp;confirm=1&amp;sesskey=' . sesskey(),
                     $returnurl, NULL, NULL, 'post', 'get');
-            admin_externalpage_print_footer();
+            echo $OUTPUT->footer();
             exit;
         }
 
         // Do the deletion.
         $title = get_string('deletingfilter', 'admin', $filtername);
         admin_externalpage_print_header();
-        print_heading($title);
+        echo $OUTPUT->heading($title);
 
         // Delete all data for this plugin.
         filter_delete_all_for_filter($filterpath);
@@ -140,7 +140,7 @@
         $a->directory = $filterpath;
         print_box(get_string('deletefilterfiles', 'admin', $a), 'generalbox', 'notice');
         print_continue($returnurl);
-        admin_externalpage_print_footer();
+        echo $OUTPUT->footer();
         exit;
     }
 
@@ -159,7 +159,7 @@
 
 /// Print the page heading.
     admin_externalpage_print_header();
-    print_heading(get_string('filtersettings', 'admin'));
+    echo $OUTPUT->heading(get_string('filtersettings', 'admin'));
 
     $activechoices = array(
         TEXTFILTER_DISABLED => get_string('disabled', 'filters'),
@@ -219,7 +219,7 @@
 
     print_table($table);
     echo '<p class="filtersettingnote">' . get_string('filterallwarning', 'filters') . '</p>';
-    admin_externalpage_print_footer();
+    echo $OUTPUT->footer();
 
 /// Display helper functions ===================================================
 

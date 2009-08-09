@@ -62,7 +62,7 @@
     $completioninfo = new completion_info($course);
     $completioninfo->print_help_icon();
 
-    print_heading_block(get_string('weeklyoutline'), 'outline');
+    echo $OUTPUT->heading(get_string('weeklyoutline'), 2, 'headingblock header outline');
 
     // Note, an ordered list would confuse - "1" could be the clipboard or summary.
     echo "<ul class='weeks'>\n";
@@ -126,6 +126,8 @@
     $weekofseconds = 604800;
     $course->enddate = $course->startdate + ($weekofseconds * $course->numsections);
 
+    $popupurl = $CFG->wwwroot.'/course/view.php?id='.$course->id.'&week=';
+
     $strftimedateshort = ' '.get_string('strftimedateshort');
 
     while ($weekdate < $course->enddate) {
@@ -150,7 +152,7 @@
 
         if (!empty($displaysection) and $displaysection != $section) {  // Check this week is visible
             if ($showsection) {
-                $sectionmenu[$section] = s("$strweek $section |     $weekday - $endweekday");
+                $sectionmenu[$popupurl.$section] = s("$strweek $section |     $weekday - $endweekday");
             }
             $section++;
             $weekdate = $nextweekdate;
@@ -211,10 +213,10 @@
 
             echo '<div class="content">';
             if (!has_capability('moodle/course:viewhiddensections', $context) and !$thissection->visible) {   // Hidden for students
-                print_heading($currenttext.$weekperiod.' ('.get_string('notavailable').')', null, 3, 'weekdates');
+                echo $OUTPUT->heading($currenttext.$weekperiod.' ('.get_string('notavailable').')', 3, 'weekdates');
 
             } else {
-                print_heading($currenttext.$weekperiod, null, 3, 'weekdates');
+                echo $OUTPUT->heading($currenttext.$weekperiod, 3, 'weekdates');
 
                 echo '<div class="summary">';
                 $summaryformatoptions->noclean = true;
@@ -244,7 +246,8 @@
 
     if (!empty($sectionmenu)) {
         echo '<div class="jumpmenu">';
-        echo popup_form($CFG->wwwroot.'/course/view.php?id='.$course->id.'&amp;week=', $sectionmenu,
-                   'sectionmenu', '', get_string('jumpto'), '', '', true);
+        $select = moodle_select::make_popup_form($sectionmenu, 'sectionmenu');
+        $select->set_label(get_string('jumpto'));
+        echo $OUTPUT->select($select);
         echo '</div>';
     }

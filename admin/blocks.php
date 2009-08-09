@@ -45,7 +45,7 @@
 
     if (!empty($delete) && confirm_sesskey()) {
         admin_externalpage_print_header();
-        print_heading($strmanageblocks);
+        echo $OUTPUT->heading($strmanageblocks);
 
         if (!$block = blocks_get_record($delete)) {
             print_error('blockdoesnotexist', 'error');
@@ -60,7 +60,7 @@
             notice_yesno(get_string('blockdeleteconfirm', '', $strblockname),
                          'blocks.php?delete='.$block->id.'&amp;confirm=1&amp;sesskey='.sesskey(),
                          'blocks.php');
-            admin_externalpage_print_footer();
+            echo $OUTPUT->footer();
             exit;
 
         } else {
@@ -99,7 +99,7 @@
     }
 
     admin_externalpage_print_header();
-    print_heading($strmanageblocks);
+    echo $OUTPUT->heading($strmanageblocks);
 
 /// Main display starts here
 
@@ -190,7 +190,7 @@
     $table->print_html();
 
     if(!empty($incompatible)) {
-        print_heading(get_string('incompatibleblocks', 'admin'));
+        echo $OUTPUT->heading(get_string('incompatibleblocks', 'admin'));
 
         $table = new flexible_table('admin-blocks-incompatible');
 
@@ -212,6 +212,6 @@
         $table->print_html();
     }
 
-    admin_externalpage_print_footer();
+    echo $OUTPUT->footer();
 
 ?>

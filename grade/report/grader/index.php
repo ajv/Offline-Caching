@@ -34,6 +34,8 @@ $target        = optional_param('target', 0, PARAM_ALPHANUM);
 $toggle        = optional_param('toggle', NULL, PARAM_INT);
 $toggle_type   = optional_param('toggle_type', 0, PARAM_ALPHANUM);
 
+$PAGE->set_url('grade/report/grader/index.php', compact('courseid', 'page', 'perpageurl', 'edit', 'sortitemid'));
+
 /// basic access checks
 if (!$course = $DB->get_record('course', array('id' => $courseid))) {
     print_error('nocourseid');
@@ -123,8 +125,8 @@ if ($report->get_pref('enableajax')) {
 // make sure separate group does not prevent view
 if ($report->currentgroup == -2) {
     print_grade_page_head($COURSE->id, 'report', 'grader', $reportname, false, $buttons);
-    print_heading(get_string("notingroup"));
-    print_footer($course);
+    echo $OUTPUT->heading(get_string("notingroup"));
+    echo $OUTPUT->footer();
     exit;
 }
 
@@ -161,7 +163,7 @@ foreach($warnings as $warning) {
 $studentsperpage = $report->get_pref('studentsperpage');
 // Don't use paging if studentsperpage is empty or 0 at course AND site levels
 if (!empty($studentsperpage)) {
-    print_paging_bar($numusers, $report->page, $studentsperpage, $report->pbarurl);
+    echo $OUTPUT->paging_bar(moodle_paging_bar::make($numusers, $report->page, $studentsperpage, $report->pbarurl));
 }
 
 $reporthtml = '<div class="gradeparent">';
@@ -196,7 +198,7 @@ if ($USER->gradeediting[$course->id] && ($report->get_pref('showquickfeedback')
 
 // prints paging bar at bottom for large pages
 if (!empty($studentsperpage) && $studentsperpage >= 20) {
-    print_paging_bar($numusers, $report->page, $studentsperpage, $report->pbarurl);
+    echo $OUTPUT->paging_bar(moodle_paging_bar::make($numusers, $report->page, $studentsperpage, $report->pbarurl));
 }
 
 echo '<div id="hiddentooltiproot">tooltip panel</div>';
@@ -359,6 +361,6 @@ YAHOO.util.Event.onDOMReady(init);
 </script>
 <?php
 
-print_footer($course);
+echo $OUTPUT->footer();
 
 ?>

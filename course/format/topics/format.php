@@ -71,7 +71,7 @@
     $completioninfo = new completion_info($course);
     $completioninfo->print_help_icon();
 
-    print_heading_block(get_string('topicoutline'), 'outline');
+    echo $OUTPUT->heading(get_string('topicoutline'), 2, 'headingblock header outline');
 
     // Note, an ordered list would confuse - "1" could be the clipboard or summary.
     echo "<ul class='topics'>\n";
@@ -130,6 +130,8 @@
     $timenow = time();
     $section = 1;
     $sectionmenu = array();
+    
+    $popupurl = $CFG->wwwroot.'/course/view.php?id='.$course->id.'&topic=';
 
     while ($section <= $course->numsections) {
 
@@ -155,7 +157,7 @@
 		} else {
 		    $strsummary = ' - '.substr($strsummary, 0, 60).'...';
 		}
-                $sectionmenu[$section] = s($section.$strsummary);
+                $sectionmenu[$popupurl.$section] = s($section.$strsummary);
             }
             $section++;
             continue;
@@ -252,7 +254,8 @@
 
     if (!empty($sectionmenu)) {
         echo '<div class="jumpmenu">';
-        echo popup_form($CFG->wwwroot.'/course/view.php?id='.$course->id.'&amp;topic=', $sectionmenu,
-                   'sectionmenu', '', get_string('jumpto'), '', '', true);
+        $select = moodle_select::make_popup_form($sectionmenu, 'sectionmenu');
+        $select->set_label(get_string('jumpto'));
+        echo $OUTPUT->select($select);
         echo '</div>';
     }

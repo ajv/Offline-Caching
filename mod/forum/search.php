@@ -108,7 +108,7 @@
                   "", "", "&nbsp;", navmenu($course));
 
         forum_print_big_search_form($course);
-        print_footer($course);
+        echo $OUTPUT->footer();
         exit;
     }
 
@@ -127,7 +127,7 @@
 
     if (!$posts = forum_search_posts($searchterms, $course->id, $page*$perpage, $perpage, $totalcount)) {
         print_header_simple("$strsearchresults", "", $navigation, 'search.words', "", "", "&nbsp;", navmenu($course));
-        print_heading(get_string("nopostscontaining", "forum", $search));
+        echo $OUTPUT->heading(get_string("nopostscontaining", "forum", $search));
 
         if (!$individualparams) {
             $words = $search;
@@ -135,7 +135,7 @@
 
         forum_print_big_search_form($course);
 
-        print_footer($course);
+        echo $OUTPUT->footer();
         exit;
     }
 
@@ -158,9 +158,10 @@
                              '">'.get_string('advancedsearch','forum').'...</a>';
     echo '</div>';
 
-    print_heading("$strsearchresults: $totalcount");
-
-    print_paging_bar($totalcount, $page, $perpage, "search.php?search=".urlencode($search)."&amp;id=$course->id&amp;perpage=$perpage&amp;");
+    echo $OUTPUT->heading("$strsearchresults: $totalcount");
+    
+    $url = new moodle_url('search.php', array('search' => urlencode($search), 'id' => $course->id, 'perpage' => $perpage));
+    echo $OUTPUT->paging_bar(moodle_paging_bar::make($totalcount, $page, $perpage, $url));
 
     //added to implement highlighting of search terms found only in HTML markup
     //fiedorow - 9/2/2005
@@ -236,9 +237,9 @@
                 $fulllink, $strippedsearch, -99, false);
     }
 
-    print_paging_bar($totalcount, $page, $perpage, "search.php?search=".urlencode($search)."&amp;id=$course->id&amp;perpage=$perpage&amp;");
+    echo $OUTPUT->paging_bar(moodle_paging_bar::make($totalcount, $page, $perpage, $url));
 
-    print_footer($course);
+    echo $OUTPUT->footer();
 
 
 
@@ -246,7 +247,7 @@
  * @todo Document this function
  */
 function forum_print_big_search_form($course) {
-    global $CFG, $DB, $words, $subject, $phrase, $user, $userid, $fullwords, $notwords, $datefrom, $dateto, $PAGE;
+    global $CFG, $DB, $words, $subject, $phrase, $user, $userid, $fullwords, $notwords, $datefrom, $dateto, $PAGE, $OUTPUT;
 
     print_simple_box(get_string('searchforumintro', 'forum'), 'center', '', '', 'searchbox', 'intro');
 
@@ -291,9 +292,10 @@ function forum_print_big_search_form($course) {
     }
 
     echo '<input name="timefromrestrict" type="checkbox" value="1" alt="'.get_string('searchdatefrom', 'forum').'" onclick="return lockoptions(\'searchform\', \'timefromrestrict\', timefromitems)" '.  $datefromchecked . ' /> ';
-    print_date_selector('fromday', 'frommonth', 'fromyear', $datefrom);
-    print_time_selector('fromhour', 'fromminute', $datefrom);
-
+    $selectors = moodle_select::make_time_selectors(array('days' => 'fromday','months' => 'frommonth', 'years' => 'fromyear', 'hours' => 'fromhour', 'minutes' => 'fromminute'), $datefrom);
+    foreach ($selectors as $select) {
+        echo $OUTPUT->select($select);
+    }
     echo '<input type="hidden" name="hfromday" value="0" />';
     echo '<input type="hidden" name="hfrommonth" value="0" />';
     echo '<input type="hidden" name="hfromyear" value="0" />';
@@ -314,8 +316,10 @@ function forum_print_big_search_form($course) {
     }
 
     echo '<input name="timetorestrict" type="checkbox" value="1" alt="'.get_string('searchdateto', 'forum').'" onclick="return lockoptions(\'searchform\', \'timetorestrict\', timetoitems)" ' .$datetochecked. ' /> ';
-    print_date_selector('today', 'tomonth', 'toyear', $dateto);
-    print_time_selector('tohour', 'tominute', $dateto);
+    $selectors = moodle_select::make_time_selectors(array('days' => 'today','months' => 'tomonth', 'years' => 'toyear', 'hours' => 'tohour', 'minutes' => 'tominute'), $dateto);
+    foreach ($selectors as $select) {
+        echo $OUTPUT->select($select);
+    }
 
     echo '<input type="hidden" name="htoday" value="0" />';
     echo '<input type="hidden" name="htomonth" value="0" />';

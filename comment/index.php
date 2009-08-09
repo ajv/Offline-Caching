@@ -62,7 +62,7 @@ if ($action === 'delete') {
 
 admin_externalpage_setup('comments');
 admin_externalpage_print_header();
-print_heading(get_string('comments'));
+echo $OUTPUT->heading(get_string('comments'));
 if (!empty($err)) {
     print_error($err, 'error', $CFG->httpswwwroot.'/comment/');
 }
@@ -72,4 +72,4 @@ if (empty($action)) {
     echo '<button id="comments_delete">'.get_string('delete').'</button>';
     echo '<div>';
 }
-admin_externalpage_print_footer();
+echo $OUTPUT->footer();

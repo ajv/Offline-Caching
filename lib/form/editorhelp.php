@@ -56,7 +56,7 @@ for ($i=1; ; $i++){
 }
 print_header();
 print_simple_box_start('center', '96%');
-print_heading(get_string('editorhelptopics'));
+echo $OUTPUT->heading(get_string('editorhelptopics'));
 
 
 echo '<ul>';
@@ -66,12 +66,12 @@ foreach ($topics as $i => $topic){
 echo '</ul>';
 print_simple_box_end();
 // End of page.
-close_window_button();
+echo $OUTPUT->close_window_button();
 global $CFG;
 echo '<p align="center"><a href="'.$CFG->wwwroot.'/help.php?file=index.html">'. get_string('helpindex') .'</a></p>';
 
 $CFG->docroot = '';   // We don't want a doc link here
-print_footer('none');
+echo $OUTPUT->footer();
 die;
 /**
  * A function to return a simple link to a help page. We don't want a popup here

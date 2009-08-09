@@ -57,7 +57,7 @@
 /// Print the component download link
     echo '<div class="reportlink"><a href="environment.php?action=updatecomponent&amp;sesskey='.sesskey().'">'.$strupdate.'</a></div>';
 
-    print_heading($strenvironment);
+    echo $OUTPUT->heading($strenvironment);
 
 /// Handle the 'updatecomponent' action
     if ($action == 'updatecomponent' && confirm_sesskey()) {
@@ -132,5 +132,5 @@
     $status = check_moodle_environment($version, $environment_results);
 
 /// Print footer
-    admin_externalpage_print_footer();
+    echo $OUTPUT->footer();
 ?>

@@ -225,6 +225,7 @@ class default_questiontype {
      * @param string $wizardnow is '' for first page.
      */
     function display_question_editing_page(&$mform, $question, $wizardnow){
+        global $OUTPUT;
         $heading = $this->get_heading(empty($question->id));
         print_heading_with_help($heading, $this->name(), $this->plugin_name());
         $permissionstrs = array();
@@ -240,7 +241,7 @@ class default_questiontype {
             }
         }
         if (!$question->formoptions->movecontext  && count($permissionstrs)){
-            print_heading(get_string('permissionto', 'question'), 'center', 3);
+            echo $OUTPUT->heading(get_string('permissionto', 'question'), 3);
             $html = '<ul>';
             foreach ($permissionstrs as $permissionstr){
                 $html .= '<li>'.$permissionstr.'</li>';
@@ -290,7 +291,7 @@ class default_questiontype {
     *       is itself an object, shown next to the form fields. (I don't think this is accurate any more.)
     */
     function save_question($question, $form, $course) {
-        global $USER, $DB;
+        global $USER, $DB, $OUTPUT;
         // This default implementation is suitable for most
         // question types.
 
@@ -367,7 +368,7 @@ class default_questiontype {
         if (!empty($result->noticeyesno)) {
             notice_yesno($result->noticeyesno, "question.php?id=$question->id&amp;courseid={$course->id}",
                 "edit.php?courseid={$course->id}");
-            print_footer($course);
+            echo $OUTPUT->footer();
             exit;
         }
 

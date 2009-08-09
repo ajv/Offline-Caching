@@ -207,7 +207,7 @@
     /// Print the responses of the given user
     ////////////////////////////////////////////////////////
     if($do_show == 'showoneentry') {
-        print_heading(format_text($feedback->name));
+        echo $OUTPUT->heading(format_text($feedback->name));
         
         //print the items
         if(is_array($feedbackitems)){
@@ -259,6 +259,6 @@
     ///////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
 
-    print_footer($course);
+    echo $OUTPUT->footer();
 
 ?>

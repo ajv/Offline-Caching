@@ -30,7 +30,7 @@
 
     $capabilities = feedback_load_capabilities($cm->id);
 
-    if($feedback->anonymous == FEEDBACK_ANONYMOUS_YES AND !$capabilities->edititems) {
+    if($feedback->anonymous == FEEDBACK_ANONYMOUS_YES ) {
         $capabilities->complete = true;
     }
     
@@ -110,7 +110,7 @@
     /// print the tabs
     include('tabs.php');
 
-    print_heading(format_text($feedback->name));
+    echo $OUTPUT->heading(format_text($feedback->name));
 
     // print_simple_box_start('center', '80%');
     print_box_start('generalbox boxaligncenter boxwidthwide');
@@ -120,7 +120,7 @@
     print_box_end();
     
     if($capabilities->edititems) {
-        print_heading(get_string("page_after_submit", "feedback"), '', 4);
+        echo $OUTPUT->heading(get_string("page_after_submit", "feedback"), 4);
         // print_simple_box_start('center', '80%');
         print_box_start('generalbox boxaligncenter boxwidthwide');
         echo format_text($feedback->page_after_submit);
@@ -158,7 +158,7 @@
     //####### mapcourse-end
 
     //####### completed-start
-    if($capabilities->complete AND !$capabilities->edititems) {
+    if($capabilities->complete) {
         // print_simple_box_start('center', '80%');
         print_box_start('generalbox boxaligncenter boxwidthwide');
         //check, whether the feedback is open (timeopen, timeclose)
@@ -170,7 +170,7 @@
                 print_continue($CFG->wwwroot.'/course/view.php?id='.$course->id);
             // print_simple_box_end();
             print_box_end();
-            print_footer($course);
+            echo $OUTPUT->footer();
             exit;
         }
         
@@ -218,6 +218,6 @@
     ///////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
 
-    print_footer($course);
+    echo $OUTPUT->footer();
 
 ?>

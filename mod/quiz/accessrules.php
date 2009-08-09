@@ -220,7 +220,7 @@ class quiz_access_manager {
      * @param boolean $canpreview This affects whether we have to worry about secure window stuff.
      */
     public function back_to_view_page($canpreview, $message = '') {
-        global $CFG;
+        global $CFG, $OUTPUT;
         $url = $this->_quizobj->view_url();
         if ($this->securewindow_required($canpreview)) {
             print_header();
@@ -234,7 +234,7 @@ class quiz_access_manager {
             }
             print_box_end();
             $PAGE->requires->js_function_call('quiz_secure_window.close', array($url, $delay));
-            print_footer('empty');
+            echo $OUTPUT->footer();
             die();
         } else {
             redirect($url, $message);
@@ -596,7 +596,7 @@ class password_access_rule extends quiz_access_rule_base {
      * @return mixed return null, unless $return is true, and a form needs to be displayed.
      */
     public function do_password_check($canpreview, $accessmanager, $return = false) {
-        global $CFG, $SESSION;
+        global $CFG, $SESSION, $OUTPUT;
 
     /// We have already checked the password for this quiz this session, so don't ask again.
         if (!empty($SESSION->passwordcheckedquizzes[$this->_quiz->id])) {
@@ -657,7 +657,7 @@ class password_access_rule extends quiz_access_rule_base {
             return $output;
         } else {
             echo $output;
-            print_footer('empty');
+            echo $OUTPUT->footer();
             exit;
         }
     }
@@ -692,7 +692,7 @@ class securewindow_access_rule extends quiz_access_rule_base {
      * a JavaScript altert before the button submits.
      */
     public function print_start_attempt_button($buttontext, $strconfirmstartattempt) {
-        global $CFG, $SESSION, $PAGE;
+        global $CFG, $SESSION, $PAGE, $OUTPUT;
 
         $attempturl = $this->_quizobj->start_attempt_url() . '?cmid=' . $this->_quizobj->get_cmid() .
                 '&sesskey=' . sesskey();
@@ -715,7 +715,7 @@ class securewindow_access_rule extends quiz_access_rule_base {
 
     /// A noscript tag to explains that this quiz only works with JavaScript enabled.
         echo '<noscript>';
-        print_heading(get_string('noscript', 'quiz'));
+        echo $OUTPUT->heading(get_string('noscript', 'quiz'));
         echo "</noscript>\n";
     }
 
@@ -727,8 +727,13 @@ class securewindow_access_rule extends quiz_access_rule_base {
      * @return string HTML for the link.
      */
     public function make_review_link($linktext, $attemptid) {
-        return button_to_popup_window($this->_quizobj->review_url($attemptid),
-                'quizpopup', $linktext, '', '', '', $this->windowoptions, true);
+        global $OUTPUT;
+        $form = new html_form();
+        $form->button->text = $linktext;
+        $form->button->title = $form->button->text;
+        $form->url = $this->_quizobj->review_url($attemptid);
+        $form->button->add_action(new popup_action('click', $form->url, 'quizpopup', $this->windowoptions));
+        return $OUTPUT->button($form);
     }
 
     /**

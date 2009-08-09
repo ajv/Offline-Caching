@@ -59,7 +59,7 @@ if($mform->is_cancelled()) {
     print_header_simple($data->name, '', $nav,
         '', '', true, update_module_button($cm->id, $course->id, get_string('modulename', 'data')),
         navmenu($course, $cm), '', '');
-    print_heading(format_string($data->name));
+    echo $OUTPUT->heading(format_string($data->name));
 
     // these are for the tab display
     $currentgroup = groups_get_activity_group($cm);
@@ -67,7 +67,7 @@ if($mform->is_cancelled()) {
     $currenttab = 'export';
     include('tabs.php');
     $mform->display();
-    print_footer();
+    echo $OUTPUT->footer();
     die;
 }
 

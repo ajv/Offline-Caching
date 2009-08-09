@@ -36,8 +36,8 @@ if (!$DB->get_record('role_assignments', array('userid' => $USER->id, 'contextid
 
 if ($user->deleted) {
     print_header();
-    print_heading(get_string('userdeleted'));
-    print_footer($course);
+    echo $OUTPUT->heading(get_string('userdeleted'));
+    echo $OUTPUT->footer();
     die;
 }
 
@@ -96,9 +96,9 @@ if ($course->id == SITEID) {
 // Get the posts.
 if ($posts = forum_search_posts($searchterms, $searchcourse, $page*$perpage, $perpage,
             $totalcount, $extrasql)) {
-
-    print_paging_bar($totalcount, $page, $perpage,
-            "user.php?id=$user->id&amp;course=$course->id&amp;mode=$mode&amp;perpage=$perpage&amp;");
+    
+    $baseurl = new moodle_url('user.php', array('id' => $user->id, 'course' => $course->id, 'mode' => $mode, 'perpage' => $perpage));
+    echo $OUTPUT->paging_bar(moodle_paging_bar::make($totalcount, $page, $perpage, $baseurl));
 
     $discussions = array();
     $forums      = array();
@@ -165,16 +165,15 @@ if ($posts = forum_search_posts($searchterms, $searchcourse, $page*$perpage, $pe
         echo "<br />";
     }
 
-    print_paging_bar($totalcount, $page, $perpage,
-            "user.php?id=$user->id&amp;course=$course->id&amp;mode=$mode&amp;perpage=$perpage&amp;");
+    echo $OUTPUT->paging_bar(moodle_paging_bar::make($totalcount, $page, $perpage, $baseurl));
 } else {
     if ($mode == 'posts') {
-        print_heading(get_string('noposts', 'forum'));
+        echo $OUTPUT->heading(get_string('noposts', 'forum'));
     } else {
-        print_heading(get_string('nodiscussionsstartedby', 'forum'));
+        echo $OUTPUT->heading(get_string('nodiscussionsstartedby', 'forum'));
     }
 }
 echo '</div>';
-print_footer($course);
+echo $OUTPUT->footer();
 
 ?>

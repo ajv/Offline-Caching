@@ -144,7 +144,7 @@ if ($courseid != SITEID) {
 $showroles = 1;
 $currenttab = 'usersroles';
 include_once($CFG->dirroot.'/user/tabs.php');
-print_heading($title, '', 3);
+echo $OUTPUT->heading($title, 3);
 print_box_start('generalbox boxaligncenter boxwidthnormal');
 
 // Display them.
@@ -156,7 +156,7 @@ if (!$roleassignments) {
 
 /// End of page.
 print_box_end();
-print_footer($course);
+echo $OUTPUT->footer();
 
 function print_report_tree($contextid, $contexts, $systemcontext, $fullname) {
     global $CFG, $OUTPUT;
@@ -175,7 +175,7 @@ function print_report_tree($contextid, $contexts, $systemcontext, $fullname) {
     $context = $contexts[$contextid];
 
     // Print the context name.
-    print_heading(print_context_name($contexts[$contextid]), '', 4, 'contextname');
+    echo $OUTPUT->heading(print_context_name($contexts[$contextid]), 4, 'contextname');
 
     // If there are any role assignments here, print them.
     foreach ($context->roleassignments as $ra) {

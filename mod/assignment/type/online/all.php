@@ -139,7 +139,7 @@
         print_container_start(true,'generalbox assignment');
 
         // info bit
-        print_heading("$view->section - $view->name", 'left', 3);
+        echo $OUTPUT->heading("$view->section - $view->name", 3, 'mdl-left');
         if (!empty($view->submitted)) {
             echo '<div class="reportlink">'.$view->submitted.'</div>';
         }
@@ -161,5 +161,5 @@
         print_container_end();
     }
 
-    print_footer($course);
+    echo $OUTPUT->footer();
 ?>

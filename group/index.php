@@ -149,7 +149,7 @@ if (ajaxenabled()) {
     $deletegroup_disabled = '';
 }
 
-print_heading(format_string($course->shortname) .' '.$strgroups, 'center', 3);
+echo $OUTPUT->heading(format_string($course->shortname) .' '.$strgroups, 3);
 echo '<form id="groupeditform" action="index.php" method="post">'."\n";
 echo '<div>'."\n";
 echo '<input type="hidden" name="id" value="' . $courseid . '" />'."\n";
@@ -258,7 +258,7 @@ if (ajaxenabled()) {
             array($CFG->httpswwwroot, $course->id));
 }
 
-print_footer($course);
+echo $OUTPUT->footer();
 
 /**
  * Returns the first button action with the given prefix, taken from

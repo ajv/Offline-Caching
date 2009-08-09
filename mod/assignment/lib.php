@@ -244,7 +244,8 @@ class assignment_base {
      * This will be suitable for most assignment types
      */
     function view_footer() {
-        print_footer($this->course);
+        global $OUTPUT;
+        echo $OUTPUT->footer();
     }
 
     /**
@@ -259,7 +260,7 @@ class assignment_base {
      * @param object $submission The submission object or NULL in which case it will be loaded
      */
     function view_feedback($submission=NULL) {
-        global $USER, $CFG, $DB;
+        global $USER, $CFG, $DB, $OUTPUT;
         require_once($CFG->libdir.'/gradelib.php');
 
         if (!has_capability('mod/assignment:submit', $this->context, $USER->id, false)) {
@@ -292,7 +293,7 @@ class assignment_base {
         }
 
     /// Print the feedback
-        print_heading(get_string('feedbackfromteacher', 'assignment', fullname($teacher)));
+        echo $OUTPUT->heading(get_string('feedbackfromteacher', 'assignment', fullname($teacher)));
 
         echo '<table cellspacing="0" class="feedback">';
 
@@ -558,7 +559,7 @@ class assignment_base {
         ///3) Save and Skip to the next one on the popup
 
         //make user global so we can use the id
-        global $USER;
+        global $USER, $OUTPUT;
 
         $mailinfo = optional_param('mailinfo', null, PARAM_BOOL);
         if (is_null($mailinfo)) {
@@ -572,7 +573,7 @@ class assignment_base {
                 if ($submission = $this->process_feedback()) {
                     //IE needs proper header with encoding
                     print_header(get_string('feedback', 'assignment').':'.format_string($this->assignment->name));
-                    print_heading(get_string('changessaved'));
+                    echo $OUTPUT->heading(get_string('changessaved'));
                     print $this->update_main_listing($submission);
                 }
                 close_window();
@@ -847,7 +848,7 @@ class assignment_base {
      * @param string $extra_javascript
      */
     function display_submission($extra_javascript = '') {
-        global $CFG, $DB, $PAGE;
+        global $CFG, $DB, $PAGE, $OUTPUT;
         require_once($CFG->libdir.'/gradelib.php');
         require_once($CFG->libdir.'/tablelib.php');
 
@@ -1039,7 +1040,7 @@ class assignment_base {
 
         echo '</table>';
 
-        print_footer('none');
+        echo $OUTPUT->footer();
     }
 
     /**
@@ -1064,7 +1065,7 @@ class assignment_base {
      * @return bool|void
      */
     function display_submissions($message='') {
-        global $CFG, $DB, $USER, $DB;
+        global $CFG, $DB, $USER, $DB, $OUTPUT;
         require_once($CFG->libdir.'/gradelib.php');
 
         /* first we check to see if the form has just been submitted
@@ -1195,7 +1196,7 @@ class assignment_base {
         $table->setup();
 
         if (empty($users)) {
-            print_heading(get_string('nosubmitusers','assignment'));
+            echo $OUTPUT->heading(get_string('nosubmitusers','assignment'));
             return true;
         }
 
@@ -1422,7 +1423,7 @@ class assignment_base {
         echo '</td></tr></table>';
         echo '</div></form></div>';
         ///End of mini form
-        print_footer($this->course);
+        echo $OUTPUT->footer();
     }
 
     /**
@@ -2550,7 +2551,7 @@ function assignment_refresh_events($courseid = 0) {
  * This is used by the recent activity block
  */
 function assignment_print_recent_activity($course, $viewfullnames, $timestart) {
-    global $CFG, $USER, $DB;
+    global $CFG, $USER, $DB, $OUTPUT;
 
     // do not use log table if possible, it may be huge
 
@@ -2627,7 +2628,7 @@ function assignment_print_recent_activity($course, $viewfullnames, $timestart) {
         return false;
     }
 
-    print_headline(get_string('newsubmissions', 'assignment').':');
+    echo $OUTPUT->heading(get_string('newsubmissions', 'assignment').':');
 
     foreach ($show as $submission) {
         $cm = $modinfo->cms[$submission->cmid];

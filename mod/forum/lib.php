@@ -1301,7 +1301,7 @@ function forum_print_overview($courses,&$htmlarray) {
  * @return bool success
  */
 function forum_print_recent_activity($course, $viewfullnames, $timestart) {
-    global $CFG, $USER, $DB;
+    global $CFG, $USER, $DB, $OUTPUT;
 
     // do not use log table if possible, it may be huge and is expensive to join with other tables
 
@@ -1377,7 +1377,7 @@ function forum_print_recent_activity($course, $viewfullnames, $timestart) {
         return false;
     }
 
-    print_headline(get_string('newforumposts', 'forum').':', 3);
+    echo $OUTPUT->heading(get_string('newforumposts', 'forum').':', 3);
     echo "\n<ul class='unlist'>\n";
 
     foreach ($printposts as $post) {
@@ -5527,7 +5527,7 @@ function forum_print_latest_discussions($course, $forum, $maxdiscussions=-1, $di
         $numdiscussions = forum_get_discussions_count($cm);
 
         ///Show the paging bar
-        print_paging_bar($numdiscussions, $page, $perpage, "view.php?f=$forum->id&amp;");
+        echo $OUTPUT->paging_bar(moodle_paging_bar::make($numdiscussions, $page, $perpage, "view.php?f=$forum->id"));
         if ($numdiscussions > 1000) {
             // saves some memory on sites with very large forums
             $replies = forum_count_discussion_replies($forum->id, $sort, $maxdiscussions, $page, $perpage);
@@ -5667,7 +5667,7 @@ function forum_print_latest_discussions($course, $forum, $maxdiscussions=-1, $di
     }
 
     if ($page != -1) { ///Show the paging bar
-        print_paging_bar($numdiscussions, $page, $perpage, "view.php?f=$forum->id&amp;");
+        echo $OUTPUT->paging_bar(moodle_paging_bar::make($numdiscussions, $page, $perpage, "view.php?f=$forum->id"));
     }
 }
 
@@ -5816,7 +5816,7 @@ function forum_print_discussion($course, $cm, $forum, $discussion, $post, $mode,
             }
             if ($forum->scale < 0) {
                 if ($scale = $DB->get_record("scale", array("id" => abs($forum->scale)))) {
-                    print_scale_menu_helpbutton($course->id, $scale );
+                    echo $OUTPUT->help_button(help_button::make_scale_menu($course->id, $scale));
                 }
             }
             echo '</div>';

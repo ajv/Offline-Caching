@@ -284,7 +284,11 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
     /// (some formats like main page, social..., haven't it and rolling dates
     /// from 0 produces crazy dates. MDL-10125
         if ($form1->startdate) {
-            print_date_selector("startday", "startmonth", "startyear", $form1->startdate);
+            $dayselector = moodle_select::make_time_selector('days', "startday", $form1->startdate);
+            $monthselector = moodle_select::make_time_selector('months', "startmonth", $form1->startdate);
+            $yearselector = moodle_select::make_time_selector('years', "startyear", $form1->startdate);
+
+            echo $OUTPUT->select($dayselector) . $OUTPUT->select($monthselector) . $OUTPUT->select($yearselector);
             helpbutton("coursestartdate", get_string("startdate"));
         } else {
             print_string('notavailable');
@@ -342,8 +346,6 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
                         echo "</td><td>";
                         $restore_options[1] = get_string("yes");
                         $restore_options[0] = get_string("no");
-                        //choose_from_menu($restore_options, $restore_var, $$restore_var, "");
-                        //choose_from_radio($restore_options, $restore_var, $$restore_var);
                         //Print the checkbox
                         print_checkbox($restore_var, $$restore_var, $$restore_var, get_string("modulenameplural",$modname),'','selectItemInCheckboxByName(\'form1\',\'restore_'.$modname.'\',this.checked)');
                         //If backup contains user data, then show menu, else fix it to
@@ -353,8 +355,6 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
                         if ($info->mods[$modname]->userinfo == "true") {
                             $restore_user_options[1] = get_string("yes");
                             $restore_user_options[0] = get_string("no");
-                            //choose_from_menu($restore_user_options, $user_info_var, $$user_info_var, "");
-                            //choose_from_radio($restore_user_options, $user_info_var, $$user_info_var);
                             print_checkbox($user_info_var, $$user_info_var, $$user_info_var, get_string("userdata"),'','selectItemInCheckboxByName(\'form1\',\'restore_user_info_'.$modname.'\',this.checked)');
                         } else {
                             //Module haven't userdata
@@ -600,7 +600,7 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
 <hr />
 <?php
 
-print_heading(get_string('rolemappings'));
+echo $OUTPUT->heading(get_string('rolemappings'));
 $xml_file  = $CFG->dataroot."/temp/backup/".$backup_unique_code."/moodle.xml";
 
 $info = restore_read_xml_info($xml_file);

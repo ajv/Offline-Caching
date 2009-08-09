@@ -178,7 +178,7 @@ $strperm = array(
 
 // Start the output.
 print_header(get_string('explainpermission', 'role'));
-print_heading(get_string('explainpermission', 'role'));
+echo $OUTPUT->heading(get_string('explainpermission', 'role'));
 
 // Print a summary of what we are doing.
 $a = new stdClass;
@@ -273,6 +273,6 @@ if ($userid && $capability != 'moodle/site:doanything' && !$userhascapability &&
         has_capability('moodle/site:doanything', $context, $userid)) {
     echo '<p>' . get_string('explainpermissionsdoanything', 'role', $capability) . '</p>';
 }
-close_window_button();
-print_footer('empty');
+echo $OUTPUT->close_window_button();
+echo $OUTPUT->footer();
 ?>

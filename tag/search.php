@@ -40,7 +40,7 @@ if ( has_capability('moodle/tag:manage',$systemcontext) ) {
     echo '<div class="managelink"><a href="'. $CFG->wwwroot .'/tag/manage.php">' . get_string('managetags', 'tag') . '</a></div>' ;
 }
 
-print_heading(get_string('searchtags', 'tag'), '', 2);
+echo $OUTPUT->heading(get_string('searchtags', 'tag'), 2);
 
 tag_print_search_box();
 
@@ -54,6 +54,6 @@ print_box_start('generalbox', 'big-tag-cloud-box');
 tag_print_cloud(150);
 print_box_end();
 
-print_footer();
+echo $OUTPUT->footer();
 
 ?>

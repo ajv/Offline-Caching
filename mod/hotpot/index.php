@@ -99,9 +99,9 @@
                 print_simple_box_start("center", "60%", "#FFAAAA", 20, "noticebox");
 
                 if (count($regrade_hotpots)==1) {
-                    print_heading(get_string('regradecheck', 'hotpot', $regrade_hotpots[$regrade]->name));
+                    echo $OUTPUT->heading(get_string('regradecheck', 'hotpot', $regrade_hotpots[$regrade]->name));
                 } else {
-                    print_heading(get_string('regradecheck', 'hotpot', ''));
+                    echo $OUTPUT->heading(get_string('regradecheck', 'hotpot', ''));
                     print '<ul>';
                     foreach ($regrade_hotpots as $hotpot) {
                         print "<li>$hotpot->name</li>";
@@ -127,7 +127,7 @@
                 ;
 
                 print_simple_box_end();
-                print_footer($course);
+                echo $OUTPUT->footer();
                 exit;
 
             } else { // regrade has been confirmed, so proceed
@@ -402,5 +402,5 @@
     print_table($table);
 
     // Finish the page
-    print_footer($course);
+    echo $OUTPUT->footer();
 ?>

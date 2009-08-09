@@ -104,7 +104,7 @@ switch ($action) {
                         'sesskey' =>  sesskey(),
                         'deleteconfirmed'=> 1)
                     );
-            print_footer();
+            echo $OUTPUT->footer();
             die;
         }else{
             $outcome->delete();
@@ -129,7 +129,7 @@ $outcomes_tables = array();
 $heading = get_string('outcomes', 'grades');
 
 if ($courseid and $outcomes = grade_outcome::fetch_all_local($courseid)) {
-    $return = print_heading($strcustomoutcomes, '', 3, 'main', true);
+    $return = $OUTPUT->heading($strcustomoutcomes, 3, 'main');
     $data = array();
     foreach($outcomes as $outcome) {
         $line = array();
@@ -182,7 +182,7 @@ if ($courseid and $outcomes = grade_outcome::fetch_all_local($courseid)) {
 
 
 if ($outcomes = grade_outcome::fetch_all_global()) {
-    $return = print_heading($strstandardoutcome, '', 3, 'main', true);
+    $return = $OUTPUT->heading($strstandardoutcome, 3, 'main');
     $data = array();
     foreach($outcomes as $outcome) {
         $line = array();
@@ -254,10 +254,4 @@ echo '</div>';
 
 $upload_form->display();
 
-if ($courseid) {
-    print_footer($course);
-} else {
-    admin_externalpage_print_footer();
-}
-
-?>
+echo $OUTPUT->footer();

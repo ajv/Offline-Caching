@@ -52,7 +52,7 @@
         notice_yesno(get_string('noguests', 'chat').'<br /><br />'.get_string('liketologin'),
                 get_login_url(), $CFG->wwwroot.'/course/view.php?id='.$course->id);
 
-        print_footer($course);
+        echo $OUTPUT->footer();
         exit;
 
     }
@@ -109,7 +109,7 @@
     }
 
 
-    print_heading(format_string($chat->name));
+    echo $OUTPUT->heading(format_string($chat->name));
 
     if (has_capability('mod/chat:chat',$context)) {
         /// Print the main part of the page
@@ -166,7 +166,7 @@
     if ($chatusers = chat_get_users($chat->id, $currentgroup, $cm->groupingid)) {
         $timenow = time();
         print_simple_box_start('center');
-        print_heading($strcurrentusers);
+        echo $OUTPUT->heading($strcurrentusers);
         echo '<table id="chatcurrentusers">';
         foreach ($chatusers as $chatuser) {
             $lastping = $timenow - $chatuser->lastmessageping;
@@ -184,6 +184,6 @@
         print_simple_box_end();
     }
 
-    print_footer($course);
+    echo $OUTPUT->footer();
 
 ?>

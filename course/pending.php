@@ -147,7 +147,7 @@
     /// Display the form for giving a reason for rejecting the request.
         admin_externalpage_print_header($rejectform->focus());
         $rejectform->display();
-        admin_externalpage_print_footer();
+        echo $OUTPUT->footer();
         exit;
     }
 
@@ -156,9 +156,9 @@
 
     $pending = $DB->get_records('course_request');
     if (empty($pending)) {
-        print_heading(get_string('nopendingcourses'));
+        echo $OUTPUT->heading(get_string('nopendingcourses'));
     } else {
-        print_heading(get_string('coursespending'));
+        echo $OUTPUT->heading(get_string('coursespending'));
 
     /// Build a table of all the requests.
         $table->class = 'pendingcourserequests generaltable';
@@ -209,5 +209,5 @@
 
 /// Finish off the page.
     print_single_button($CFG->wwwroot . '/course/index.php', array(), get_string('backtocourselisting'));
-    admin_externalpage_print_footer();
+    echo $OUTPUT->footer();
 ?>

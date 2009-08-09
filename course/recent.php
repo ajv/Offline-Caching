@@ -57,7 +57,7 @@
     $navlinks[] = array('name' => $userinfo, 'link' => null, 'type' => 'misc');
     $navigation = build_navigation($navlinks);
     print_header("$course->shortname: $strrecentactivity", $course->fullname, $navigation, '', $meta);
-    print_heading(format_string($course->fullname) . ": $userinfo", '', 3);
+    echo $OUTPUT->heading(format_string($course->fullname) . ": $userinfo", 3);
 
     $mform->display();
 
@@ -204,7 +204,9 @@
             if (($activity->type == 'section') && ($param->sortby == 'default')) {
                 if ($inbox) {
                     print_simple_box_end();
-                    print_spacer(30);
+                    $spacer = new html_image();
+                    $spacer->height = 30;
+                    echo $OUTPUT->spacer($spacer) . '<br />';
                 }
                 print_simple_box_start('center', '90%');
                 echo "<h2>$activity->name</h2>";
@@ -259,7 +261,7 @@
 
     }
 
-    print_footer($course);
+    echo $OUTPUT->footer();
 
 function compare_activities_by_time_desc($a, $b) {
     // make sure the activities actually have a timestamp property

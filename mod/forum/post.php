@@ -55,7 +55,7 @@
 
         notice_yesno(get_string('noguestpost', 'forum').'<br /><br />'.get_string('liketologin'),
                      get_login_url(), get_referer(false));
-        print_footer($course);
+        echo $OUTPUT->footer();
         exit;
     }
 
@@ -336,7 +336,7 @@
             }
 
         }
-        print_footer($course);
+        echo $OUTPUT->footer();
         die;
 
 
@@ -410,7 +410,7 @@
             $navigation = build_navigation($navlinks, $cm);
             print_header_simple(format_string($discussion->name).": ".format_string($post->subject), "", $navigation, '', "", true, "", navmenu($course, $cm));
 
-            print_heading(get_string('pruneheading', 'forum'));
+            echo $OUTPUT->heading(get_string('pruneheading', 'forum'));
             echo '<center>';
 
             include('prune.html');
@@ -418,7 +418,7 @@
             forum_print_post($post, $discussion, $forum, $cm, $course, false, false, false);
             echo '</center>';
         }
-        print_footer($course);
+        echo $OUTPUT->footer();
         die;
     } else {
         print_error('unknowaction');
@@ -801,7 +801,7 @@
 
     $mform_post->display();
 
-    print_footer($course);
+    echo $OUTPUT->footer();
 
 
 ?>

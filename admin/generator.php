@@ -1198,17 +1198,18 @@ class generator_web extends generator {
     }
 
     public function display() {
+        global $OUTPUT;
         print_header("Data generator");
-        print_heading("Data generator: web interface");
-        print_heading("FOR DEVELOPMENT PURPOSES ONLY. DO NOT USE ON A PRODUCTION SITE!", '', 3);
-        print_heading("Your database contents will probably be massacred. You have been warned", '', 5);
+        echo $OUTPUT->heading("Data generator: web interface");
+        echo $OUTPUT->heading("FOR DEVELOPMENT PURPOSES ONLY. DO NOT USE ON A PRODUCTION SITE!", 3);
+        echo $OUTPUT->heading("Your database contents will probably be massacred. You have been warned", 5);
 
 
         $systemcontext = get_context_instance(CONTEXT_SYSTEM);
         if (!has_capability('moodle/site:doanything', $systemcontext)) {
             // If not logged in, give link to login page for current site
             notify("You must be logged in as administrator before using this script.");
-            print_footer();
+            echo $OUTPUT->footer();
             require_login();
         } else {
             $this->mform->display();
@@ -1217,7 +1218,8 @@ class generator_web extends generator {
     }
 
     public function __destroy() {
-        print_footer();
+        global $OUTPUT;
+        echo $OUTPUT->footer();
     }
 }
 

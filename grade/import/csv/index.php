@@ -126,7 +126,7 @@ if ($formdata = $mform->get_data()) {
     // print some preview
     $numlines = 0; // 0 preview lines displayed
 
-    print_heading(get_string('importpreview', 'grades'));
+    echo $OUTPUT->heading(get_string('importpreview', 'grades'));
     echo '<table>';
     echo '<tr>';
     foreach ($header as $h) {
@@ -484,5 +484,5 @@ if ($formdata = $mform->get_data()) {
     $mform->display();
 }
 
-print_footer();
+echo $OUTPUT->footer();
 ?>

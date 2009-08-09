@@ -22,7 +22,7 @@ define('FIRSTUSEDEXCELROW', 3);
 define('MOD_CLASS_ACTIVITY', 0);
 define('MOD_CLASS_RESOURCE', 1);
 
-if (!defined('MAX_MODINFO_CACHE_SIZE')) { 
+if (!defined('MAX_MODINFO_CACHE_SIZE')) {
     define('MAX_MODINFO_CACHE_SIZE', 10);
 }
 
@@ -270,12 +270,12 @@ function build_logs_array($course, $user=0, $date=0, $order="l.time ASC", $limit
 function print_log($course, $user=0, $date=0, $order="l.time ASC", $page=0, $perpage=100,
                    $url="", $modname="", $modid=0, $modaction="", $groupid=0) {
 
-    global $CFG, $DB;
+    global $CFG, $DB, $OUTPUT;
 
     if (!$logs = build_logs_array($course, $user, $date, $order, $page*$perpage, $perpage,
                        $modname, $modid, $modaction, $groupid)) {
         notify("No logs found!");
-        print_footer($course);
+        echo $OUTPUT->footer();
         exit;
     }
 
@@ -304,7 +304,7 @@ function print_log($course, $user=0, $date=0, $order="l.time ASC", $page=0, $per
     print_string("displayingrecords", "", $totalcount);
     echo "</div>\n";
 
-    print_paging_bar($totalcount, $page, $perpage, "$url&amp;perpage=$perpage&amp;");
+    echo $OUTPUT->paging_bar(moodle_paging_bar::make($totalcount, $page, $perpage, "$url&perpage=$perpage"));
 
     echo '<table class="logtable generalbox boxaligncenter" summary="">'."\n";
     // echo "<table class=\"logtable\" cellpadding=\"3\" cellspacing=\"0\" summary=\"\">\n";
@@ -384,19 +384,19 @@ function print_log($course, $user=0, $date=0, $order="l.time ASC", $page=0, $per
     }
     echo "</table>\n";
 
-    print_paging_bar($totalcount, $page, $perpage, "$url&amp;perpage=$perpage&amp;");
+    echo $OUTPUT->paging_bar(moodle_paging_bar::make($totalcount, $page, $perpage, "$url&perpage=$perpage"));
 }
 
 
 function print_mnet_log($hostid, $course, $user=0, $date=0, $order="l.time ASC", $page=0, $perpage=100,
                    $url="", $modname="", $modid=0, $modaction="", $groupid=0) {
 
-    global $CFG, $DB;
+    global $CFG, $DB, $OUTPUT;
 
     if (!$logs = build_mnet_logs_array($hostid, $course, $user, $date, $order, $page*$perpage, $perpage,
                        $modname, $modid, $modaction, $groupid)) {
         notify("No logs found!");
-        print_footer($course);
+        echo $OUTPUT->footer();
         exit;
     }
 
@@ -421,7 +421,7 @@ function print_mnet_log($hostid, $course, $user=0, $date=0, $order="l.time ASC",
     print_string("displayingrecords", "", $totalcount);
     echo "</div>\n";
 
-    print_paging_bar($totalcount, $page, $perpage, "$url&amp;perpage=$perpage&amp;");
+    echo $OUTPUT->paging_bar(moodle_paging_bar::make($totalcount, $page, $perpage, "$url&perpage=$perpage"));
 
     echo "<table class=\"logtable\" cellpadding=\"3\" cellspacing=\"0\">\n";
     echo "<tr>";
@@ -487,7 +487,7 @@ function print_mnet_log($hostid, $course, $user=0, $date=0, $order="l.time ASC",
     }
     echo "</table>\n";
 
-    print_paging_bar($totalcount, $page, $perpage, "$url&amp;perpage=$perpage&amp;");
+    echo $OUTPUT->paging_bar(moodle_paging_bar::make($totalcount, $page, $perpage, "$url&perpage=$perpage"));
 }
 
 
@@ -809,7 +809,7 @@ function print_log_graph($course, $userid=0, $type="course.png", $date=0) {
 
 
 function print_overview($courses) {
-    global $CFG, $USER, $DB;
+    global $CFG, $USER, $DB, $OUTPUT;
 
     $htmlarray = array();
     if ($modules = $DB->get_records('modules')) {
@@ -829,7 +829,7 @@ function print_overview($courses) {
         if (empty($course->visible)) {
             $linkcss = 'class="dimmed"';
         }
-        print_heading('<a title="'. format_string($course->fullname).'" '.$linkcss.' href="'.$CFG->wwwroot.'/course/view.php?id='.$course->id.'">'. format_string($course->fullname).'</a>');
+        echo $OUTPUT->heading('<a title="'. format_string($course->fullname).'" '.$linkcss.' href="'.$CFG->wwwroot.'/course/view.php?id='.$course->id.'">'. format_string($course->fullname).'</a>');
         if (array_key_exists($course->id,$htmlarray)) {
             foreach ($htmlarray[$course->id] as $modname => $html) {
                 echo $html;
@@ -846,7 +846,7 @@ function print_overview($courses) {
  */
 function print_recent_activity($course) {
     // $course is an object
-    global $CFG, $USER, $SESSION, $DB;
+    global $CFG, $USER, $SESSION, $DB, $OUTPUT;
 
     $context = get_context_instance(CONTEXT_COURSE, $course->id);
 
@@ -880,7 +880,7 @@ function print_recent_activity($course) {
     //Accessibility: new users now appear in an <OL> list.
     if ($users) {
         echo '<div class="newusers">';
-        print_headline(get_string("newusers").':', 3);
+        echo $OUTPUT->heading(get_string("newusers").':', 3);
         $content = true;
         echo "<ol class=\"list\">\n";
         foreach ($users as $user) {
@@ -954,7 +954,7 @@ function print_recent_activity($course) {
     }
 
     if (!empty($changelist)) {
-        print_headline(get_string('courseupdates').':', 3);
+        echo $OUTPUT->heading(get_string("courseupdates").':', 3);
         $content = true;
         foreach ($changelist as $changeinfo => $change) {
             echo '<p class="activity">'.$change['text'].'</p>';
@@ -1249,11 +1249,11 @@ function print_section($course, $section, $mods, $modnamesused, $absolute=false,
                 // 1) The activity is not visible to users
                 // and
                 // 2a) The 'showavailability' option is not set (if that is set,
-                //     we need to display the activity so we can show 
+                //     we need to display the activity so we can show
                 //     availability info)
                 // or
-                // 2b) The 'availableinfo' is empty, i.e. the activity was 
-                //     hidden in a way that leaves no info, such as using the 
+                // 2b) The 'availableinfo' is empty, i.e. the activity was
+                //     hidden in a way that leaves no info, such as using the
                 //     eye icon.
                 if (!$modinfo->cms[$modnumber]->uservisible &&
                     (empty($modinfo->cms[$modnumber]->showavailability) ||
@@ -1273,7 +1273,7 @@ function print_section($course, $section, $mods, $modnamesused, $absolute=false,
                 }
             }
 
-            // In some cases the activity is visible to user, but it is 
+            // In some cases the activity is visible to user, but it is
             // dimmed. This is done if viewhiddenactivities is true and if:
             // 1. the activity is not visible, or
             // 2. the activity has dates set which do not include current, or
@@ -1289,7 +1289,7 @@ function print_section($course, $section, $mods, $modnamesused, $absolute=false,
                     $accessiblebutdim = $accessiblebutdim ||
                         $mod->availablefrom > time() ||
                         ($mod->availableuntil && $mod->availableuntil < time()) ||
-                        count($mod->conditionsgrade) > 0 || 
+                        count($mod->conditionsgrade) > 0 ||
                         count($mod->conditionscompletion) > 0;
                 }
             }
@@ -1304,7 +1304,10 @@ function print_section($course, $section, $mods, $modnamesused, $absolute=false,
             }
 
             if ($mod->indent) {
-                print_spacer(12, 20 * $mod->indent, false);
+                $spacer = new html_image();
+                $spacer->height = 12;
+                $spacer->width = 20 * $mod->indent;
+                echo $OUTPUT->spacer($spacer);
             }
 
             $extra = '';
@@ -1380,7 +1383,7 @@ function print_section($course, $section, $mods, $modnamesused, $absolute=false,
                     }
 
                     echo '<a '.$linkcss.' '.$extra.
-                         ' href="'.$CFG->wwwroot.'/mod/'.$mod->modname.'/view.php?id='.$mod->id.'">'.                         
+                         ' href="'.$CFG->wwwroot.'/mod/'.$mod->modname.'/view.php?id='.$mod->id.'">'.
                          '<img src="'.$icon.'" class="activityicon" alt="" /> '.
                          $accesstext.'<span>'.$instancename.$altname.'</span></a>';
 
@@ -1428,7 +1431,7 @@ function print_section($course, $section, $mods, $modnamesused, $absolute=false,
             $completion = $hidecompletion
                 ? COMPLETION_TRACKING_NONE
                 : $completioninfo->is_enabled($mod);
-            if ($completion!=COMPLETION_TRACKING_NONE && isloggedin() && 
+            if ($completion!=COMPLETION_TRACKING_NONE && isloggedin() &&
                 !isguestuser() && $mod->uservisible) {
                 $completiondata = $completioninfo->get_data($mod,true);
                 $completionicon = '';
@@ -1473,7 +1476,7 @@ function print_section($course, $section, $mods, $modnamesused, $absolute=false,
                         // If this completion state is used by the
                         // conditional activities system, we need to turn
                         // off the JS.
-                        if (!empty($CFG->enableavailability) && 
+                        if (!empty($CFG->enableavailability) &&
                             condition_info::completion_value_used_as_condition(
                             $course, $mod)) {
                             $extraclass = ' preventjs';
@@ -1499,7 +1502,7 @@ function print_section($course, $section, $mods, $modnamesused, $absolute=false,
                 }
             }
 
-            // Show availability information (for someone who isn't allowed to 
+            // Show availability information (for someone who isn't allowed to
             // see the activity itself, or for staff)
             if (!$mod->uservisible) {
                 echo '<div class="availabilityinfo">'.$mod->availableinfo.'</div>';
@@ -1507,7 +1510,7 @@ function print_section($course, $section, $mods, $modnamesused, $absolute=false,
                 $ci = new condition_info($mod);
                 $fullinfo = $ci->get_full_information();
                 if($fullinfo) {
-                    echo '<div class="availabilityinfo">'.get_string($mod->showavailability 
+                    echo '<div class="availabilityinfo">'.get_string($mod->showavailability
                         ? 'userrestriction_visible'
                         : 'userrestriction_hidden','condition',
                         $fullinfo).'</div>';
@@ -1543,7 +1546,7 @@ function print_section($course, $section, $mods, $modnamesused, $absolute=false,
  * Prints the menus to add activities and resources.
  */
 function print_section_add_menus($course, $section, $modnames, $vertical=false, $return=false) {
-    global $CFG;
+    global $CFG, $OUTPUT;
 
     // check to see if user can add menus
     if (!has_capability('moodle/course:manageactivities', get_context_instance(CONTEXT_COURSE, $course->id))) {
@@ -1552,6 +1555,8 @@ function print_section_add_menus($course, $section, $modnames, $vertical=false, 
 
     static $resources = false;
     static $activities = false;
+
+    $popupurl = "$CFG->wwwroot/course/mod.php?id=$course->id&section=$section&sesskey=".sesskey()."&add=";
 
     if ($resources === false) {
         $resources = array();
@@ -1570,20 +1575,22 @@ function print_section_add_menus($course, $section, $modnames, $vertical=false, 
             $gettypesfunc =  $modname.'_get_types';
             if (function_exists($gettypesfunc)) {
                 $types = $gettypesfunc();
+
                 foreach($types as $type) {
+                    $type->type = str_replace('&amp;', '&', $type->type);
                     if (!isset($type->modclass) or !isset($type->typestr)) {
                         debugging('Incorrect activity type in '.$modname);
                         continue;
                     }
                     if ($type->modclass == MOD_CLASS_RESOURCE) {
-                        $resources[$type->type] = $type->typestr;
+                        $resources[$popupurl.$type->type] = $type->typestr;
                     } else {
-                        $activities[$type->type] = $type->typestr;
+                        $activities[$popupurl.$type->type] = $type->typestr;
                     }
                 }
             } else {
                 // all mods without type are considered activity
-                $activities[$modname] = $modnamestr;
+                $activities[$popupurl.$modname] = $modnamestr;
             }
         }
     }
@@ -1596,16 +1603,19 @@ function print_section_add_menus($course, $section, $modnames, $vertical=false, 
     if (!$vertical) {
         $output .= '<div class="horizontal">';
     }
-
+    
     if (!empty($resources)) {
-        $output .= popup_form("$CFG->wwwroot/course/mod.php?id=$course->id&section=$section&sesskey=".sesskey()."&add=",
-                              $resources, "ressection$section", "", $straddresource, 'resource/types', $straddresource, true);
+        $select = moodle_select::make_popup_form($resources, "ressection$section", null);
+        $select->nothinglabel = $straddresource;
+        $select->set_help_icon('resource/types', $straddresource); 
+        $output .= $OUTPUT->select($select);
     }
 
     if (!empty($activities)) {
-        $output .= ' ';
-        $output .= popup_form("$CFG->wwwroot/course/mod.php?id=$course->id&section=$section&sesskey=".sesskey()."&add=",
-                    $activities, "section$section", "", $straddactivity, 'mods', $straddactivity, true);
+        $select = moodle_select::make_popup_form($activities, "section$section", null);
+        $select->nothinglabel = $straddactivity;
+        $select->set_help_icon('mods', $straddactivity); 
+        $output .= $OUTPUT->select($select);
     }
 
     if (!$vertical) {
@@ -1910,7 +1920,10 @@ function print_category_info($category, $depth, $showcourses = false) {
             $indent = $depth*30;
             $rows = count($courses) + 1;
             echo '<td class="category indentation" rowspan="'.$rows.'" valign="top">';
-            print_spacer(10, $indent);
+            $spacer = new html_image();
+            $spacer->height = 10;
+            $spacer->width = $indent;
+            echo $OUTPUT->spacer($spacer) . '<br />';
             echo '</td>';
         }
 
@@ -1962,7 +1975,10 @@ function print_category_info($category, $depth, $showcourses = false) {
         if ($depth) {
             $indent = $depth*20;
             echo '<td class="category indentation" valign="top">';
-            print_spacer(10, $indent);
+            $spacer = new html_image();
+            $spacer->height = 10;
+            $spacer->width = $indent;
+            echo $OUTPUT->spacer($spacer) . '<br />';
             echo '</td>';
         }
 
@@ -2048,7 +2064,7 @@ function update_category_button($categoryid = 0) {
  * Category is 0 (for all courses) or an object
  */
 function print_courses($category) {
-    global $CFG;
+    global $CFG, $OUTPUT;
 
     if (!is_object($category) && $category==0) {
         $categories = get_child_categories(0);  // Parent = 0   ie top-level categories only
@@ -2081,7 +2097,7 @@ function print_courses($category) {
         }
         echo "</ul>\n";
     } else {
-        print_heading(get_string("nocoursesyet"));
+        echo $OUTPUT->heading(get_string("nocoursesyet"));
         $context = get_context_instance(CONTEXT_SYSTEM);
         if (has_capability('moodle/course:create', $context)) {
             $options = array();
@@ -3129,7 +3145,7 @@ function category_delete_full($category, $showfeedback=true) {
 
     events_trigger('course_category_deleted', $category);
 
-    return $deletedcourses; 
+    return $deletedcourses;
 }
 
 /**
@@ -3345,7 +3361,7 @@ function create_course($data) {
             throw new moodle_exception('idnumbertaken');
         }
     }
-    
+
 
     // preprocess allowed mods
     $allowedmods = empty($data->allowedmods) ? array() : $data->allowedmods;
@@ -3495,13 +3511,13 @@ function is_course_participant ($userid, $courseid) {
     $users = get_users_by_capability(
                         get_context_instance(CONTEXT_COURSE, $courseid),
                         'moodle/course:view','u.id');
-    
+
     foreach($users as $user) {
         if ($user->id == $userid) {
             return true;
         }
     }
-   
+
     return false;
 }
 

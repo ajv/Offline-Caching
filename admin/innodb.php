@@ -12,7 +12,7 @@
     require_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM));
 
     admin_externalpage_print_header();
-    print_heading('Convert all MySQL tables from MYISAM to InnoDB');
+    echo $OUTPUT->heading('Convert all MySQL tables from MYISAM to InnoDB');
 
     if ($DB->get_dbfamily() != 'mysql') {
         notice('This function is for MySQL databases only!', 'index.php');
@@ -32,13 +32,13 @@
         }
         notify('... done.', 'notifysuccess');
         print_continue('index.php');
-        admin_externalpage_print_footer();
+        echo $OUTPUT->footer();
 
     } else {
         $optionsyes = array('confirm'=>'1', 'sesskey'=>sesskey());
         notice_yesno('Are you sure you want convert all your tables to the InnoDB format?',
                      'innodb.php', 'index.php', $optionsyes, NULL, 'post', 'get');
-        admin_externalpage_print_footer();
+        echo $OUTPUT->footer();
     }
 
 ?>

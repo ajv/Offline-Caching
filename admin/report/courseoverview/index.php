@@ -59,7 +59,7 @@
     echo '</div>';
     echo '</form>';
 
-    print_heading($reportoptions[$report]);
+    echo $OUTPUT->heading($reportoptions[$report]);
 
 
     if (!empty($report) && !empty($time)) {
@@ -114,6 +114,6 @@
             print_table($table);
         }
     }
-    admin_externalpage_print_footer();
+    echo $OUTPUT->footer();
 
 ?>

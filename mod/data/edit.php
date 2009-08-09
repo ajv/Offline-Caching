@@ -118,7 +118,7 @@
     $currentgroup = groups_get_activity_group($cm);
     $groupmode = groups_get_activity_groupmode($cm);
 
-    print_heading(format_string($data->name));
+    echo $OUTPUT->heading(format_string($data->name));
 
     if ($currentgroup) {
         $groupselect = " AND groupid = '$currentgroup'";
@@ -187,7 +187,7 @@
 
             if (data_atmaxentries($data) and !has_capability('mod/data:manageentries',$context)){
                 notify (get_string('atmaxentry','data'));
-                print_footer($course);
+                echo $OUTPUT->footer();
                 exit;
             }
 
@@ -260,7 +260,7 @@
     print_simple_box_start('center','80%');
 
     if (!$rid){
-        print_heading(get_string('newentry','data'), '', 2);
+        echo $OUTPUT->heading(get_string('newentry','data'), 2);
     }
 
     /******************************************
@@ -301,7 +301,7 @@
     if (has_capability('mod/data:manageentries',$context)) {
         if ($import) {
             print_simple_box_start('center','80%');
-            print_heading(get_string('uploadrecords', 'data'), '', 3);
+            echo $OUTPUT->heading(get_string('uploadrecords', 'data'), 3);
 
             $maxuploadsize = get_max_upload_file_size();
             echo '<div style="text-align:center">';
@@ -347,5 +347,5 @@
         $field->print_after_form();
     }
 
-    print_footer($course);
+    echo $OUTPUT->footer();
 ?>

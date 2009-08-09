@@ -49,14 +49,14 @@
         "", "", true, update_module_button($cm->id, $course->id, $strglossary),
         navmenu($course, $cm));
 
-    print_heading($strimportentries);
+    echo $OUTPUT->heading($strimportentries);
 
     if ( !$step ) {
         print_box_start('glossarydisplay generalbox');
         include("import.html");
         print_box_end();
 
-        print_footer($course);
+        echo $OUTPUT->footer();
         exit;
     }
 
@@ -71,7 +71,7 @@
         print_continue('import.php?id='.$id);
         print_box_end();
 
-        print_footer();
+        echo $OUTPUT->footer();
         die();
     }
 
@@ -134,7 +134,7 @@
                     notify("Error while trying to create the new glossary.");
                     echo '</center>';
                     glossary_print_tabbed_table_end();
-                    print_footer($course);
+                    echo $OUTPUT->footer();
                     exit;
                 } else {
                     //The instance has been created, so lets do course_modules
@@ -180,7 +180,7 @@
                 }
             } else {
                 notify("Error while trying to create the new glossary.");
-                print_footer($course);
+                echo $OUTPUT->footer();
                 exit;
             }
         }
@@ -351,6 +351,6 @@
     }
 
 /// Finish the page
-    print_footer($course);
+    echo $OUTPUT->footer();
 
 ?>

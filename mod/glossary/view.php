@@ -233,7 +233,7 @@
         print_header_simple(format_string($glossary->name), "", $navigation, "", "", true,
             update_module_button($cm->id, $course->id, $strglossary), navmenu($course, $cm));
 
-        print_heading($strwaitingapproval);
+        echo $OUTPUT->heading($strwaitingapproval);
     } else { /// Print standard header
         $navigation = build_navigation('', $cm);
         print_header_simple(format_string($glossary->name), "", $navigation, "", "", true,
@@ -447,7 +447,7 @@
                         echo '<th >';
                     }
 
-                    print_heading($pivottoshow);
+                    echo $OUTPUT->heading($pivottoshow);
                     echo "</th></tr></table></div>\n";
 
                 }
@@ -495,7 +495,7 @@
         echo "<div class=\"boxaligncenter\"><input type=\"submit\" value=\"".get_string("sendinratings", "glossary")."\" />";
         if ($glossary->scale < 0) {
             if ($scale = $DB->get_record("scale", array("id"=>abs($glossary->scale)))) {
-                print_scale_menu_helpbutton($course->id, $scale );
+                echo $OUTPUT->help_button(help_button::make_scale_menu($course->id, $scale));
             }
         }
         echo "</div>";
@@ -517,7 +517,7 @@
     glossary_print_tabbed_table_end();
 
 /// Finish the page
-    print_footer($course);
+    echo $OUTPUT->footer();
 
 /// Mark as viewed
     $completion=new completion_info($course);

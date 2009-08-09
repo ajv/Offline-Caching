@@ -2097,35 +2097,6 @@ function print_continue($link, $return = false) {
 }
 
 /**
- * Returns a string containing a link to the user documentation for the current
- * page. Also contains an icon by default. Shown to teachers and admin only.
- *
- * @deprecated since Moodle 2.0
- *
- * @global object
- * @global object
- * @param string $text The text to be displayed for the link
- * @param string $iconpath The path to the icon to be displayed
- * @return string The link to user documentation for this current page
- */
-function page_doc_link($text='', $iconpath='') {
-    global $CFG, $PAGE;
-
-    if (empty($CFG->docroot) || during_initial_install()) {
-        return '';
-    }
-    if (!has_capability('moodle/site:doclinks', $PAGE->context)) {
-        return '';
-    }
-
-    $path = $PAGE->docspath;
-    if (!$path) {
-        return '';
-    }
-    return doc_link($path, $text, $iconpath);
-}
-
-/**
  * Print a standard header
  *
  * @param string  $title Appears at the top of the window
@@ -2480,9 +2451,7 @@ function link_to_popup_window ($url, $name=null, $linkname=null,
     }
 
     // Create a html_link object
-    $link = new html_link();
-    $link->text = $linkname;
-    $link->url = $url;
+    $link = html_link::make($url, $linkname);
     $link->title = $title;
 
     // Parse the $options string
@@ -2550,13 +2519,12 @@ function button_to_popup_window ($url, $name=null, $linkname=null,
     }
 
     // Create a html_button object
-    $button = new html_button();
-    $button->value = $linkname;
-    $button->url = $url;
-    $button->id = $id;
-    $button->add_class($class);
-    $button->method = 'post';
-    $button->title = $title;
+    $form = new html_form();
+    $form->button->text = $linkname;
+    $form->button->title = $title;
+    $form->button->id = $id;
+    $form->url = $url;
+    $form->add_class($class);
 
     // Parse the $options string
     $popupparams = array();
@@ -2583,9 +2551,8 @@ function button_to_popup_window ($url, $name=null, $linkname=null,
         $popupparams['width'] = $width;
     }
 
-    $popupaction = new popup_action('click', $url, $name, $popupparams);
-    $button->add_action($popupaction);
-    $output = $OUTPUT->button($button);
+    $form->button->add_action(new popup_action('click', $url, $name, $popupparams));
+    $output = $OUTPUT->button($form);
 
     if ($return) {
         return $output;
@@ -2621,7 +2588,6 @@ function print_single_button($link, $options, $label='OK', $method='get', $notus
     $options = (array) $options;
     $form = new html_form();
     $form->url = new moodle_url($link, $options);
-    $form->button = new html_button();
     $form->button->text = $label;
     $form->button->disabled = $disabled;
     $form->button->title = $tooltip;
@@ -2634,8 +2600,6 @@ function print_single_button($link, $options, $label='OK', $method='get', $notus
     }
 
     $output = $OUTPUT->button($form);
-
-    $icon = new action_icon();
 
     if ($return) {
         return $output;
@@ -2709,7 +2673,7 @@ function print_file_picture($path, $courseid=0, $height='', $width='', $link='',
 function print_user_picture($user, $courseid, $picture=NULL, $size=0, $return=false, $link=true, $target='', $alttext=true) {
     global $CFG, $DB, $OUTPUT;
 
-    // debugging('print_user_picture() has been deprecated. Please change your code to use $OUTPUT->user_picture($user, $link, $popup).');
+    // debugging('print_user_picture() has been deprecated. Please change your code to use $OUTPUT->user_picture($user, $courseid).');
 
     $userpic = new user_picture();
     $userpic->user = $user;
@@ -2719,13 +2683,11 @@ function print_user_picture($user, $courseid, $picture=NULL, $size=0, $return=fa
     $userpic->alttext = $alttext;
 
     if (!empty($picture)) {
-        $userpic->image = new html_image();
         $userpic->image->src = $picture;
     }
 
     if (!empty($target)) {
-        $popupaction = new popup_action('click', new moodle_url($target));
-        $userpic->add_action($popupaction);
+        $userpic->add_action(new popup_action('click', new moodle_url($target)));
     }
 
     $output = $OUTPUT->user_picture($userpic);
@@ -2946,24 +2908,7 @@ function doc_link($path='', $text='', $iconpath='') {
         return '';
     }
 
-    $icon = new action_icon();
-    $icon->linktext = $text;
-
-    if (!empty($iconpath)) {
-        $icon->image->src = $iconpath;
-        $icon->image->alt = $text;
-        $icon->image->add_class('iconhelp');
-    } else {
-        $icon->image->src = $CFG->httpswwwroot . '/pix/docs.gif';
-    }
-
-    $icon->link->url = new moodle_url(get_docs_url($path));
-
-    if (!empty($CFG->doctonewwindow)) {
-        $icon->actions[] = new popup_action('click', $icon->link->url);
-    }
-
-    return $OUTPUT->action_icon($icon);
+    return $OUTPUT->doc_link($path, $text, $iconpath);
 }
 
 /**
@@ -2986,11 +2931,7 @@ function print_paging_bar($totalcount, $page, $perpage, $baseurl, $pagevar='page
 
     // debugging('print_paging_bar() has been deprecated. Please change your code to use $OUTPUT->paging_bar($pagingbar).');
 
-    $pagingbar = new moodle_paging_bar();
-    $pagingbar->totalcount = $totalcount;
-    $pagingbar->page = $page;
-    $pagingbar->perpage = $perpage;
-    $pagingbar->baseurl = $baseurl;
+    $pagingbar = moodle_paging_bar::make($totalcount, $page, $perpage, $baseurl);
     $pagingbar->pagevar = $pagevar;
     $pagingbar->nocurr = $nocurr;
     $output = $OUTPUT->paging_bar($pagingbar);
@@ -3085,10 +3026,7 @@ function choose_from_menu ($options, $name, $selected='', $nothing='choose', $sc
     if ($script) {
         debugging('The $script parameter has been deprecated. You must use component_actions instead', DEBUG_DEVELOPER);
     }
-    $select = new moodle_select();
-    $select->options = $options;
-    $select->name = $name;
-    $select->selectedvalue = $selected;
+    $select = moodle_select::make($options, $name, $selected);
     $select->nothinglabel = $nothing;
     $select->nothingvalue = $nothingvalue;
     $select->disabled = $disabled;
@@ -3128,8 +3066,7 @@ function choose_from_menu ($options, $name, $selected='', $nothing='choose', $sc
  * @param int $tabindex
  * @return string|void If $return=true returns string, else echo's and returns void
  */
-function choose_from_menu_yesno($name, $selected, $script = '',
-        $return = false, $disabled = false, $tabindex = 0) {
+function choose_from_menu_yesno($name, $selected, $script = '', $return = false, $disabled = false, $tabindex = 0) {
     // debugging('choose_from_menu_yesno() has been deprecated. Please change your code to use $OUTPUT->select($select).');
     global $OUTPUT;
 
@@ -3217,9 +3154,7 @@ function print_scale_menu_helpbutton($courseid, $scale, $return=false) {
     // debugging('print_scale_menu_helpbutton() has been deprecated. Please change your code to use $OUTPUT->help_button($scaleselect).');
     global $OUTPUT;
 
-    $helpbutton = help_button::make_scale_menu($courseid, $scale);
-
-    $output = $OUTPUT->help_button($helpbutton);
+    $output = $OUTPUT->help_button(help_button::make_scale_menu($courseid, $scale));
 
     if ($return) {
         return $output;
@@ -3345,15 +3280,16 @@ function popup_form($baseurl, $options, $formid, $selected='', $nothing='choose'
 
     foreach ($options as $var => $val) {
         $url = new moodle_url($baseurl . $var);
-        if (!empty($optionsextra[$var])) {
-            new moodle_url($baseurl . $var . $optionsextra[$var]);
-        }
         $options[$url->out(false, array(), false)] = $val;
         unset($options[$var]);
     }
 
-    $select = moodle_select::make_popup_form($options, $formid, $submitvalue, $selected);
+    $select = moodle_select::make_popup_form($options, $formid, $selected, $submitvalue);
     $select->disabled = $disabled;
+
+    if (!empty($optionsextra)) {
+        debugging('The $optionsextra (11th) param to popup_form is not supported, please improve your code.', DEBUG_DEVELOPER);
+    }
 
     if ($nothing == 'choose') {
         $select->nothinglabel = '';
@@ -3361,7 +3297,7 @@ function popup_form($baseurl, $options, $formid, $selected='', $nothing='choose'
         $select->nothinglabel = $nothing;
     }
 
-    $select->set_label($selectlabel, $select->id);
+    $select->set_label($selectlabel);
     $select->set_help_icon($help, $helptext);
 
     $output = $OUTPUT->select($select);
@@ -3454,14 +3390,7 @@ function print_checkbox ($name, $value, $checked = true, $label = '', $alt = '',
         debugging('The use of the $script param in print_checkbox has not been migrated into $OUTPUT->checkbox. Please use $checkbox->add_action().', DEBUG_DEVELOPER);
     }
 
-    $checkbox = new html_select_option();
-    $checkbox->value = $value;
-    $checkbox->selected = $checked;
-    $checkbox->text = $label;
-    $checkbox->label->text = $label;
-    $checkbox->alt = $alt;
-
-    $output = $OUTPUT->checkbox($checkbox, $name);
+    $output = $OUTPUT->checkbox(html_select_option::make_checkbox($value, $checked, $label, $alt), $name);
 
     if (empty($return)) {
         echo $output;
@@ -3529,7 +3458,7 @@ function print_heading_with_help($text, $helppage, $module='moodle', $icon=false
     $helpicon->page = $helppage;
     $helpicon->text = $text;
     $helpicon->module = $module;
-    
+
     // Extract the src from $icon if it exists
     if (preg_match('/src="([^"]*)"/', $icon, $matches)) {
         $icon = $matches[1];
@@ -3547,14 +3476,75 @@ function print_heading_with_help($text, $helppage, $module='moodle', $icon=false
 /**
  * Returns a turn edit on/off button for course in a self contained form.
  * Used to be an icon, but it's now a simple form button
+ * @deprecated since Moodle 2.0
+ */
+function update_mymoodle_icon() {
+    throw new coding_exception('update_mymoodle_icon() has been completely deprecated.');
+}
+
+/**
+ * Returns a turn edit on/off button for tag in a self contained form.
+ * @deprecated since Moodle 2.0
+ * @param string $tagid The ID attribute
+ * @return string
+ */
+function update_tag_button($tagid) {
+    // debugging('update_tag_button() has been deprecated. Please change your code to use $OUTPUT->edit_button(moodle_url).');
+    return $OUTPUT->edit_button(new moodle_url($CFG->wwwroot.'/tag/index.php', array('id' => $tagid)));
+}
+
+
+/**
+ * Prints the 'update this xxx' button that appears on module pages.
  *
  * @deprecated since Moodle 2.0
+ *
+ * @param string $cmid the course_module id.
+ * @param string $ignored not used any more. (Used to be courseid.)
+ * @param string $string the module name - get_string('modulename', 'xxx')
+ * @return string the HTML for the button, if this user has permission to edit it, else an empty string.
+ */
+function update_module_button($cmid, $ignored, $string) {
+    global $OUTPUT;
+
+    // debugging('update_module_button() has been deprecated. Please change your code to use $OUTPUT->update_module_button().');
+
+    return $OUTPUT->update_module_button($cmid, strtolower($string));
+}
+
+/**
+ * Prints the editing button on search results listing
+ * For bulk move courses to another category
+ * @deprecated since Moodle 2.0
+ */
+function update_categories_search_button($search,$page,$perpage) {
+    throw new coding_exception('update_categories_search_button() has been completely deprecated.');
+}
+
+/**
+ * Prints a summary of a user in a nice little box.
+ * @deprecated since Moodle 2.0
+ */
+function print_user($user, $course, $messageselect=false, $return=false) {
+    throw new coding_exception('print_user() has been completely deprecated. See user/index.php for new usage.');
+}
+
+/**
+ * Returns a turn edit on/off button for course in a self contained form.
+ * Used to be an icon, but it's now a simple form button
+ *
+ * Note that the caller is responsible for capchecks.
  *
  * @global object
  * @global object
  * @param int $courseid The course  to update by id as found in 'course' table
  * @return string
  */
-function update_mymoodle_icon() {
-    throw new coding_exception('update_mymoodle_icon() has been completely deprecated.');
+function update_course_icon($courseid) {
+    global $CFG, $OUTPUT;
+
+    // debugging('update_course_button() has been deprecated. Please change your code to use $OUTPUT->edit_button(moodle_url).');
+
+    return $OUTPUT->edit_button(new moodle_url($CFG->wwwroot.'/course/view.php', array('id' => $courseid)));
 }
+

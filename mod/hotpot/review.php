@@ -58,7 +58,7 @@
     $button = update_module_button($cm->id, $course->id, $strmodulename);
     print_header($title, $heading, $navigation, "", "", true, $button, navmenu($course, $cm));
     print '<div id="overDiv" style="position:absolute; visibility:hidden; z-index:1000;"></div>'; // for overlib
-    print_heading($hotpot->name);
+    echo $OUTPUT->heading($hotpot->name);
     hotpot_print_attempt_summary($hotpot, $attempt);
     hotpot_print_review_buttons($course, $hotpot, $attempt, $context);
     $action = has_capability('mod/hotpot:viewreport',$context) ? optional_param('action', '', PARAM_ALPHA) : '';
@@ -83,7 +83,7 @@
         hotpot_print_attempt_details($hotpot, $attempt);
     }
     hotpot_print_review_buttons($course, $hotpot, $attempt, $context);
-    print_footer($course);
+    echo $OUTPUT->footer();
 ///////////////////////////
 //    functions
 ///////////////////////////
@@ -146,7 +146,10 @@ function hotpot_print_review_buttons(&$course, &$hotpot, &$attempt, $context) {
     }
     print "</td>\n</tr>\n";
     print '<tr><td colspan="'.$colspan.'">';
-    print_spacer(4, 1, false); // height=4, width=1, no <br />
+    $spacer = new html_image();
+    $spacer->height = 4;
+    $spacer->width = 1;
+    echo $OUTPUT->spacer($spacer);
     print "</td></tr>\n";
     print "</table>\n";
 }

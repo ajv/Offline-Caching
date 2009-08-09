@@ -46,9 +46,9 @@ if ($confirm and confirm_sesskey()) {
     $optionsyes = array();
     $optionsyes['confirm'] = 1;
     $optionsyes['sesskey'] = sesskey();
-    print_heading(get_string('confirmation', 'admin'));
+    echo $OUTPUT->heading(get_string('confirmation', 'admin'));
     notice_yesno(get_string('deletecheckfull', '', $usernames), 'user_bulk_delete.php', 'user_bulk.php', $optionsyes, NULL, 'post', 'get');
 }
 
-admin_externalpage_print_footer();
+echo $OUTPUT->footer();
 ?>

@@ -61,11 +61,11 @@ if ($attemptobj->is_preview_user()) {
 }
 
 /// Print heading.
-print_heading(format_string($attemptobj->get_quiz_name()));
+echo $OUTPUT->heading(format_string($attemptobj->get_quiz_name()));
 if ($attemptobj->is_preview_user()) {
     $attemptobj->print_restart_preview_button();
 }
-print_heading($title);
+echo $OUTPUT->heading($title);
 
 /// Prepare the summary table header
 $table->class = 'generaltable quizsummaryofattempt boxaligncenter';
@@ -120,10 +120,6 @@ echo "</div>\n";
 
 /// Finish the page
 $accessmanager->show_attempt_timer_if_needed($attemptobj->get_attempt(), time());
-if ($accessmanager->securewindow_required($attemptobj->is_preview_user())) {
-    print_footer('empty');
-} else {
-    print_footer($attemptobj->get_course());
-}
+echo $OUTPUT->footer();
 
 ?>

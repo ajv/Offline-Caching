@@ -108,7 +108,7 @@ if (empty($iid)) {
         admin_externalpage_print_header();
         print_heading_with_help(get_string('uploadusers'), 'uploadusers3');
         $mform->display();
-        admin_externalpage_print_footer();
+        echo $OUTPUT->footer();
         die;
     }
 } else {
@@ -130,7 +130,7 @@ if ($formdata = $mform->is_cancelled()) {
 } else if ($formdata = $mform->get_data()) {
     // Print the header
     admin_externalpage_print_header();
-    print_heading(get_string('uploadusersresult', 'admin'));
+    echo $OUTPUT->heading(get_string('uploadusersresult', 'admin'));
 
     $optype = $formdata->uutype;
 
@@ -733,7 +733,7 @@ if ($formdata = $mform->is_cancelled()) {
     } else {
         print_continue($returnurl);
     }
-    admin_externalpage_print_footer();
+    echo $OUTPUT->footer();
     die;
 }
 
@@ -774,7 +774,7 @@ $cir->close();
 echo '</table>';
 echo '<div class="centerpara">'.get_string('uupreprocessedcount', 'admin', $readcount).'</div>';
 $mform->display();
-admin_externalpage_print_footer();
+echo $OUTPUT->footer();
 die;
 
 /////////////////////////////////////

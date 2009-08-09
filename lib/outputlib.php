@@ -2414,17 +2414,6 @@ class moodle_core_renderer extends moodle_renderer_base {
     }
 
     /**
-     * Given a html_textarea object, outputs an <a> tag that uses the object's attributes.
-     *
-     * @param mixed $link A html_link object or a string URL (text param required in second case)
-     * @param string $text A descriptive text for the link. If $link is a html_link, this is not required.
-     * @return string HTML fragment
-     */
-    public function textarea($textarea) {
-
-    }
-
-    /**
      * Given a html_link object, outputs an <a> tag that uses the object's attributes.
      *
      * @param mixed $link A html_link object or a string URL (text param required in second case)
@@ -2435,6 +2424,7 @@ class moodle_core_renderer extends moodle_renderer_base {
         $attributes = array();
 
         if (is_a($link, 'html_link')) {
+            $link = clone($link);
             $link->prepare();
             $this->prepare_event_handlers($link);
             $attributes['href'] = prepare_url($link->url);
@@ -2464,7 +2454,7 @@ class moodle_core_renderer extends moodle_renderer_base {
     */
     public function confirm($message, $continue, $cancel) {
         if ($continue instanceof html_form) {
-            // ok
+            $continue = clone($continue);
         } else if (is_string($continue)) {
             $continueform = new html_form();
             $continueform->url = new moodle_url($continue);
@@ -2474,13 +2464,11 @@ class moodle_core_renderer extends moodle_renderer_base {
             $continueform->url = $continue;
             $continue = $continueform;
         } else {
-            var_dump($continue);
             throw new coding_exception('The continue param to $OUTPUT->confirm must be either a URL (string/moodle_url) or a html_form object.');
-
         }
 
         if ($cancel instanceof html_form) {
-            //ok
+            $cancel = clone($cancel);
         } else if (is_string($cancel)) {
             $cancelform = new html_form();
             $cancelform->url = new moodle_url($cancel);
@@ -2517,7 +2505,7 @@ class moodle_core_renderer extends moodle_renderer_base {
         if (empty($form->button) or !($form->button instanceof html_button)) {
             throw new coding_exception('$OUTPUT->button($form) requires $form to have a button (html_button) value');
         }
-
+        $form = clone($form);
         $form->button->prepare();
 
         $this->prepare_event_handlers($form->button);
@@ -2529,6 +2517,9 @@ class moodle_core_renderer extends moodle_renderer_base {
                                   'id' => $form->button->id);
 
         $buttonoutput = $this->output_empty_tag('input', $buttonattributes);
+
+        // Removing the button so it doesn't get output again
+        unset($form->button);
 
         return $this->form($form, $buttonoutput);
     }
@@ -2542,14 +2533,30 @@ class moodle_core_renderer extends moodle_renderer_base {
      * @return string HTML fragment
      */
     public function form($form, $contents=null) {
+        $form = clone($form);
         $form->prepare();
-
         $this->prepare_event_handlers($form);
+        $buttonoutput = null;
 
         if (empty($contents) && !empty($form->button)) {
             debugging("You probably want to use \$OUTPUT->button(\$form), please read that function's documentation", DEBUG_DEVELOPER);
         } else if (empty($contents)) {
             $contents = $this->output_empty_tag('input', array('type' => 'submit', 'value' => get_string('ok')));
+        } else if (!empty($form->button)) {
+            $form->button->prepare();
+            $buttonoutput = $this->output_start_tag('div', array('id' => "noscript$form->id"));
+            $this->prepare_event_handlers($form->button);
+
+            $buttonattributes = array('class' => $form->button->get_classes_string(),
+                                      'type' => 'submit',
+                                      'value' => $form->button->text,
+                                      'disabled' => $form->button->disabled,
+                                      'id' => $form->button->id);
+
+            $buttonoutput .= $this->output_empty_tag('input', $buttonattributes);
+            $buttonoutput .= $this->output_end_tag('div');
+            $this->page->requires->js_function_call('hide_item', array("noscript$form->id"));
+
         }
 
         $hiddenoutput = '';
@@ -2564,11 +2571,40 @@ class moodle_core_renderer extends moodle_renderer_base {
                 'id' => $form->id,
                 'class' => $form->get_classes_string());
 
-        $divoutput = $this->output_tag('div', array(), $hiddenoutput . $contents);
+        $divoutput = $this->output_tag('div', array(), $hiddenoutput . $contents . $buttonoutput);
         $formoutput = $this->output_tag('form', $formattributes, $divoutput);
         $output = $this->output_tag('div', array('class' => 'singlebutton'), $formoutput);
 
         return $output;
+    }
+
+    /**
+     * Returns a string containing a link to the user documentation.
+     * Also contains an icon by default. Shown to teachers and admin only.
+     * @param string $path The page link after doc root and language, no leading slash.
+     * @param string $text The text to be displayed for the link
+     * @param string $iconpath The path to the icon to be displayed
+     */
+    public function doc_link($path, $text=false, $iconpath=false) {
+        global $CFG, $OUTPUT;
+        $icon = new action_icon();
+        $icon->linktext = $text;
+        $icon->image->alt = $text;
+        $icon->image->add_class('iconhelp');
+        $icon->link->url = new moodle_url(get_docs_url($path));
+
+        if (!empty($iconpath)) {
+            $icon->image->src = $iconpath;
+        } else {
+            $icon->image->src = $this->old_icon_url('docs');
+        }
+
+        if (!empty($CFG->doctonewwindow)) {
+            $icon->actions[] = new popup_action('click', $icon->link->url);
+        }
+
+        return $this->action_icon($icon);
+
     }
 
     /**
@@ -2578,6 +2614,7 @@ class moodle_core_renderer extends moodle_renderer_base {
      * @return string HTML fragment
      */
     public function action_icon($icon) {
+        $icon = clone($icon);
         $icon->prepare();
         $imageoutput = $this->image($icon->image);
 
@@ -2614,7 +2651,7 @@ class moodle_core_renderer extends moodle_renderer_base {
      */
     public function help_icon($icon) {
         global $COURSE;
-
+        $icon = clone($icon);
         $icon->prepare();
 
         $popup = new popup_action('click', $icon->link->url);
@@ -2640,6 +2677,7 @@ class moodle_core_renderer extends moodle_renderer_base {
      * @return string HTML fragment
      */
     public function link_to_popup($link, $image=null) {
+        $link = clone($link);
         $link->prepare();
 
         $this->prepare_event_handlers($link);
@@ -2681,6 +2719,7 @@ class moodle_core_renderer extends moodle_renderer_base {
      * @return string HTML fragment
      */
     public function spacer($image) {
+        $image = clone($image);
         $image->prepare();
         $image->add_class('spacer');
 
@@ -2705,6 +2744,7 @@ class moodle_core_renderer extends moodle_renderer_base {
             return false;
         }
 
+        $image = clone($image);
         $image->prepare();
 
         $this->prepare_event_handlers($image);
@@ -2756,6 +2796,8 @@ class moodle_core_renderer extends moodle_renderer_base {
             $userpic = new user_picture();
             $userpic->user = $user;
             $userpic->courseid = $courseid;
+        } else {
+            $userpic = clone($userpic);
         }
 
         $userpic->prepare();
@@ -2783,12 +2825,58 @@ class moodle_core_renderer extends moodle_renderer_base {
     }
 
     /**
+     * Prints the 'Update this Modulename' button that appears on module pages.
+     *
+     * @param string $cmid the course_module id.
+     * @param string $modulename the module name, eg. "forum", "quiz" or "workshop"
+     * @return string the HTML for the button, if this user has permission to edit it, else an empty string.
+     */
+    public function update_module_button($cmid, $modulename) {
+        global $CFG;
+        if (has_capability('moodle/course:manageactivities', get_context_instance(CONTEXT_MODULE, $cmid))) {
+            $modulename = get_string('modulename', $modulename);
+            $string = get_string('updatethis', '', $modulename);
+
+            $form = new html_form();
+            $form->url = new moodle_url("$CFG->wwwroot/course/mod.php", array('update' => $cmid, 'return' => true, 'sesskey' => sesskey()));
+            $form->button->text = $string;
+            return $this->button($form);
+        } else {
+            return '';
+        }
+    }
+
+    /**
+     * Prints a "Turn editing on/off" button in a form.
+     * @param moodle_url $url The URL + params to send through when clicking the button
+     * @return string HTML the button
+     */
+    public function edit_button(moodle_url $url) {
+        global $USER;
+        if (!empty($USER->editing)) {
+            $string = get_string('turneditingoff');
+            $edit = '0';
+        } else {
+            $string = get_string('turneditingon');
+            $edit = '1';
+        }
+
+        $form = new html_form();
+        $form->url = $url;
+        $form->url->param('edit', $edit);
+        $form->button->text = $string;
+
+        return $this->button($form);
+    }
+
+    /**
      * Outputs a HTML nested list
      *
      * @param html_list $list A html_list object
      * @return string HTML structure
      */
     public function htmllist($list) {
+        $list = clone($list);
         $list->prepare();
 
         $this->prepare_event_handlers($list);
@@ -2824,6 +2912,9 @@ class moodle_core_renderer extends moodle_renderer_base {
      * @return string|void if $return is true, void otherwise
      */
     public function close_window_button($text) {
+        if (empty($text)) {
+            $text = get_string('closewindow');
+        }
         $closeform = new html_form();
         $closeform->url = '#';
         $closeform->button->text = $text;
@@ -2928,7 +3019,6 @@ class moodle_core_renderer extends moodle_renderer_base {
                 $html .= $this->checkbox($option, $select->name);
                 $currentcheckbox++;
             }
-
         }
 
         if (!empty($select->form) && $select->form instanceof html_form) {
@@ -2951,7 +3041,7 @@ class moodle_core_renderer extends moodle_renderer_base {
         } else if (!($option instanceof html_select_option)) {
             throw new coding_exception('$OUTPUT->radio($option) only accepts a html_select_option object as param.');
         }
-
+        $option = clone($option);
         $option->prepare();
         $option->label->for = $option->id;
         $this->prepare_event_handlers($option);
@@ -2990,7 +3080,7 @@ class moodle_core_renderer extends moodle_renderer_base {
         } else if (!($option instanceof html_select_option)) {
             throw new coding_exception('$OUTPUT->checkbox($option) only accepts a html_select_option object as param.');
         }
-
+        $option = clone($option);
         $option->prepare();
 
         $option->label->for = $option->id;
@@ -3025,6 +3115,7 @@ class moodle_core_renderer extends moodle_renderer_base {
      * @return string the HTML for the <option> or <optgroup>
      */
     public function select_option($option) {
+        $option = clone($option);
         $option->prepare();
         $this->prepare_event_handlers($option);
 
@@ -3050,6 +3141,7 @@ class moodle_core_renderer extends moodle_renderer_base {
      * @return string the HTML for the <input>
      */
     public function textfield($field) {
+        $field = clone($field);
         $field->prepare();
         $this->prepare_event_handlers($field);
         $output = $this->output_start_tag('span', array('class' => "textfield $field->name"));
@@ -3071,12 +3163,11 @@ class moodle_core_renderer extends moodle_renderer_base {
      * @return HTML fragment
      */
     public function label($label) {
+        $label = clone($label);
         $label->prepare();
         $this->prepare_event_handlers($label);
         return $this->output_tag('label', array('for' => $label->for, 'class' => $label->get_classes_string()), $label->text);
     }
-
-    // TODO choose_from_radio
 
     /**
      * Output an error message. By default wraps the error message in <span class="error">.
@@ -3191,7 +3282,7 @@ class moodle_core_renderer extends moodle_renderer_base {
      */
     public function paging_bar($pagingbar) {
         $output = '';
-
+        $pagingbar = clone($pagingbar);
         $pagingbar->prepare();
 
         if ($pagingbar->totalcount > $pagingbar->perpage) {
@@ -3232,6 +3323,7 @@ class moodle_core_renderer extends moodle_renderer_base {
      * @return string the HTML to output.
      */
     public function table(html_table $table) {
+        $table = clone($table);
         $table->prepare();
         $attributes = array(
                 'id'            => $table->id,
@@ -3284,43 +3376,62 @@ class moodle_core_renderer extends moodle_renderer_base {
             $keys       = array_keys($table->data);
             $lastrowkey = end($keys);
             $output .= $this->output_start_tag('tbody', array()) . "\n";
+
             foreach ($table->data as $key => $row) {
-                $oddeven = $oddeven ? 0 : 1;
-                if (isset($table->rowclasses[$key])) {
-                    $classes = array_unique(moodle_html_component::clean_classes($table->rowclasses[$key]));
-                } else {
-                    $classes = array();
-                }
-                $classes[] = 'r' . $oddeven;
-                if ($key == $lastrowkey) {
-                    $classes[] = 'lastrow';
-                }
-                $output .= $this->output_start_tag('tr', array('class' => moodle_renderer_base::prepare_classes($classes))) . "\n";
                 if (($row === 'hr') && ($countcols)) {
                     $output .= $this->output_tag('td', array('colspan' => $countcols),
                                                  $this->output_tag('div', array('class' => 'tabledivider'), '')) . "\n";
-                } else {  /// it's a normal row of data
-                    $keys2 = array_keys($row);
-                    $lastkey = end($keys2);
-                    foreach ($row as $key => $item) {
-                        if (isset($table->colclasses[$key])) {
-                            $classes = array_unique(moodle_html_component::clean_classes($table->colclasses[$key]));
-                        } else {
-                            $classes = array();
+                } else {
+                    // Convert array rows to html_table_rows and cell strings to html_table_cell objects
+                    if (!($row instanceof html_table_row)) {
+                        $newrow = new html_table_row();
+
+                        foreach ($row as $unused => $item) {
+                            $cell = new html_table_cell();
+                            $cell->text = $item;
+                            $newrow->cells[] = $cell;
                         }
-                        $classes[] = 'cell';
-                        $classes[] = 'c' . $key;
+                        $row = $newrow;
+                    }
+
+                    $oddeven = $oddeven ? 0 : 1;
+                    if (isset($table->rowclasses[$key])) {
+                        $row->add_classes(array_unique(moodle_html_component::clean_classes($table->rowclasses[$key])));
+                    }
+
+                    $row->add_class('r' . $oddeven);
+                    if ($key == $lastrowkey) {
+                        $row->add_class('lastrow');
+                    }
+
+                    $output .= $this->output_start_tag('tr', array('class' => $row->get_classes_string(), 'style' => $row->style, 'id' => $row->id)) . "\n";
+                    $keys2 = array_keys($row->cells);
+                    $lastkey = end($keys2);
+
+                    foreach ($row->cells as $key => $cell) {
+                        if (isset($table->colclasses[$key])) {
+                            $cell->add_classes(array_unique(moodle_html_component::clean_classes($table->colclasses[$key])));
+                        }
+
+                        $cell->add_classes('cell');
+                        $cell->add_classes('c' . $key);
                         if ($key == $lastkey) {
-                            $classes[] = 'lastcol';
+                            $cell->add_classes('lastcol');
                         }
                         $tdstyle = '';
                         $tdstyle .= isset($table->align[$key]) ? $table->align[$key] : '';
                         $tdstyle .= isset($table->size[$key]) ? $table->size[$key] : '';
                         $tdstyle .= isset($table->wrap[$key]) ? $table->wrap[$key] : '';
-                        $output .= $this->output_tag('td',
-                                                     array('style' => $tdstyle,
-                                                           'class' => moodle_renderer_base::prepare_classes($classes)),
-                                                     $item) . "\n";
+                        $tdattributes = array(
+                                'style' => $tdstyle . $cell->style,
+                                'colspan' => $cell->colspan,
+                                'rowspan' => $cell->rowspan,
+                                'id' => $cell->id,
+                                'class' => $cell->get_classes_string(),
+                                'abbr' => $cell->abbr,
+                                'scope' => $cell->scope);
+
+                        $output .= $this->output_tag('td', $tdattributes, $cell->text) . "\n";
                     }
                 }
                 $output .= $this->output_end_tag('tr') . "\n";
@@ -3349,12 +3460,12 @@ class moodle_core_renderer extends moodle_renderer_base {
     /**
      * Outputs a heading
      * @param string $text The text of the heading
-     * @param int $level The level of importance of the heading
+     * @param int $level The level of importance of the heading. Defaulting to 2
      * @param string $classes A space-separated list of CSS classes
      * @param string $id An optional ID
      * @return string the HTML to output.
      */
-    public function heading($text, $level, $classes = 'main', $id = '') {
+    public function heading($text, $level = 2, $classes = 'main', $id = '') {
         $level = (integer) $level;
         if ($level < 1 or $level > 6) {
             throw new coding_exception('Heading level must be an integer between 1 and 6.');
@@ -3595,7 +3706,7 @@ class moodle_html_component {
      * This can be used in two ways:
      *
      * <pre>
-     * $component->set_label($elementid, $elementlabel);
+     * $component->set_label($elementlabel, $elementid);
      * // OR
      * $label = new html_label();
      * $label->for = $elementid;
@@ -3616,6 +3727,9 @@ class moodle_html_component {
         } else if (!empty($text)) {
             $this->label = new html_label();
             $this->label->for = $for;
+            if (empty($for) && !empty($this->id)) {
+                $this->label->for = $this->id;
+            }
             $this->label->text = $text;
         }
     }
@@ -3734,15 +3848,6 @@ class moodle_select extends moodle_html_component {
             $this->nothinglabel = get_string('choosedots');
         }
 
-        if ($this->rendertype == 'radio' && $this->multiple) {
-            $this->rendertype = 'checkbox';
-        }
-
-        // If nested is on, or if radio/checkbox rendertype is set, remove the default Choose option
-        if ($this->nested || $this->rendertype == 'radio' || $this->rendertype == 'checkbox') {
-            $this->nothinglabel = '';
-        }
-
         if (!empty($this->label) && !($this->label instanceof html_label)) {
             $label = new html_label();
             $label->text = $this->label;
@@ -3752,99 +3857,7 @@ class moodle_select extends moodle_html_component {
 
         $this->add_class('select');
 
-        $firstoption = reset($this->options);
-        if (is_object($firstoption)) {
-            parent::prepare();
-            return true;
-        }
-
-        $options = $this->options;
-
-        $this->options = array();
-
-        if ($this->nested && $this->rendertype != 'menu') {
-            throw new coding_exception('moodle_select cannot render nested options as radio buttons or checkboxes.');
-        } else if ($this->nested) {
-            foreach ($options as $section => $values) {
-                $optgroup = new html_select_optgroup();
-                $optgroup->text = $section;
-
-                foreach ($values as $value => $display) {
-                    $option = new html_select_option();
-                    $option->value = s($value);
-                    $option->text = $display;
-                    if ($display === '') {
-                        $option->text = $value;
-                    }
-
-                    if ((string) $value == (string) $this->selectedvalue ||
-                            (is_array($this->selectedvalue) && in_array($value, $this->selectedvalue))) {
-                        $option->selected = 'selected';
-                    }
-
-                    $optgroup->options[] = $option;
-                }
-
-                $this->options[] = $optgroup;
-            }
-        } else {
-            $inoptgroup = false;
-            $optgroup = false;
-
-            foreach ($options as $value => $display) {
-                if ($display == '--') { /// we are ending previous optgroup
-                    // $this->options[] = $optgroup;
-                    $inoptgroup = false;
-                    continue;
-                } else if (substr($display,0,2) == '--') { /// we are starting a new optgroup
-                    if (!empty($optgroup->options)) {
-                        $this->options[] = $optgroup;
-                    }
-
-                    $optgroup = new html_select_optgroup();
-                    $optgroup->text = substr($display,2); // stripping the --
-
-                    $inoptgroup = true; /// everything following will be in an optgroup
-                    continue;
-
-                } else {
-                    // Add $nothing option if there are not optgroups
-                    if ($this->nothinglabel && empty($this->options[0]) && !$inoptgroup) {
-                        $nothingoption = new html_select_option();
-                        $nothingoption->value = 0;
-                        if (!empty($this->nothingvalue)) {
-                            $nothingoption->value = $this->nothingvalue;
-                        }
-                        $nothingoption->text = $this->nothinglabel;
-                        $this->options = array($nothingoption) + $this->options;
-                    }
-
-                    $option = new html_select_option();
-                    $option->text = $display;
-
-                    if ($display === '') {
-                        $option->text = $value;
-                    }
-
-                    if ((string) $value == (string) $this->selectedvalue ||
-                            (is_array($this->selectedvalue) && in_array($value, $this->selectedvalue))) {
-                        $option->selected = 'selected';
-                    }
-
-                    $option->value = s($value);
-
-                    if ($inoptgroup) {
-                        $optgroup->options[] = $option;
-                    } else {
-                        $this->options[] = $option;
-                    }
-                }
-            }
-
-            if ($optgroup) {
-                $this->options[] = $optgroup;
-            }
-        }
+        $this->initialise_options();
         parent::prepare();
     }
 
@@ -3938,15 +3951,31 @@ class moodle_select extends moodle_html_component {
     }
 
     /**
+     * Given an associative array of type => fieldname and an optional timestamp,
+     * returns an array of moodle_select components representing date/time selectors.
+     * @param array $selectors Arrays of type => fieldname. Selectors will be returned in the order of the types given
+     * @param int $currenttime A UNIX timestamp
+     * @param int $step minute spacing
+     * @return array Instantiated date/time selectors
+     */
+    public function make_time_selectors($selectors, $currenttime=0, $step=5) {
+        $selects = array();
+        foreach ($selectors as $type => $name) {
+            $selects[] = moodle_select::make_time_selector($type, $name, $currenttime, $step);
+        }
+        return $selects;
+    }
+
+    /**
      * This is a shortcut for making a select popup form.
      * @param string $baseurl The target URL up to the point of the variable that changes
      * @param array $options A list of value-label pairs for the popup list
      * @param string $formid id for the control. Must be unique on the page. Used in the HTML.
-     * @param string $submitvalue Optional label for the 'Go' button. Defaults to get_string('go').
      * @param string $selected The option that is initially selected
+     * @param string $submitvalue Optional label for the 'Go' button. Defaults to get_string('go').
      * @return moodle_select A menu initialised as a popup form.
      */
-    public function make_popup_form($options, $formid, $submitvalue='', $selected=null) {
+    public function make_popup_form($options, $formid, $selected=null, $submitvalue='') {
         global $CFG;
         $select = self::make($options, 'jump', $selected);
         $select->form = new html_form();
@@ -3994,10 +4023,122 @@ class moodle_select extends moodle_html_component {
         if ($page instanceof help_icon) {
             $this->helpicon = $page;
         } else if (!empty($page)) {
-            $this->helpicon = new html_label();
+            $this->helpicon = new help_icon();
             $this->helpicon->page = $page;
             $this->helpicon->text = $text;
             $this->helpicon->linktext = $linktext;
+        }
+    }
+
+    /**
+     * Parses the $options array and instantiates html_select_option objects in
+     * the place of the original value => label pairs. This is useful for when you
+     * need to setup extra html attributes and actions on individual options before
+     * the component is sent to the renderer
+     * @return void;
+     */
+    public function initialise_options() {
+        // If options are already instantiated objects, stop here
+        $firstoption = reset($this->options);
+        if ($firstoption instanceof html_select_option || $firstoption instanceof html_select_optgroup) {
+            return;
+        }
+
+        if ($this->rendertype == 'radio' && $this->multiple) {
+            $this->rendertype = 'checkbox';
+        }
+
+        // If nested is on, or if radio/checkbox rendertype is set, remove the default Choose option
+        if ($this->nested || $this->rendertype == 'radio' || $this->rendertype == 'checkbox') {
+            $this->nothinglabel = '';
+        }
+
+        $options = $this->options;
+
+        $this->options = array();
+
+        if ($this->nested && $this->rendertype != 'menu') {
+            throw new coding_exception('moodle_select cannot render nested options as radio buttons or checkboxes.');
+        } else if ($this->nested) {
+            foreach ($options as $section => $values) {
+                $optgroup = new html_select_optgroup();
+                $optgroup->text = $section;
+
+                foreach ($values as $value => $display) {
+                    $option = new html_select_option();
+                    $option->value = s($value);
+                    $option->text = $display;
+                    if ($display === '') {
+                        $option->text = $value;
+                    }
+
+                    if ((string) $value == (string) $this->selectedvalue ||
+                            (is_array($this->selectedvalue) && in_array($value, $this->selectedvalue))) {
+                        $option->selected = 'selected';
+                    }
+
+                    $optgroup->options[] = $option;
+                }
+
+                $this->options[] = $optgroup;
+            }
+        } else {
+            $inoptgroup = false;
+            $optgroup = false;
+
+            foreach ($options as $value => $display) {
+                if ($display == '--') { /// we are ending previous optgroup
+                    // $this->options[] = $optgroup;
+                    $inoptgroup = false;
+                    continue;
+                } else if (substr($display,0,2) == '--') { /// we are starting a new optgroup
+                    if (!empty($optgroup->options)) {
+                        $this->options[] = $optgroup;
+                    }
+
+                    $optgroup = new html_select_optgroup();
+                    $optgroup->text = substr($display,2); // stripping the --
+
+                    $inoptgroup = true; /// everything following will be in an optgroup
+                    continue;
+
+                } else {
+                    // Add $nothing option if there are not optgroups
+                    if ($this->nothinglabel && empty($this->options[0]) && !$inoptgroup) {
+                        $nothingoption = new html_select_option();
+                        $nothingoption->value = 0;
+                        if (!empty($this->nothingvalue)) {
+                            $nothingoption->value = $this->nothingvalue;
+                        }
+                        $nothingoption->text = $this->nothinglabel;
+                        $this->options = array($nothingoption) + $this->options;
+                    }
+
+                    $option = new html_select_option();
+                    $option->text = $display;
+
+                    if ($display === '') {
+                        $option->text = $value;
+                    }
+
+                    if ((string) $value == (string) $this->selectedvalue ||
+                            (is_array($this->selectedvalue) && in_array($value, $this->selectedvalue))) {
+                        $option->selected = 'selected';
+                    }
+
+                    $option->value = s($value);
+
+                    if ($inoptgroup) {
+                        $optgroup->options[] = $option;
+                    } else {
+                        $this->options[] = $option;
+                    }
+                }
+            }
+
+            if ($optgroup) {
+                $this->options[] = $optgroup;
+            }
         }
     }
 }
@@ -4079,6 +4220,24 @@ class html_select_option extends moodle_html_component {
         }
 
         parent::prepare();
+    }
+
+    /**
+     * Shortcut for making a checkbox-ready option
+     * @param string $value The value of the checkbox
+     * @param boolean $checked
+     * @param string $label
+     * @param string $alt
+     * @return html_select_option A component ready for $OUTPUT->checkbox()
+     */
+    public function make_checkbox($value, $checked, $label='', $alt='') {
+        $checkbox = new html_select_option();
+        $checkbox->value = $value;
+        $checkbox->selected = $checked;
+        $checkbox->text = $label;
+        $checkbox->label->text = $label;
+        $checkbox->alt = $alt;
+        return $checkbox;
     }
 }
 
@@ -4377,13 +4536,27 @@ class html_table extends moodle_html_component {
      */
     public $wrap;
     /**
-     * @var array of arrays containing the data. Alternatively, if you have
+     * @var array of arrays or html_table_row objects containing the data. Alternatively, if you have
      * $head specified, the string 'hr' (for horizontal ruler) can be used
      * instead of an array of cells data resulting in a divider rendered.
      *
-     * Example if usage:
+     * Example of usage with array of arrays:
      * $row1 = array('Harry Potter', '76 %');
      * $row2 = array('Hermione Granger', '100 %');
+     * $t->data = array($row1, $row2);
+     *
+     * Example with array of html_table_row objects: (used for more fine-grained control)
+     * $cell1 = new html_table_cell();
+     * $cell1->text = 'Harry Potter';
+     * $cell1->colspan = 2;
+     * $row1 = new html_table_row();
+     * $row1->cells[] = $cell1;
+     * $cell2 = new html_table_cell();
+     * $cell2->text = 'Hermione Granger';
+     * $cell3 = new html_table_cell();
+     * $cell3->text = '100 %';
+     * $row2 = new html_table_row();
+     * $row2->cells = array($cell2, $cell3);
      * $t->data = array($row1, $row2);
      */
     public $data;
@@ -4513,6 +4686,66 @@ class html_table extends moodle_html_component {
 }
 
 /**
+ * Component representing a table row.
+ *
+ * @copyright 2009 Nicolas Connault
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since     Moodle 2.0
+ */
+class html_table_row extends moodle_html_component {
+    /**
+     * @var array $cells Array of html_table_cell objects
+     */
+    public $cells = array();
+
+    /**
+     * @see lib/moodle_html_component#prepare()
+     * @return void
+     */
+    public function prepare() {
+        parent::prepare();
+    }
+}
+
+/**
+ * Component representing a table cell.
+ *
+ * @copyright 2009 Nicolas Connault
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @since     Moodle 2.0
+ */
+class html_table_cell extends moodle_html_component {
+    /**
+     * @var string $text The contents of the cell
+     */
+    public $text;
+    /**
+     * @var string $abbr Abbreviated version of the contents of the cell
+     */
+    public $abbr = '';
+    /**
+     * @var int $colspan Number of columns this cell should span
+     */
+    public $colspan = '';
+    /**
+     * @var int $rowspan Number of rows this cell should span
+     */
+    public $rowspan = '';
+    /**
+     * @var string $scope Defines a way to associate header cells and data cells in a table
+     */
+    public $scope = '';
+
+    /**
+     * @see lib/moodle_html_component#prepare()
+     * @return void
+     */
+    public function prepare() {
+        parent::prepare();
+    }
+}
+
+/**
  * Component representing a XHTML link.
  *
  * @copyright 2009 Nicolas Connault
@@ -4542,6 +4775,19 @@ class html_link extends moodle_html_component {
         }
 
         parent::prepare();
+    }
+
+    /**
+     * Shortcut for creating a link component.
+     * @param mixed  $url String or moodle_url
+     * @param string $text The text of the link
+     * @return html_link The link component
+     */
+    public function make($url, $text) {
+        $link = new html_link();
+        $link->url = $url;
+        $link->text = $text;
+        return $link;
     }
 }
 
@@ -5080,7 +5326,7 @@ class moodle_paging_bar extends moodle_html_component {
     /**
      * @var int $page The page you are currently viewing
      */
-    public $page;
+    public $page = 0;
     /**
      * @var int $perpage The number of entries that should be shown per page
      */
@@ -5124,6 +5370,18 @@ class moodle_paging_bar extends moodle_html_component {
      * @return void
      */
     public function prepare() {
+        if (empty($this->totalcount)) {
+            throw new coding_exception('moodle_paging_bar requires a totalcount value.');
+        }
+        if (!isset($this->page) || is_null($this->page)) {
+            throw new coding_exception('moodle_paging_bar requires a page value.');
+        }
+        if (empty($this->perpage)) {
+            throw new coding_exception('moodle_paging_bar requires a perpage value.');
+        }
+        if (empty($this->baseurl)) {
+            throw new coding_exception('moodle_paging_bar requires a baseurl value.');
+        }
         if (!($this->baseurl instanceof moodle_url)) {
             $this->baseurl = new moodle_url($this->baseurl);
         }
@@ -5134,7 +5392,8 @@ class moodle_paging_bar extends moodle_html_component {
             if ($this->page > 0) {
                 $this->previouslink = new html_link();
                 $this->previouslink->add_class('previous');
-                $this->previouslink->url = $this->baseurl->out(false, array($this->pagevar => $pagenum));
+                $this->previouslink->url = clone($this->baseurl);
+                $this->previouslink->url->param($this->pagevar, $pagenum);
                 $this->previouslink->text = get_string('previous');
             }
 
@@ -5148,7 +5407,8 @@ class moodle_paging_bar extends moodle_html_component {
                 $startpage = $this->page - 10;
 
                 $this->firstlink = new html_link();
-                $this->firstlink->url = $this->baseurl->out(false, array($this->pagevar => 0));
+                $this->firstlink->url = clone($this->baseurl);
+                $this->firstlink->url->param($this->pagevar, 0);
                 $this->firstlink->text = 1;
                 $this->firstlink->add_class('first');
             } else {
@@ -5165,7 +5425,8 @@ class moodle_paging_bar extends moodle_html_component {
                     $this->pagelinks[] = $displaypage;
                 } else {
                     $pagelink = new html_link();
-                    $pagelink->url = $this->baseurl->out(false, array($this->pagevar => $currpage));
+                    $pagelink->url = clone($this->baseurl);
+                    $pagelink->url->param($this->pagevar, $currpage);
                     $pagelink->text = $displaypage;
                     $this->pagelinks[] = $pagelink;
                 }
@@ -5177,7 +5438,8 @@ class moodle_paging_bar extends moodle_html_component {
             if ($currpage < $lastpage) {
                 $lastpageactual = $lastpage - 1;
                 $this->lastlink = new html_link();
-                $this->lastlink->url = $this->baseurl->out(false, array($this->pagevar => $lastpageactual));
+                $this->lastlink->url = clone($this->baseurl);
+                $this->lastlink->url->param($this->pagevar, $lastpageactual);
                 $this->lastlink->text = $lastpage;
                 $this->lastlink->add_class('last');
             }
@@ -5186,13 +5448,31 @@ class moodle_paging_bar extends moodle_html_component {
 
             if ($pagenum != $displaypage) {
                 $this->nextlink = new html_link();
-                $this->nextlink->url = $this->baseurl->out(false, array($this->pagevar => $pagenum));
+                $this->nextlink->url = clone($this->baseurl);
+                $this->nextlink->url->param($this->pagevar, $pagenum);
                 $this->nextlink->text = get_string('next');
                 $this->nextlink->add_class('next');
             }
         }
     }
 
+    /**
+     * Shortcut for initialising a moodle_paging_bar with only the required params.
+     *
+     * @param int $totalcount Thetotal number of entries available to be paged through
+     * @param int $page The page you are currently viewing
+     * @param int $perpage The number of entries that should be shown per page
+     * @param mixed $baseurl If this  is a string then it is the url which will be appended with $pagevar, an equals sign and the page number.
+     *                          If this is a moodle_url object then the pagevar param will be replaced by the page no, for each page.
+     */
+    public function make($totalcount, $page, $perpage, $baseurl) {
+        $pagingbar = new moodle_paging_bar();
+        $pagingbar->totalcount = $totalcount;
+        $pagingbar->page = $page;
+        $pagingbar->perpage = $perpage;
+        $pagingbar->baseurl = $baseurl;
+        return $pagingbar;
+    }
 }
 
 /**

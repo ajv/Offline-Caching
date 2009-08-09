@@ -107,7 +107,7 @@ if (!$helpfound) {
 }
 
 // End of page.
-close_window_button();
+echo $OUTPUT->close_window_button();
 echo '<p class="helpindex"><a href="help.php?file=index.html">'. get_string('helpindex') .'</a></p>';
 
 // Offer a link to the alternative help file language
@@ -125,7 +125,7 @@ if ($file && $helpfound && ($foundlang != 'en_utf8' || ($forcelang == 'en_utf8' 
 }
 
 $CFG->docroot = '';   // We don't want a doc link here
-print_footer('none');
+echo $OUTPUT->footer();
 
 function file_exists_and_readable($filepath) {
     return file_exists($filepath) and is_file($filepath) and is_readable($filepath);

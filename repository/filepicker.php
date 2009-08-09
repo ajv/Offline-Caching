@@ -152,10 +152,8 @@ case 'sign':
             }
             if (!empty($list['page'])) {
                 // TODO: need a better solution
-                print_paging_bar($list['total'], $list['page']-1,
-                    $list['perpage'], $CFG->httpswwwroot
-                    .'/repository/filepicker.php?action=list&amp;itemid='
-                    .$itemid.'&amp;ctx_id='.$ctx_id.'&amp;repo_id='.$repo_id.'&amp;', 'page', false, false, 1);
+                $pagingurl = new moodle_url("$CFG->httpswwwroot/repository/filepicker.php?action=list&itemid=$itemid&ctx_id=$ctx_id&repo_id=$repo_id");
+                echo $OUTPUT->paging_bar(moodle_paging_bar::make($list['total'], $list['page'] - 1, $list['perpage'], $pagingurl));
             }
             echo '<table>';
             foreach ($list['list'] as $item) {
@@ -195,7 +193,7 @@ case 'sign':
         $repo->print_login();
         echo '</form>';
     }
-    print_footer('empty');
+    echo $OUTPUT->footer();
     break;
 case 'download':
     $filepath = $repo->get_file($file, $title, $itemid);
@@ -226,7 +224,7 @@ case 'confirm':
     echo '<input type="submit" value="'.get_string('download', 'repository').'" />';
     echo '</div>';
     echo '</form>';
-    print_footer('empty');
+    echo $OUTPUT->footer();
     break;
 case 'plugins':
     $user_context = get_context_instance(CONTEXT_USER, $USER->id);
@@ -267,6 +265,6 @@ default:
     }
     $url->param('action', 'plugins');
     echo '<div><a href="'.$url->out().'">'.get_string('addfile', 'repository').'</a></div>';
-    print_footer('empty');
+    echo $OUTPUT->footer();
     break;
 }

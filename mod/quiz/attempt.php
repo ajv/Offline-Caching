@@ -103,13 +103,13 @@
         include('tabs.php');
 
     /// Heading and tab bar.
-        print_heading(get_string('previewquiz', 'quiz', format_string($quiz->name)));
+        echo $OUTPUT->heading(get_string('previewquiz', 'quiz', format_string($quiz->name)));
         $attemptobj->print_restart_preview_button();
 
     /// Inform teachers of any restrictions that would apply to students at this point.
         if ($messages) {
             print_box_start('quizaccessnotices');
-            print_heading(get_string('accessnoticesheader', 'quiz'), '', 3);
+            echo $OUTPUT->heading(get_string('accessnoticesheader', 'quiz'), 3);
             $accessmanager->print_messages($messages);
             print_box_end();
         }
@@ -158,9 +158,5 @@
 
     // Finish the page
     $accessmanager->show_attempt_timer_if_needed($attemptobj->get_attempt(), time());
-    if ($accessmanager->securewindow_required($attemptobj->is_preview_user())) {
-        print_footer('empty');
-    } else {
-        print_footer($attemptobj->get_course());
-    }
+    echo $OUTPUT->footer();
 ?>

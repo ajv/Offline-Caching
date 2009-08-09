@@ -119,7 +119,7 @@
 
     if ($nothingtodisplay) {
         notify(get_string('nolessonattempts', 'lesson'));
-        print_footer($course);
+        echo $OUTPUT->footer();
         exit();
     }
 
@@ -315,7 +315,7 @@
         }
 
         // output the stats
-        print_heading(get_string('lessonstats', 'lesson'));
+        echo $OUTPUT->heading(get_string('lessonstats', 'lesson'));
         $stattable = new stdClass;
         $stattable->head = array(get_string('averagescore', 'lesson'), get_string('averagetime', 'lesson'),
                                 get_string('highscore', 'lesson'), get_string('lowscore', 'lesson'),
@@ -835,7 +835,7 @@
                 //$headingobject->firstname = $students[$userid]->firstname;
                 //$headingobject->attempt = $try + 1;
                 //print_heading(get_string("studentattemptlesson", "lesson", $headingobject));
-            print_heading(get_string('attempt', 'lesson', $try+1));
+            echo $OUTPUT->heading(get_string('attempt', 'lesson', $try+1));
             
             $table->head = array();
             $table->align = array("right", "left");
@@ -923,6 +923,6 @@
     }
 
 /// Finish the page
-    print_footer($course);
+    echo $OUTPUT->footer();
 
 ?>

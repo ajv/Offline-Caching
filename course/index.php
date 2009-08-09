@@ -59,7 +59,7 @@
             $navlinks[] = array('name'=>$strcategories,'link'=>'','type'=>'misc');
             $navigation = build_navigation($navlinks);
             print_header("$site->shortname: $strcategories", $strcourses, $navigation, '', '', true, update_category_button());
-            print_heading($strcategories);
+            echo $OUTPUT->heading($strcategories);
             echo skip_main_destination();
             print_box_start('categorybox');
             print_whole_category_list();
@@ -85,7 +85,7 @@
         }
         print_course_request_buttons($systemcontext);
         echo '</div>';
-        print_footer();
+        echo $OUTPUT->footer();
         exit;
     }
 /// Everything else is editing on mode.
@@ -101,7 +101,7 @@
         require_capability('moodle/category:manage', $context);
         require_capability('moodle/category:manage', get_category_or_system_context($deletecat->parent));
 
-        $heading = get_string('deletecategory', '', format_string($deletecat->name));
+        $heading = get_string('deletecategory', format_string($deletecat->name));
         require_once('delete_category_form.php');
         $mform = new delete_category_form(null, $deletecat);
         $mform->set_data(array('delete'=>$delete));
@@ -112,14 +112,14 @@
         } else if (!$data= $mform->get_data()) {
             require_once($CFG->libdir . '/questionlib.php');
             admin_externalpage_print_header();
-            print_heading($heading);
+            echo $OUTPUT->heading($heading);
             $mform->display();
-            admin_externalpage_print_footer();
+            echo $OUTPUT->footer();
             exit();
         }
 
         admin_externalpage_print_header();
-        print_heading($heading);
+        echo $OUTPUT->heading($heading);
 
         if ($data->fulldelete) {
             $deletedcourses = category_delete_full($deletecat, true);
@@ -140,7 +140,7 @@
 
         print_continue('index.php');
 
-        admin_externalpage_print_footer();
+        echo $OUTPUT->footer();
         die;
     }
 
@@ -214,7 +214,7 @@
 
 /// Print headings
     admin_externalpage_print_header();
-    print_heading($strcategories);
+    echo $OUTPUT->heading($strcategories);
 
 /// Print out the categories with all the knobs
     $strcategories = get_string('categories');
@@ -256,7 +256,7 @@
     print_course_request_buttons($systemcontext);
     echo '</div>';
 
-    admin_externalpage_print_footer();
+    echo $OUTPUT->footer();
 
 function print_category_edit($category, $displaylist, $parentslist, $depth=-1, $up=false, $down=false) {
 /// Recursive function to print all the categories ready for editing
@@ -330,13 +330,18 @@ function print_category_edit($category, $displaylist, $parentslist, $depth=-1, $
         echo '<td align="left">';
         if (has_capability('moodle/category:manage', $category->context)) {
             $tempdisplaylist = $displaylist;
+            $popupurl = "index.php?move=$category->id&sesskey=".sesskey()."&moveto=";
             unset($tempdisplaylist[$category->id]);
             foreach ($parentslist as $key => $parents) {
                 if (in_array($category->id, $parents)) {
                     unset($tempdisplaylist[$key]);
                 }
             }
-            popup_form ("index.php?move=$category->id&amp;sesskey=".sesskey()."&amp;moveto=", $tempdisplaylist, "moveform$category->id", $category->parent, '', '', '', false);
+            foreach ($tempdisplaylist as $key => $val) {
+                $tempdisplaylist[$popupurl.$key] = $val;
+                unset($tempdisplaylist[$key]);
+            }
+            echo $OUTPUT->select(moodle_select::make_popup_form($tempdisplaylist, "moveform$category->id", $popupurl.$category->parent));
         }
         echo '</td>';
         echo '</tr>';

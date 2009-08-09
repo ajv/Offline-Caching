@@ -296,7 +296,7 @@ function glossary_user_complete($course, $user, $mod, $glossary) {
  * @return bool
  */
 function glossary_print_recent_activity($course, $viewfullnames, $timestart) {
-    global $CFG, $USER, $DB;
+    global $CFG, $USER, $DB, $OUTPUT;
 
     //TODO: use timestamp in approved field instead of changing timemodified when approving in 2.0
 
@@ -346,7 +346,7 @@ function glossary_print_recent_activity($course, $viewfullnames, $timestart) {
     if (!$entries) {
         return false;
     }
-    print_headline(get_string('newentries', 'glossary').':');
+    echo $OUTPUT->heading(get_string('newentries', 'glossary').':');
 
     $strftimerecent = get_string('strftimerecent');
     foreach ($entries as $entry) {
@@ -796,9 +796,10 @@ function glossary_print_entry_default ($entry, $glossary, $cm) {
  * @param object $entry
  */
 function  glossary_print_entry_concept($entry) {
+    global $OUTPUT;
     $options = new object();
     $options->para = false;
-    $text = format_text(print_heading('<span class="nolink">' . $entry->concept . '</span>', '', 3, 'nolink', true), FORMAT_MOODLE, $options);
+    $text = format_text($OUTPUT->heading('<span class="nolink">' . $entry->concept . '</span>', 3, 'nolink'), FORMAT_MOODLE, $options);
     if (!empty($entry->highlight)) {
         $text = highlight($entry->highlight, $text);
     }

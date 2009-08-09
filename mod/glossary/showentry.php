@@ -64,9 +64,9 @@
         glossary_print_dynaentry($courseid, $entries, $displayformat);
     }
 
-    close_window_button();
+    echo $OUTPUT->close_window_button();
 
 /// Show one reduced footer
-    print_footer('none');
+    echo $OUTPUT->footer();
 
 ?>

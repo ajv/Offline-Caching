@@ -35,21 +35,21 @@
                 $scalemenu = make_menu_from_list($scale->scale);
 
                 print_simple_box_start("center");
-                print_heading($scale->name);
+                echo $OUTPUT->heading($scale->name);
                 echo "<center>";
                 choose_from_menu($scalemenu, "", "", "");
                 echo "</center>";
                 echo text_to_html($scale->description);
                 print_simple_box_end();
-                close_window_button();
-                print_footer('empty');
+                echo $OUTPUT->close_window_button();
+                echo $OUTPUT->footer();
                 exit;
             }
         }
     }
 
     if ($scales = $DB->get_records("scale", array("courseid"=>$course->id), "name ASC")) {
-        print_heading($strcustomscales);
+        echo $OUTPUT->heading($strcustomscales);
 
         if (has_capability('moodle/course:managescales', $context)) {
             echo "<p align=\"center\">(";
@@ -61,7 +61,7 @@
             $scalemenu = make_menu_from_list($scale->scale);
 
             print_simple_box_start("center");
-            print_heading($scale->name);
+            echo $OUTPUT->heading($scale->name);
             echo "<center>";
             choose_from_menu($scalemenu, "", "", "");
             echo "</center>";
@@ -79,12 +79,12 @@
     }
 
     if ($scales = $DB->get_records("scale", array("courseid"=>0), "name ASC")) {
-        print_heading($strstandardscales);
+        echo $OUTPUT->heading($strstandardscales);
         foreach ($scales as $scale) {
             $scalemenu = make_menu_from_list($scale->scale);
 
             print_simple_box_start("center");
-            print_heading($scale->name);
+            echo $OUTPUT->heading($scale->name);
             echo "<center>";
             choose_from_menu($scalemenu, "", "", "");
             echo "</center>";
@@ -94,7 +94,7 @@
         }
     }
 
-    close_window_button();
-    print_footer('empty');
+    echo $OUTPUT->close_window_button();
+    echo $OUTPUT->footer();
 
 ?>

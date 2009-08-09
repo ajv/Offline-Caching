@@ -56,8 +56,8 @@
         print_simple_box_end();
 
         print_simple_box(format_text($submission->data1, $submission->data2), 'center', '100%');
-        close_window_button();
-        print_footer('none');
+        echo $OUTPUT->close_window_button();
+        echo $OUTPUT->footer();
     } else {
         print_string('emptysubmission', 'assignment');
     }

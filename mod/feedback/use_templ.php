@@ -77,11 +77,11 @@
     ///////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
-    print_heading(format_text($feedback->name));
+    echo $OUTPUT->heading(format_text($feedback->name));
     
     // print_simple_box_start("center", "60%", "#FFAAAA", 20, "noticebox");
     print_box_start('generalbox errorboxcontent boxaligncenter boxwidthnormal');
-    print_heading(get_string('confirmusetemplate', 'feedback'));
+    echo $OUTPUT->heading(get_string('confirmusetemplate', 'feedback'));
     
     $mform->display();
 
@@ -123,6 +123,6 @@
         print_box(get_string('no_items_available_at_this_template','feedback'),'generalbox boxaligncenter boxwidthwide');
     }
 
-    print_footer($course);
+    echo $OUTPUT->footer();
 
 ?>

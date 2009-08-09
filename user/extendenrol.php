@@ -112,7 +112,7 @@ if($course->enrollable == 2) {
 }
 
 $title = get_string('extendenrol');
-print_heading($title . helpbutton('extendenrol', $title, 'moodle', true, false, '', true));
+echo $OUTPUT->heading($title . helpbutton('extendenrol', $title, 'moodle', true, false, '', true));
 echo "<form method=\"post\" action=\"extendenrol.php\">\n";
 echo '<input type="hidden" name="id" value="'.$course->id.'" />';
 echo '<input type="hidden" name="sesskey" value="'.sesskey().'" />';
@@ -157,5 +157,5 @@ foreach ($_POST as $k => $v) {
 print_table($table);
 echo "\n<div style=\"width:100%;text-align:center;\"><input type=\"submit\" value=\"".get_string('savechanges')."\" /></div>\n</form>\n";
 
-print_footer($course);
+echo $OUTPUT->footer();
 ?>

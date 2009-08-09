@@ -61,8 +61,8 @@
 
     if ($user->deleted) {
         print_header();
-        print_heading(get_string('userdeleted'));
-        print_footer($course);
+        echo $OUTPUT->heading(get_string('userdeleted'));
+        echo $OUTPUT->footer();
         die;
     }
 
@@ -198,7 +198,7 @@
         } else {
             admin_externalpage_print_header();
             $userfullname = fullname($user, true);
-            print_heading($userfullname);
+            echo $OUTPUT->heading($userfullname);
         }
     } else if (!empty($USER->newadminuser)) {
         $strinstallation = get_string('installation', 'install');
@@ -234,6 +234,6 @@
     $userform->display();
 
 /// and proper footer
-    print_footer();
+    echo $OUTPUT->footer();
 
 ?>

@@ -145,8 +145,8 @@ if (!empty($user)) {
 
     if ($user->deleted) {
         print_header();
-        print_heading(get_string('userdeleted'));
-        print_footer();
+        echo $OUTPUT->heading(get_string('userdeleted'));
+        echo $OUTPUT->footer();
         die;
     }
 
@@ -205,6 +205,6 @@ add_to_log($courseid, 'blog', 'view', 'index.php?filtertype='.$filtertype.'&amp;
 
 include($CFG->dirroot .'/blog/footer.php');
 
-print_footer();
+echo $OUTPUT->footer();
 
 ?>

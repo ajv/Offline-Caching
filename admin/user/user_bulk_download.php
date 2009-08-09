@@ -54,7 +54,7 @@ if ($format) {
 }
 
 admin_externalpage_print_header();
-print_heading(get_string('download', 'admin'));
+echo $OUTPUT->heading(get_string('download', 'admin'));
 
 print_box_start();
 echo '<ul>';
@@ -66,7 +66,7 @@ print_box_end();
 
 print_continue($return);
 
-print_footer();
+echo $OUTPUT->footer();
 
 function user_download_ods($fields) {
     global $CFG, $SESSION, $DB;

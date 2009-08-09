@@ -255,7 +255,7 @@ class data_field_base {     // Base class for Database Field Types (see field/*/
      * @return void Output is echo'd
      */
     function display_edit_field() {
-        global $CFG, $DB;
+        global $CFG, $DB, $OUTPUT;
 
         if (empty($this->field)) {   // No field has been defined yet, try and make one
             $this->define_default_field();
@@ -275,7 +275,7 @@ class data_field_base {     // Base class for Database Field Types (see field/*/
         echo '<input type="hidden" name="type" value="'.$this->type.'" />'."\n";
         echo '<input name="sesskey" value="'.sesskey().'" type="hidden" />'."\n";
 
-        print_heading($this->name());
+        echo $OUTPUT->heading($this->name());
 
         require_once($CFG->dirroot.'/mod/data/field/'.$this->type.'/mod.html');
 
@@ -1477,7 +1477,7 @@ function data_print_preference_form($data, $perpage, $search, $sort='', $order='
  * @return void Output echo'd
  */
 function data_print_ratings($data, $record) {
-    global $USER, $DB;
+    global $USER, $DB, $OUTPUT;
 
     $cm = get_coursemodule_from_instance('data', $data->id);
     $context = get_context_instance(CONTEXT_MODULE, $cm->id);
@@ -1502,7 +1502,7 @@ function data_print_ratings($data, $record) {
 
             if ($data->scale < 0) {
                 if ($scale = $DB->get_record('scale', array('id'=>abs($data->scale)))) {
-                    print_scale_menu_helpbutton($data->course, $scale );
+                    echo $OUTPUT->help_button(helpbutton::make_scale_menu($data->course, $scale));
                 }
             }
 
@@ -2044,14 +2044,14 @@ function data_get_available_presets($context) {
  */
 function data_print_header($course, $cm, $data, $currenttab='') {
 
-    global $CFG, $displaynoticegood, $displaynoticebad;
+    global $CFG, $displaynoticegood, $displaynoticebad, $OUTPUT;
 
     $navigation = build_navigation('', $cm);
     print_header_simple($data->name, '', $navigation,
             '', '', true, update_module_button($cm->id, $course->id, get_string('modulename', 'data')),
             navmenu($course, $cm));
 
-    print_heading(format_string($data->name));
+    echo $OUTPUT->heading(format_string($data->name));
 
 // Groups needed for Add entry tab
     $currentgroup = groups_get_activity_group($cm);

@@ -1308,9 +1308,10 @@ class admin_setting_heading extends admin_setting {
      * @return string Returns an HTML string
      */
     public function output_html($data, $query='') {
+        global $OUTPUT;
         $return = '';
         if ($this->visiblename != '') {
-            $return .= print_heading('<a name="'.$this->name.'">'.highlightfast($query, $this->visiblename).'</a>', '', 3, 'main', true);
+            $return .= $OUTPUT->heading('<a name="'.$this->name.'">'.highlightfast($query, $this->visiblename).'</a>', 3, 'main', true);
         }
         if ($this->description != '') {
             $return .= print_box(highlight($query, $this->description), 'generalbox formsettingheading', '', true);
@@ -4546,7 +4547,7 @@ class admin_setting_manageauths extends admin_setting {
             }
         }
 
-        $return = print_heading(get_string('actauthhdr', 'auth'), '', 3, 'main', true);
+        $return = $OUTPUT->heading(get_string('actauthhdr', 'auth'), 3, 'main');
         $return .= print_box_start('generalbox authsui', '', true);
 
         $table = new object();
@@ -4723,7 +4724,7 @@ class admin_setting_manageeditors extends admin_setting {
             //$active_editors = array('textarea');
         }
         $editors_available = array_reverse($editors_available, true);
-        $return = print_heading(get_string('acteditorshhdr', 'editor'), '', 3, 'main', true);
+        $return = $OUTPUT->heading(get_string('acteditorshhdr', 'editor'), 3, 'main', true);
         $return .= print_box_start('generalbox editorsui', '', true);
 
         $table = new object();
@@ -5095,9 +5096,9 @@ function admin_externalpage_print_header($focus='') {
  */
 function admin_externalpage_print_footer() {
 // TODO Still 103 referernces in core code. Don't do debugging output yet.
-//    debugging('admin_externalpage_print_footer is deprecated. Please  use print_footer ' .
-//            '(or even $OUTPUT->footer() instead.', DEBUG_DEVELOPER);
-    print_footer();
+    debugging('admin_externalpage_print_footer is deprecated. Please $OUTPUT->footer() instead.', DEBUG_DEVELOPER);
+    global $OUTPUT;
+    echo $OUTPUT->footer();
 }
 
 /**
@@ -5277,7 +5278,7 @@ function admin_find_write_settings($node, $data) {
  * @return string empty or XHTML
  */
 function admin_search_settings_html($query) {
-    global $CFG;
+    global $CFG, $OUTPUT;
 
     $textlib = textlib_get_instance();
     if ($textlib->strlen($query) < 2) {
@@ -5298,9 +5299,9 @@ function admin_search_settings_html($query) {
             continue;
         }
         if ($page instanceof admin_externalpage) {
-            $return .= print_heading(get_string('searchresults','admin').' - <a href="'.$page->url.'">'.highlight($query, $page->visiblename).'</a>', '', 2, 'main', true);
+            $return .= $OUTPUT->heading(get_string('searchresults','admin').' - <a href="'.$page->url.'">'.highlight($query, $page->visiblename).'</a>', 2, 'main');
         } else if ($page instanceof admin_settingpage) {
-            $return .= print_heading(get_string('searchresults','admin').' - <a href="'.$CFG->wwwroot.'/'.$CFG->admin.'/settings.php?section='.$page->name.'">'.highlight($query, $page->visiblename).'</a>', '', 2, 'main', true);
+            $return .= $OUTPUT->heading(get_string('searchresults','admin').' - <a href="'.$CFG->wwwroot.'/'.$CFG->admin.'/settings.php?section='.$page->name.'">'.highlight($query, $page->visiblename).'</a>', 2, 'main');
         } else {
             continue;
         }
@@ -5336,6 +5337,7 @@ function admin_search_settings_html($query) {
  * @return array
  */
 function admin_output_new_settings_by_page($node) {
+    global $OUTPUT;
     $return = array();
 
     if ($node instanceof admin_category) {
@@ -5353,7 +5355,7 @@ function admin_output_new_settings_by_page($node) {
         }
         if (count($newsettings) > 0) {
             $adminroot = admin_get_root();
-            $page = print_heading(get_string('upgradesettings','admin').' - '.$node->visiblename, '', 2, 'main', true);
+            $page = $OUTPUT->heading(get_string('upgradesettings','admin').' - '.$node->visiblename, 2, 'main');
             $page .= '<fieldset class="adminsettings">'."\n";
             foreach ($newsettings as $setting) {
                 $fullname = $setting->get_full_name();
@@ -6015,7 +6017,7 @@ class admin_setting_managewsusersettings extends admin_setting {
      * @return string XHTML
      */
     public function output_html($data, $query='') {
-        global $CFG;
+        global $CFG, $OUTPUT;
         $output = "";
 
         //search all web service users
@@ -6031,7 +6033,9 @@ class admin_setting_managewsusersettings extends admin_setting {
                 $wsusersetting = ' <a href="' . $this->baseurl . '&amp;username=' . $user->username . '">'
                 . get_string("settings")
                           .'</a>' . "\n";
-                $textfield = print_textfield('whitelist_'.$user->username, '', '', 50, 0, true);
+                $field = html_field::make_text('whitelist_'.$user->username);
+                $field->style = "width: {$size}px;";
+                $textfield = $OUTPUT->textfield($field);
                 $table->data[] = array($user->username, $wsusersetting);
             }
         }

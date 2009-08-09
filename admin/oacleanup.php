@@ -9,17 +9,17 @@ if (!isset($CFG)) {
 
     admin_externalpage_print_header();
     online_assignment_cleanup(true);
-    admin_externalpage_print_footer();
+    echo $OUTPUT->footer();
 
 }
 
 
 
 function online_assignment_cleanup($output=false) {
-    global $CFG, $DB;
+    global $CFG, $DB, $OUTPUT;
 
     if ($output) {
-        print_heading('Online Assignment Cleanup');
+        echo $OUTPUT->heading('Online Assignment Cleanup');
         echo '<center>';
     }
 
@@ -48,7 +48,7 @@ function online_assignment_cleanup($output=false) {
     foreach ($courses as $course) {
 
         $fullname = empty($course->fullname) ? 'Course: '.$course->id : $course->fullname;
-        if ($output) print_heading($fullname);
+        if ($output) echo $OUTPUT->heading($fullname);
 
         /// retrieve a list of sections beyond what is currently being shown
         $sql = "SELECT *

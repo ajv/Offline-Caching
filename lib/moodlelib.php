@@ -1977,7 +1977,7 @@ function get_login_url($loginguest=false) {
  * @return mixed Void, exit, and die depending on path
  */
 function require_login($courseorid=0, $autologinguest=true, $cm=null, $setwantsurltome=true) {
-    global $CFG, $SESSION, $USER, $COURSE, $FULLME, $PAGE, $SITE, $DB;
+    global $CFG, $SESSION, $USER, $COURSE, $FULLME, $PAGE, $SITE, $DB, $OUTPUT;
 
 /// setup global $COURSE, themes, language and locale
     if (!empty($courseorid)) {
@@ -2195,7 +2195,7 @@ function require_login($courseorid=0, $autologinguest=true, $cm=null, $setwantsu
                     } else {
                         notify(get_string('guestsnotallowed', '', format_string($COURSE->fullname)));
                         echo '<div class="notifyproblem">'.switchroles_form($COURSE->id).'</div>';
-                        print_footer($COURSE);
+                        echo $OUTPUT->footer();
                         exit;
                     }
                     break;
@@ -3497,6 +3497,10 @@ function authenticate_user_login($username, $password) {
 function complete_user_login($user, $setcookie=true) {
     global $CFG, $USER, $SESSION;
 
+    // regenerate session id and delete old session,
+    // this helps prevent session fixation attacks from the same domain
+    session_regenerate_id(true);
+    
     // check enrolments, load caps and setup $USER object
     session_set_user($user);
 

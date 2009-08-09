@@ -127,7 +127,7 @@
             print_continue($CFG->wwwroot.'/course/view.php?id='.$course->id);
         // print_simple_box_end();
         print_box_end();
-        print_footer($course);
+        echo $OUTPUT->footer();
         exit;
     }
     
@@ -224,7 +224,7 @@
         ///////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
         ///////////////////////////////////////////////////////////////////////////
-        print_heading(format_text($feedback->name));
+        echo $OUTPUT->heading(format_text($feedback->name));
         
         if( (intval($feedback->publish_stats) == 1) AND ( $capabilities->viewanalysepage) AND !( $capabilities->viewreports) ) {
             echo '<div class="mdl-align"><a href="'.htmlspecialchars('analysis.php?id=' . $id . '&courseid='.$courseid).'">';
@@ -385,6 +385,6 @@
     ///////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
 
-    print_footer($course);
+    echo $OUTPUT->footer();
 
 ?>

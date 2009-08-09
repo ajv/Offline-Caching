@@ -67,7 +67,7 @@ class enrolment_plugin_authorize
         print_course($course, '80%');
 
         if ($course->password) {
-            print_heading(get_string('choosemethod', 'enrol_authorize'), 'center');
+            echo $OUTPUT->heading(get_string('choosemethod', 'enrol_authorize'));
         }
 
         if ($USER->username == 'guest') { // only real guest user, not for users with guest role
@@ -107,7 +107,7 @@ class enrolment_plugin_authorize
             include($CFG->dirroot.'/enrol/manual/enrol.html');
         }
 
-        print_footer();
+        echo $OUTPUT->footer();
     }
 
 
@@ -322,7 +322,7 @@ class enrolment_plugin_authorize
                     print_single_button("$CFG->wwwroot/course/view.php", array('id'=>$course->id), $course->fullname);
                     echo '</div>';
                     $OUTPUT->box_end();
-                    print_footer($course);
+                    echo $OUTPUT->footer();
                     exit; // break;
                 }
             }

@@ -405,7 +405,7 @@ function profile_list_categories() {
 
 /// Are we adding or editing a cateogory?
 function profile_edit_category($id, $redirect) {
-    global $CFG, $DB;
+    global $CFG, $DB, $OUTPUT;
 
     require_once('index_category_form.php');
     $categoryform = new category_form();
@@ -438,16 +438,16 @@ function profile_edit_category($id, $redirect) {
 
         /// Print the page
         admin_externalpage_print_header();
-        print_heading($strheading);
+        echo $OUTPUT->heading($strheading);
         $categoryform->display();
-        admin_externalpage_print_footer();
+        echo $OUTPUT->footer();
         die;
     }
 
 }
 
 function profile_edit_field($id, $datatype, $redirect) {
-    global $CFG, $DB;
+    global $CFG, $DB, $OUTPUT;
 
     if (!$field = $DB->get_record('user_info_field', array('id'=>$id))) {
         $field = new object();
@@ -482,9 +482,9 @@ function profile_edit_field($id, $datatype, $redirect) {
 
         /// Print the page
         admin_externalpage_print_header();
-        print_heading($strheading);
+        echo $OUTPUT->heading($strheading);
         $fieldform->display();
-        admin_externalpage_print_footer();
+        echo $OUTPUT->footer();
         die;
     }
 }

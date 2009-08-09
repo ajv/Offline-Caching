@@ -71,8 +71,8 @@
         $numusers = survey_count_responses($survey->id, $currentgroup, $groupingid);
 
         if ($showscales) {
-            print_heading(get_string("surveycompleted", "survey"));
-            print_heading(get_string("peoplecompleted", "survey", $numusers));
+            echo $OUTPUT->heading(get_string("surveycompleted", "survey"));
+            echo $OUTPUT->heading(get_string("peoplecompleted", "survey", $numusers));
             echo '<div class="resultgraph">';
             survey_print_graph("id=$cm->id&amp;sid=$USER->id&amp;group=$currentgroup&amp;type=student.png");
             echo '</div>';
@@ -80,7 +80,9 @@
         } else {
 
             print_box(format_module_intro('survey', $survey, $cm->id), 'generalbox', 'intro');
-            print_spacer(30);
+            $spacer = new html_image();
+            $spacer->height = 30;
+            echo $OUTPUT->spacer(clone($spacer)) . '<br />';
 
             $questions = $DB->get_records_list("survey_questions", "id", explode(',', $survey->questions));
             $questionorder = explode(",", $survey->questions);
@@ -93,13 +95,13 @@
                         $table->align = array ("left");
                         $table->data[] = array(s($answer->answer1));//no html here, just plain text
                         print_table($table);
-                        print_spacer(30);
+                        echo $OUTPUT->spacer(clone($spacer)) . '<br />';
                     }
                 }
             }
         }
 
-        print_footer($course);
+        echo $OUTPUT->footer();
         exit;
     }
 
@@ -154,7 +156,7 @@
     if (isguest()) {
         echo '</div>';  
         echo "</form>";
-        print_footer($course);
+        echo $OUTPUT->footer();
         exit;
     }
 
@@ -174,6 +176,6 @@
     echo '</div>';
     echo "</form>";
 
-    print_footer($course);
+    echo $OUTPUT->footer();
 
 ?>

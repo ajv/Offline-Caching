@@ -76,7 +76,7 @@ if (!empty($tests)) {
 
         $UNITTEST->func_test_db = $database; // pass the db to the tests through global
 
-        print_heading('Running tests on: '.$dbinfo['name'], '', 3); // TODO: localise
+        echo $OUTPUT->heading('Running tests on: '.$dbinfo['name'], 3); // TODO: localise
 
         // Create the group of tests.
         $test = new autogroup_test_coverage(false, true, $codecoverage);
@@ -106,10 +106,10 @@ if (!empty($tests)) {
 echo $OUTPUT->box_start('generalbox boxwidthwide boxaligncenter');
 echo '<form method="post" action="dbtest.php">';
 echo '<div>';
-print_heading("Run functional database tests"); // TODO: localise
-echo '<p>'; print_checkbox('showpasses', 1, $showpasses, get_string('showpasses', 'simpletest')); echo '</p>';
+echo $OUTPUT->heading("Run functional database tests"); // TODO: localise
+echo '<p>'; echo $OUTPUT->checkbox(html_select_option::make_checkbox(1, $showpasses, get_string('showpasses', 'simpletest')), 'showpasses') ; echo '</p>';
 if (moodle_coverage_recorder::can_run_codecoverage()) {
-    echo '<p>'; print_checkbox('codecoverage', 1, $codecoverage, get_string('codecoverageanalysis', 'simpletest')); echo '</p>';
+    echo '<p>'; echo $OUTPUT->checkbox(html_select_option::make_checkbox(1, $codecoverage, get_string('codecoverageanalysis', 'simpletest')), 'codecoverage') ; echo '</p>';
 } else {
     echo '<p>'; print_string('codecoveragedisabled', 'simpletest'); echo '<input type="hidden" name="codecoverage" value="0" /></p>';
 }
@@ -121,7 +121,7 @@ foreach ($dbinfos as $i=>$dbinfo) {
         if (!$dbinfo['configured']) {
             $name = "$name (misconfigured)"; // TODO: localise
         }
-        echo '<li>'; print_checkbox('selected['.$i.']', 1, intval(!empty($selected[$i])), $name); echo '</li>';
+        echo '<li>'; echo $OUTPUT->checkbox(html_select_option::make_checkbox(1, intval(!empty($selected[$i])), $name), 'selected['.$i.']') ; echo '</li>';
     } else {
         echo '<li>'."$name: driver not installed".'</li>'; // TODO: localise
     }
@@ -144,6 +144,6 @@ if (!data_submitted() || !$codecoverage) {
 }
 
 // Footer.
-admin_externalpage_print_footer();
+echo $OUTPUT->footer();
 
 ?>

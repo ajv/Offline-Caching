@@ -110,7 +110,7 @@
         echo "</p>";
         echo "</center>";
         print_simple_box_end();
-        print_footer();
+        echo $OUTPUT->footer();
         exit;
     }
 
@@ -176,7 +176,29 @@
     $searchform = print_course_search($search, true, "navbar");
 
     if (!empty($courses) && has_capability('moodle/course:create', get_context_instance(CONTEXT_SYSTEM))) {
-        $searchform .= update_categories_search_button($search,$page,$perpage);
+        $searchform = '';
+        // not sure if this capability is the best  here
+        if (has_capability('moodle/category:manage', get_context_instance(CONTEXT_SYSTEM))) {
+            if ($PAGE->user_is_editing()) {
+                $string = get_string("turneditingoff");
+                $edit = "off";
+                $perpage = 30;
+            } else {
+                $string = get_string("turneditingon");
+                $edit = "on";
+            }
+
+            $form = new html_form();
+            $form->url = new moodle_url("$CFG->wwwroot/course/search.php", array(
+                    'edit' => $edit, 
+                    'sesskey' => sesskey(),
+                    'search' => s($search, true),
+                    'page' => $page,
+                    'perpage' => $perpage));
+            $form->method = 'get';
+            $form->button->text = s($string);
+            $searchform = $OUTPUT->button($form);
+        }
     }
 
     $navlinks = array();
@@ -189,7 +211,7 @@
 
     $lastcategory = -1;
     if ($courses) {
-        print_heading("$strsearchresults: $totalcount");
+        echo $OUTPUT->heading("$strsearchresults: $totalcount");
         $encodedsearch = urlencode($search);
 
      ///add the module parameter to the paging bar if they exists
@@ -207,7 +229,10 @@
                 $course->summary .= $displaylist[$course->category];
                 $course->summary .= "</a></p>";
                 print_course($course, $search);
-                print_spacer(5,5);
+                $spacer = new html_image();
+                $spacer->height = 5;
+                $spacer->width = 5;
+                echo $OUTPUT->spacer($spacer) . '<br />';
             }
         } else {
         /// Show editing UI.
@@ -324,10 +349,10 @@
 
     } else {
         if (!empty($search)) {
-            print_heading(get_string("nocoursesfound", "", s($search)));
+            echo $OUTPUT->heading(get_string("nocoursesfound", s($search)));
         }
         else {
-            print_heading( $strnovalidcourses );
+            echo $OUTPUT->heading( $strnovalidcourses );
         }
     }
 
@@ -335,7 +360,7 @@
 
     print_course_search($search);
 
-    print_footer();
+    echo $OUTPUT->footer();
 
    /**
      * Print a list navigation bar
@@ -347,7 +372,10 @@
      * @param string $modulelink - module name
      */
     function print_navigation_bar($totalcount,$page,$perpage,$encodedsearch,$modulelink) {
-        print_paging_bar($totalcount, $page, $perpage, "search.php?search=$encodedsearch".$modulelink."&amp;perpage=$perpage&amp;",'page',($perpage == 99999));
+        global $OUTPUT;
+        $pagingbar = moodle_paging_bar::make($totalcount, $page, $perpage, "search.php?search=$encodedsearch".$modulelink."&perpage=$perpage");
+        $pagingbar->nocurr = ($perpage == 99999);
+        echo $OUTPUT->paging_bar($pagingbar);
 
         //display
         if ($perpage != 99999 && $totalcount > $perpage) {

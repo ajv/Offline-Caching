@@ -91,8 +91,8 @@
                 $navigation = build_navigation($navlinks);
 
                 print_header("$strpersonalprofile: ", "$strpersonalprofile: ", $navigation, "", "", true, "&nbsp;", navmenu($course));
-                print_heading(get_string('usernotavailable', 'error'));
-                print_footer($course);
+                echo $OUTPUT->heading(get_string('usernotavailable', 'error'));
+                echo $OUTPUT->footer();
                 exit;
             }
         } else {   // Normal course
@@ -107,15 +107,15 @@
                     $navlinks[] = array('name' => $fullname, 'link' => null, 'type' => 'misc');
                     $navigation = build_navigation($navlinks);
                     print_header("$strpersonalprofile: ", "$strpersonalprofile: ", $navigation, "", "", true, "&nbsp;", navmenu($course));
-                    print_heading(get_string('notenrolled', '', $fullname));
+                    echo $OUTPUT->heading(get_string('notenrolled', $fullname));
                 } else {
                     $navlinks[] = array('name' => $struser, 'link' => null, 'type' => 'misc');
                     $navigation = build_navigation($navlinks);
                     print_header("$strpersonalprofile: ", "$strpersonalprofile: ", $navigation, "", "", true, "&nbsp;", navmenu($course));
-                    print_heading(get_string('notenrolledprofile'));
+                    echo $OUTPUT->heading(get_string('notenrolledprofile'));
                 }
                 print_continue($_SERVER['HTTP_REFERER']);
-                print_footer($course);
+                echo $OUTPUT->footer();
                 exit;
             }
         }
@@ -148,16 +148,16 @@
 
     if (($course->id != SITEID) and ! isguest() ) {   // Need to have access to a course to see that info
         if (!has_capability('moodle/course:view', $coursecontext, $user->id)) {
-            print_heading(get_string('notenrolled', '', $fullname));
-            print_footer($course);
+            echo $OUTPUT->heading(get_string('notenrolled', '', $fullname));
+            echo $OUTPUT->footer();
             die;
         }
     }
 
     if ($user->deleted) {
-        print_heading(get_string('userdeleted'));
+        echo $OUTPUT->heading(get_string('userdeleted'));
         if (!has_capability('moodle/user:update', $coursecontext)) {
-            print_footer($course);
+            echo $OUTPUT->footer();
             die;
         }
     }
@@ -540,11 +540,11 @@
 
     if ($CFG->debugdisplay && debugging('', DEBUG_DEVELOPER) && $USER->id == $user->id) {  // Show user object
         echo '<hr />';
-        print_heading('DEBUG MODE:  User session variables');
+        echo $OUTPUT->heading('DEBUG MODE:  User session variables');
         print_object($USER);
     }
 
-    print_footer($course);
+    echo $OUTPUT->footer();
 
 /// Functions ///////
 

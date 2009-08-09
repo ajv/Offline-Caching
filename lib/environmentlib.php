@@ -154,7 +154,7 @@ function check_moodle_environment($version, &$environment_results, $print_table=
  * @return void
  */
 function print_moodle_environment($result, $environment_results) {
-    global $CFG;
+    global $CFG, $OUTPUT;
 
 /// Get some strings
     $strname = get_string('name');
@@ -273,7 +273,7 @@ function print_moodle_environment($result, $environment_results) {
             if (empty($CFG->docroot)) {
                 $report = get_string($stringtouse, 'admin', $rec);
             } else {
-                $report = doc_link(join($linkparts, '/'), get_string($stringtouse, 'admin', $rec));
+                $report = $OUTPUT->doc_link(join($linkparts, '/'), get_string($stringtouse, 'admin', $rec));
             }
 
 
@@ -308,10 +308,10 @@ function print_moodle_environment($result, $environment_results) {
     $othertable->data = array_merge($otherdata['error'], $otherdata['warn'], $otherdata['ok']);
 
 /// Print table
-    print_heading(get_string('serverchecks', 'admin'));
+    echo $OUTPUT->heading(get_string('serverchecks', 'admin'));
     print_table($servertable);
     if (count($othertable->data)){
-        print_heading(get_string('customcheck', 'admin'));
+        echo $OUTPUT->heading(get_string('customcheck', 'admin'));
         print_table($othertable);
     }
 

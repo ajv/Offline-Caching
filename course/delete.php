@@ -46,7 +46,7 @@
                      "delete.php?id=$course->id&amp;delete=".md5($course->timemodified)."&amp;sesskey=".sesskey(),
                      "category.php?id=$course->category");
 
-        print_footer();
+        echo $OUTPUT->footer();
         exit;
     }
 
@@ -72,15 +72,15 @@
 
     print_header("$site->shortname: $strdeletingcourse", $site->fullname, $navigation);
 
-    print_heading($strdeletingcourse);
+    echo $OUTPUT->heading($strdeletingcourse);
 
     delete_course($course);
     fix_course_sortorder(); //update course count in catagories
 
-    print_heading( get_string("deletedcourse", "", format_string($course->shortname)) );
+    echo $OUTPUT->heading( get_string("deletedcourse", "", format_string($course->shortname)) );
 
     print_continue("category.php?id=$course->category");
 
-    print_footer();
+    echo $OUTPUT->footer();
 
 ?>

@@ -151,7 +151,7 @@
     $reportuser = $userselector->get_selected_user();
     if (!is_null($reportuser)) {
         print_box_start('generalbox boxaligncenter boxwidthwide');
-        print_heading(get_string('permissionsforuser', 'role', fullname($reportuser)), '', 3);
+        echo $OUTPUT->heading(get_string('permissionsforuser', 'role', fullname($reportuser)), 3);
 
         $table = new explain_capability_table($context, $reportuser, $contextname);
         $table->display();
@@ -176,7 +176,7 @@
     }
 
 /// User selector.
-    print_heading('<label for="reportuser">' . $selectheading . '</label>', '', 3);
+    echo $OUTPUT->heading('<label for="reportuser">' . $selectheading . '</label>', 3);
     $userselector->display(); 
 
 /// Submit button and the end of the form.
@@ -193,5 +193,5 @@
                 get_string('backtopageyouwereon') . '</a></div>';
     }
 
-    print_footer();
+    echo $OUTPUT->footer();
 ?>

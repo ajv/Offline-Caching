@@ -45,7 +45,7 @@
             echo '<div class="lessonbutton standardbutton" style="padding: 5px;"><a href="'.$CFG->wwwroot.'/course/view.php?id='. $course->id .'">'. get_string('returnto', 'lesson', format_string($course->fullname, true)) .'</a></div>';
             echo '</div>';
             print_box_end();
-            print_footer($course);
+            echo $OUTPUT->footer();
             exit();
         
         } else if ($lesson->usepassword and empty($USER->lessonloggedin[$lesson->id])) { // Password protected lesson code
@@ -81,7 +81,7 @@
                 echo '</fieldset></form>';
                 print_box_end();
                 echo "</div>\n";
-                print_footer($course);
+                echo $OUTPUT->footer();
                 exit();
             }
         
@@ -152,7 +152,7 @@
                     echo '<p style="text-align:center;">'.implode('<br />'.get_string('and', 'lesson').'<br />', $errors).'</p>';
                     print_box_end();
                     echo '</p>';
-                    print_footer($course);
+                    echo $OUTPUT->footer();
                     exit();
                 } 
             }
@@ -286,7 +286,7 @@
                         get_string('no').'</a></div>';
                 echo '</span>';
             }
-            print_footer($course);
+            echo $OUTPUT->footer();
             exit();
         }
         
@@ -303,7 +303,7 @@
                 echo "<br /><br /><div class=\"lessonbutton standardbutton\"><a href=\"../../course/view.php?id=$course->id\">".get_string('returntocourse', 'lesson').'</a></div>';
                 echo "</div>";
                 print_box_end();
-                print_footer($course);
+                echo $OUTPUT->footer();
                 exit();
                   //redirect("../../course/view.php?id=$course->id", get_string("alreadytaken", "lesson"));
             // allow student to retake course even if they have the maximum grade
@@ -511,7 +511,7 @@
         lesson_print_header($cm, $course, $lesson, 'view', 'true', $page->id);
 
         if ($attemptflag) {
-            print_heading(get_string('attempt', 'lesson', $retries + 1));
+            echo $OUTPUT->heading(get_string('attempt', 'lesson', $retries + 1));
         }
 
         /// This calculates and prints the ongoing score
@@ -530,7 +530,7 @@
 
         // now starting to print the page's contents   
         if ($page->qtype == LESSON_BRANCHTABLE) {
-            print_heading(format_string($page->title));
+            echo $OUTPUT->heading(format_string($page->title));
         } else {
             $lesson->slideshow = false; // turn off slide show for all pages other than LESSON_BRANTCHTABLE
         }
@@ -846,7 +846,7 @@
 
         lesson_add_pretend_blocks($PAGE, $cm, $lesson, $timer);
         lesson_print_header($cm, $course, $lesson, 'view');
-        print_heading(get_string("congratulations", "lesson"));
+        echo $OUTPUT->heading(get_string("congratulations", "lesson"));
         print_box_start('generalbox boxaligncenter');
         $ntries = $DB->count_records("lesson_grades", array("lessonid"=>$lesson->id, "userid"=>$USER->id));
         if (isset($USER->modattempts[$lesson->id])) {
@@ -1017,7 +1017,7 @@
     }
 
 /// Finish the page
-    print_footer($course);
+    echo $OUTPUT->footer();
 
 /// Mark as viewed
     $completion=new completion_info($course);

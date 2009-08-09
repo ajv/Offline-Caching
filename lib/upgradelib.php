@@ -43,7 +43,7 @@ class upgrade_exception extends moodle_exception {
     function __construct($plugin, $version) {
         global $CFG;
         $a = (object)array('plugin'=>$plugin, 'version'=>$version);
-        parent::__construct('upgradeerror', 'error', "$CFG->wwwroot/$CFG->admin/index.php", $a);
+        parent::__construct('upgradeerror', 'admin', "$CFG->wwwroot/$CFG->admin/index.php", $a);
     }
 }
 
@@ -322,8 +322,24 @@ function upgrade_plugins($type, $startcallback, $endcallback, $verbose) {
             }
         }
 
-        $installedversion = get_config($plugin->fullname, 'version');
+        // try to recover from interrupted install.php if needed
+        if (file_exists($fullplug.'/db/install.php')) {
+            if (get_config($plugin->fullname, 'installrunning')) {
+                require_once($fullplug.'/db/install.php');
+                $recover_install_function = 'xmldb_'.$plugin->fullname.'_install_recovery';
+                if (function_exists($recover_install_function)) {
+                    $startcallback($component, true, $verbose);
+                    $recover_install_function();
+                    unset_config('installrunning', 'block_'.$plugin->fullname);
+                    update_capabilities($component);
+                    events_update_definition($component);
+                    message_update_providers($component);
+                    $endcallback($component, true, $verbose);
+                }
+            }
+        }
 
+        $installedversion = get_config($plugin->fullname, 'version');
         if (empty($installedversion)) { // new installation
             $startcallback($component, true, $verbose);
 
@@ -331,15 +347,18 @@ function upgrade_plugins($type, $startcallback, $endcallback, $verbose) {
             if (file_exists($fullplug.'/db/install.xml')) {
                 $DB->get_manager()->install_from_xmldb_file($fullplug.'/db/install.xml');
             }
-        /// execute post install file
-            if (file_exists($fullplug.'/db/install.php')) {
-                require_once($fullplug.'/db/install.php');
-                $post_install_function = 'xmldb_'.$plugin->fullname.'_install';;
-                $post_install_function();
-            }
 
         /// store version
             upgrade_plugin_savepoint(true, $plugin->version, $type, $plug, false);
+
+        /// execute post install file
+            if (file_exists($fullplug.'/db/install.php')) {
+                require_once($fullplug.'/db/install.php');
+                set_config('installrunning', 1, 'block_'.$plugin->fullname);
+                $post_install_function = 'xmldb_'.$plugin->fullname.'_install';;
+                $post_install_function();
+                unset_config('installrunning', 'block_'.$plugin->fullname);
+            }
 
         /// Install various components
             update_capabilities($component);
@@ -425,6 +444,23 @@ function upgrade_plugins_modules($startcallback, $endcallback, $verbose) {
 
         $currmodule = $DB->get_record('modules', array('name'=>$module->name));
 
+        if (file_exists($fullmod.'/db/install.php')) {
+            if (get_config($module->name, 'installrunning')) {
+                require_once($fullmod.'/db/install.php');
+                $recover_install_function = 'xmldb_'.$module->name.'_install_recovery';
+                if (function_exists($recover_install_function)) {
+                    $startcallback($component, true, $verbose);
+                    $recover_install_function();
+                    unset_config('installrunning', $module->name);
+                    // Install various components too
+                    update_capabilities($component);
+                    events_update_definition($component);
+                    message_update_providers($component);
+                    $endcallback($component, true, $verbose);
+                }
+            }
+        }
+
         if (empty($currmodule->version)) {
             $startcallback($component, true, $verbose);
 
@@ -437,8 +473,11 @@ function upgrade_plugins_modules($startcallback, $endcallback, $verbose) {
         /// Post installation hook - optional
             if (file_exists("$fullmod/db/install.php")) {
                 require_once("$fullmod/db/install.php");
+                // Set installation running flag, we need to recover after exception or error
+                set_config('installrunning', 1, $module->name);
                 $post_install_function = 'xmldb_'.$module->name.'_install';;
                 $post_install_function();
+                unset_config('installrunning', $module->name);
             }
 
         /// Install various components
@@ -544,6 +583,23 @@ function upgrade_plugins_blocks($startcallback, $endcallback, $verbose) {
 
         $currblock = $DB->get_record('block', array('name'=>$block->name));
 
+        if (file_exists($fullblock.'/db/install.php')) {
+            if (get_config('block_'.$blockname, 'installrunning')) {
+                require_once($fullblock.'/db/install.php');
+                $recover_install_function = 'xmldb_block_'.$blockname.'_install_recovery';
+                if (function_exists($recover_install_function)) {
+                    $startcallback($component, true, $verbose);
+                    $recover_install_function();
+                    unset_config('installrunning', 'block_'.$blockname);
+                    // Install various components
+                    update_capabilities($component);
+                    events_update_definition($component);
+                    message_update_providers($component);
+                    $endcallback($component, true, $verbose);
+                }
+            }
+        }
+
         if (empty($currblock->version)) { // block not installed yet, so install it
             // If it allows multiples, start with it enabled
 
@@ -562,8 +618,11 @@ function upgrade_plugins_blocks($startcallback, $endcallback, $verbose) {
 
             if (file_exists($fullblock.'/db/install.php')) {
                 require_once($fullblock.'/db/install.php');
+                // Set installation running flag, we need to recover after exception or error
+                set_config('installrunning', 1, 'block_'.$blockname);
                 $post_install_function = 'xmldb_block_'.$blockname.'_install';;
                 $post_install_function();
+                unset_config('installrunning', 'block_'.$blockname);
             }
 
             $blocktitles[$block->name] = $blocktitle;
@@ -756,7 +815,7 @@ function upgrade_finished_handler() {
  * @global object
  */
 function upgrade_finished($continueurl=null) {
-    global $CFG, $DB;
+    global $CFG, $DB, $OUTPUT;
 
     if (!empty($CFG->upgraderunning)) {
         unset_config('upgraderunning');
@@ -764,7 +823,7 @@ function upgrade_finished($continueurl=null) {
         ignore_user_abort(false);
         if ($continueurl) {
             print_continue($continueurl);
-            print_footer();
+            echo $OUTPUT->footer();
             die;
         }
     }
@@ -815,15 +874,16 @@ function print_upgrade_separator() {
  * @param bool $installation true if installation, false menas upgrade
  */
 function print_upgrade_part_start($plugin, $installation, $verbose) {
+    global $OUTPUT;
     if (empty($plugin) or $plugin == 'moodle') {
         upgrade_started($installation); // does not store upgrade running flag yet
         if ($verbose) {
-            print_heading(get_string('coresystem'));
+            echo $OUTPUT->heading(get_string('coresystem'));
         }
     } else {
         upgrade_started();
         if ($verbose) {
-            print_heading($plugin);
+            echo $OUTPUT->heading($plugin);
         }
     }
     if ($installation) {
@@ -883,7 +943,7 @@ function upgrade_get_javascript() {
  * @global object
  */
 function upgrade_language_pack($lang='') {
-    global $CFG;
+    global $CFG, $OUTPUT;
 
     if (empty($lang)) {
         $lang = current_language();
@@ -894,7 +954,7 @@ function upgrade_language_pack($lang='') {
     }
 
     upgrade_started(false);
-    print_heading(get_string('langimport', 'admin').': '.$lang);
+    echo $OUTPUT->heading(get_string('langimport', 'admin').': '.$lang);
 
     @mkdir ($CFG->dataroot.'/temp/');    //make it in case it's a fresh install, it might not be there
     @mkdir ($CFG->dataroot.'/lang/');
@@ -1043,7 +1103,7 @@ function core_tables_exist() {
 
     if (!$tables = $DB->get_tables() ) {    // No tables yet at all.
         return false;
-    
+
     } else {                                 // Check for missing main tables
         $mtables = array('config', 'course', 'groupings'); // some tables used in 1.9 and 2.0, preferable something from the start and end of install.xml
         foreach ($mtables as $mtable) {
@@ -1052,5 +1112,5 @@ function core_tables_exist() {
             }
         }
         return true;
-    }        
+    }
 }

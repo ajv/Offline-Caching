@@ -171,7 +171,14 @@
     make_categories_list($displaylist, $notused);
 
     echo '<div class="categorypicker">';
-    popup_form('category.php?id=', $displaylist, 'switchcategory', $category->id, '', '', '', false, 'self', $strcategories.':');
+    $popupurl = 'category.php?id=';
+    foreach ($displaylist as $key => $val) {
+        $displaylist[$popupurl.$key] = $val;
+        unset($displaylist[$key]);
+    }
+    $select = moodle_select::make_popup_form($displaylist, 'switchcategory', $popupurl.$category->id);
+    $select->set_label($strcategories.':');
+    echo $OUTPUT->select($select);
     echo '</div>';
 
 /// Print current category description
@@ -226,7 +233,7 @@
 
     if (!$courses) {
         if (empty($subcategorieswereshown)) {
-            print_heading(get_string("nocoursesyet"));
+            echo $OUTPUT->heading(get_string("nocoursesyet"));
         }
 
     } else if ($numcourses <= COURSE_MAX_SUMMARIES_PER_PAGE and !$page and !$editingon) {
@@ -235,7 +242,7 @@
         print_box_end();
 
     } else {
-        print_paging_bar($totalcount, $page, $perpage, "category.php?id=$category->id&amp;perpage=$perpage&amp;");
+        echo $OUTPUT->paging_bar(moodle_paging_bar::make($totalcount, $page, $perpage, "category.php?id=$category->id&perpage=$perpage"));
 
         $strcourses = get_string('courses');
         $strselect = get_string('select');
@@ -446,5 +453,5 @@
 
     print_course_search();
 
-    print_footer();
+    echo $OUTPUT->footer();
 

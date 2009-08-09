@@ -123,11 +123,11 @@ foreach($users as $user)
     }
     $table->data[] = $temparray;
 }
-print_heading("$usercount / $usertotal ".get_string('users'));
+echo $OUTPUT->heading("$usercount / $usertotal ".get_string('users'));
 print_table($table);
 echo '<div class="continuebutton">';
 echo '<input type="submit" name="multienrolsubmit" value="save changes" />';
 echo '</div>';
 echo '</form>';
 
-admin_externalpage_print_footer();
+echo $OUTPUT->footer();

@@ -143,12 +143,19 @@ function file_encode_url($urlbase, $path, $forcedownload=false, $https=false) {
 }
 
 /**
- * Prepares standardised text field fro editing with Editor formslib element
+ * Prepares 'editor' formslib element from data in database
  *
- * @param object $data $database entry field
- * @param string $field name of data field
- * @param array $options various options
- * @param object $context context, required for existing data
+ * The passed $data record must contain field foobar, foobarformat and optionally foobartrust. This
+ * function then copies the embeded files into draft area (assigning itemids automatically),
+ * creates the form element foobar_editor and rewrites the URLs so the embeded images can be
+ * displayed.
+ * In your mform definition, you must have an 'editor' element called foobar_editor. Then you call
+ * your mform's set_data() supplying the object returned by this function.
+ *
+ * @param object $data database field that holds the html text with embeded media
+ * @param string $field the name of the database field that holds the html text with embeded media
+ * @param array $options editor options (like maxifiles, maxbytes etc.)
+ * @param object $context context of the editor
  * @param string $filearea file area name
  * @param int $itemid item id, required if item exists
  * @return object modified data object
@@ -171,9 +178,9 @@ function file_prepare_standard_editor($data, $field, array $options, $context=nu
         $options['noclean'] = false;
     }
 
-    if (empty($data->id) or empty($context)) {
+    if (is_null($itemid) or is_null($context)) {
         $contextid = null;
-        $data->id = null;
+        $itemid = null;
         if (!isset($data->{$field})) {
             $data->{$field} = '';
         }
@@ -201,7 +208,7 @@ function file_prepare_standard_editor($data, $field, array $options, $context=nu
 
     if ($options['maxfiles'] != 0) {
         $draftid_editor = file_get_submitted_draft_itemid($field);
-        $currenttext = file_prepare_draft_area($draftid_editor, $contextid, $filearea, $data->id, $options, $data->{$field});
+        $currenttext = file_prepare_draft_area($draftid_editor, $contextid, $filearea, $itemid, $options, $data->{$field});
         $data->{$field.'_editor'} = array('text'=>$currenttext, 'format'=>$data->{$field.'format'}, 'itemid'=>$draftid_editor);
     } else {
         $data->{$field.'_editor'} = array('text'=>$data->{$field}, 'format'=>$data->{$field.'format'}, 0);
@@ -281,15 +288,15 @@ function file_prepare_standard_filemanager($data, $field, array $options, $conte
     if (!isset($options['subdirs'])) {
         $options['subdirs'] = false;
     }
-    if (empty($data->id) or empty($context)) {
-        $data->id = null;
+    if (is_null($itemid) or is_null($context)) {
+        $itemid = null;
         $contextid = null;
     } else {
         $contextid = $context->id;
     }
 
     $draftid_editor = file_get_submitted_draft_itemid($field.'_filemanager');
-    file_prepare_draft_area($draftid_editor, $contextid, $filearea, $data->id, $options);
+    file_prepare_draft_area($draftid_editor, $contextid, $filearea, $itemid, $options);
     $data->{$field.'_filemanager'} = $draftid_editor;
 
     return $data;
@@ -322,7 +329,7 @@ function file_postupdate_standard_filemanager($data, $field, array $options, $co
         $data->$field = '';
 
     } else {
-        file_save_draft_area_files($data->{$field.'_filemanager'}, $context->id, $filearea, $data->id, $options);
+        file_save_draft_area_files($data->{$field.'_filemanager'}, $context->id, $filearea, $itemid, $options);
         $fs = get_file_storage();
 
         if ($fs->get_area_files($context->id, $filearea, $itemid)) {

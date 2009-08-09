@@ -58,11 +58,11 @@
 
         if (! $users = forum_subscribed_users($course, $forum, $currentgroup, $context) ) {
 
-            print_heading(get_string("nosubscribers", "forum"));
+            echo $OUTPUT->heading(get_string("nosubscribers", "forum"));
 
         } else {
 
-            print_heading(get_string("subscribersto","forum", "'".format_string($forum->name)."'"));
+            echo $OUTPUT->heading(get_string("subscribersto","forum", "'".format_string($forum->name)."'"));
 
             echo '<table align="center" cellpadding="5" cellspacing="5">';
             foreach ($users as $user) {
@@ -77,7 +77,7 @@
             echo "</table>";
         }
 
-        print_footer($course);
+        echo $OUTPUT->footer();
         exit;
     }
 
@@ -151,6 +151,6 @@
 
     print_simple_box_end();
 
-    print_footer($course);
+    echo $OUTPUT->footer();
 
 ?>

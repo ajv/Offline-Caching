@@ -160,7 +160,7 @@ $acl = $DB->get_records('mnet_sso_access_control', null, "$sort $dir", '*'); //,
 $aclcount = $DB->count_records('mnet_sso_access_control');
 
 if (!$acl) {
-    print_heading(get_string('noaclentries','mnet'));
+    echo $OUTPUT->heading(get_string('noaclentries','mnet'));
     $table = NULL;
 } else {
     $table->head = $headings;
@@ -185,7 +185,9 @@ if (!$acl) {
 if (!empty($table)) {
     print_table($table);
     echo '<p>&nbsp;</p>';
-    print_paging_bar($aclcount, $page, $perpage, "?sort=$sort&amp;dir=$dir&amp;perpage=$perpage&amp;");
+    $baseurl = new moodle_url(null, array('sort' => $sort, 'dir' => $dir, 'perpage' => $perpage));
+    $pagingbar = moodle_paging_bar::make($aclcount, $page, $perpage, $baseurl);
+    echo $OUTPUT->paging_bar($pagingbar);
 }
 
 
@@ -232,6 +234,6 @@ foreach ($formerror as $error) {
 }
 
 print_simple_box_end();
-admin_externalpage_print_footer();
+echo $OUTPUT->footer();
 
 ?>

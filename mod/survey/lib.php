@@ -212,7 +212,7 @@ function survey_user_complete($course, $user, $mod, $survey) {
  * @return bool
  */
 function survey_print_recent_activity($course, $viewfullnames, $timestart) {
-    global $CFG, $DB;
+    global $CFG, $DB, $OUTPUT;
 
     $modinfo = get_fast_modinfo($course);
     $ids = array();
@@ -256,7 +256,7 @@ function survey_print_recent_activity($course, $viewfullnames, $timestart) {
         return false;
     }
 
-    print_headline(get_string('newsurveyresponses', 'survey').':');
+    echo $OUTPUT->heading(get_string('newsurveyresponses', 'survey').':');
     foreach ($surveys as $survey) {
         $url = $CFG->wwwroot.'/mod/survey/view.php?id='.$survey->cmid;
         print_recent_activity_note($survey->time, $survey, $survey->name, $url, false, $viewfullnames);
@@ -520,14 +520,14 @@ function survey_shorten_name ($name, $numwords) {
  * @param object $question
  */
 function survey_print_multi($question) {
-    global $USER, $DB, $qnum, $checklist, $DB;
+    global $USER, $DB, $qnum, $checklist, $DB, $OUTPUT;
 
     $stripreferthat = get_string("ipreferthat", "survey");
     $strifoundthat = get_string("ifoundthat", "survey");
     $strdefault    = get_string('default');
     $strresponses  = get_string('responses', 'survey');
 
-    print_heading($question->text, null, 3, 'questiontext');
+    echo $OUTPUT->heading($question->text, 3, 'questiontext');
     echo "\n<table width=\"90%\" cellpadding=\"4\" cellspacing=\"1\" border=\"0\">";
 
     $options = explode( ",", $question->options);

@@ -121,22 +121,22 @@ if (!core_tables_exist()) {
         $strlicense = get_string('license');
         $navigation = build_navigation(array(array('name'=>$strlicense, 'link'=>null, 'type'=>'misc')));
         print_header($strinstallation.' - Moodle '.$CFG->target_release, $strinstallation, $navigation, '', '', false, '&nbsp;', '&nbsp;');
-        print_heading('<a href="http://moodle.org">Moodle</a> - Modular Object-Oriented Dynamic Learning Environment');
-        print_heading(get_string('copyrightnotice'));
+        echo $OUTPUT->heading('<a href="http://moodle.org">Moodle</a> - Modular Object-Oriented Dynamic Learning Environment');
+        echo $OUTPUT->heading(get_string('copyrightnotice'));
         $copyrightnotice = text_to_html(get_string('gpl'));
         $copyrightnotice = str_replace('target="_blank"', 'onclick="this.target=\'_blank\'"', $copyrightnotice); // extremely ugly validation hack
         print_box($copyrightnotice, 'copyrightnotice');
         echo '<br />';
         notice_yesno(get_string('doyouagree'), "index.php?agreelicense=1&lang=$CFG->lang",
                                                "http://docs.moodle.org/en/License");
-        print_footer();
+        echo $OUTPUT->footer();
         die;
     }
     if (empty($confirmrelease)) {
         $strcurrentrelease = get_string('currentrelease');
         $navigation = build_navigation(array(array('name'=>$strcurrentrelease, 'link'=>null, 'type'=>'misc')));
         print_header($strinstallation.' - Moodle '.$CFG->target_release, $strinstallation, $navigation, '', '', false, '&nbsp;', '&nbsp;');
-        print_heading("Moodle $release");
+        echo $OUTPUT->heading("Moodle $release");
         $releasenoteslink = get_string('releasenoteslink', 'admin', 'http://docs.moodle.org/en/Release_Notes');
         $releasenoteslink = str_replace('target="_blank"', 'onclick="this.target=\'_blank\'"', $releasenoteslink); // extremely ugly validation hack
         print_box($releasenoteslink, 'generalbox boxaligncenter boxwidthwide');
@@ -149,7 +149,7 @@ if (!core_tables_exist()) {
             print_continue("index.php?agreelicense=1&amp;confirmrelease=1&amp;lang=$CFG->lang");
         }
 
-        print_footer();
+        echo $OUTPUT->footer();
         die;
     }
 
@@ -193,14 +193,14 @@ if ($version > $CFG->version) {  // upgrade
         $continueform->method = 'get';
         $continueform->url = new moodle_url('index.php', array('confirmupgrade' => 1));
         echo $OUTPUT->confirm(get_string('upgradesure', 'admin', $a->newversion), $continueform, 'index.php');
-        print_footer();
+        echo $OUTPUT->footer();
         exit;
 
     } else if (empty($confirmrelease)){
         $strcurrentrelease = get_string('currentrelease');
         $navigation = build_navigation(array(array('name'=>$strcurrentrelease, 'link'=>null, 'type'=>'misc')));
         print_header($strcurrentrelease, $strcurrentrelease, $navigation, '', '', false, '&nbsp;', '&nbsp;');
-        print_heading("Moodle $release");
+        echo $OUTPUT->heading("Moodle $release");
         $releasenoteslink = get_string('releasenoteslink', 'admin', 'http://docs.moodle.org/en/Release_Notes');
         $releasenoteslink = str_replace('target="_blank"', 'onclick="this.target=\'_blank\'"', $releasenoteslink); // extremely ugly validation hack
         print_box($releasenoteslink);
@@ -218,21 +218,21 @@ if ($version > $CFG->version) {  // upgrade
             print_continue('index.php?confirmupgrade=1&amp;confirmrelease=1');
         }
 
-        print_footer();
+        echo $OUTPUT->footer();
         die;
 
     } elseif (empty($confirmplugins)) {
         $strplugincheck = get_string('plugincheck');
         $navigation = build_navigation(array(array('name'=>$strplugincheck, 'link'=>null, 'type'=>'misc')));
         print_header($strplugincheck, $strplugincheck, $navigation, '', '', false, '&nbsp;', '&nbsp;');
-        print_heading($strplugincheck);
+        echo $OUTPUT->heading($strplugincheck);
         print_box_start('generalbox', 'notice');
         print_string('pluginchecknotice');
         print_box_end();
         print_plugin_tables();
         print_upgrade_reload('index.php?confirmupgrade=1&amp;confirmrelease=1');
         print_continue('index.php?confirmupgrade=1&amp;confirmrelease=1&amp;confirmplugincheck=1');
-        print_footer();
+        echo $OUTPUT->footer();
         die();
 
     } else {
@@ -381,5 +381,5 @@ $copyrighttext = '<a href="http://moodle.org/">Moodle</a> '.
 print_box($copyrighttext, 'copyright');
 //////////////////////////////////////////////////////////////////////////////////////////////////
 
-admin_externalpage_print_footer();
+echo $OUTPUT->footer();
 

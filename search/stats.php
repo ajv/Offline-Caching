@@ -53,7 +53,7 @@ require_once($CFG->dirroot.'/search/lib.php');
 /// keep things pretty, even if php5 isn't available
 
     print_box_start();
-    print_heading($strquery);
+    echo $OUTPUT->heading($strquery);
     
     print_box_start();
     
@@ -104,8 +104,10 @@ require_once($CFG->dirroot.'/search/lib.php');
         }
     
         print_table($admin_table);
-        print_spacer(20);
-        print_heading($solutionsstr);
+        $spacer = new html_image();
+        $spacer->height = 20;
+        echo $OUTPUT->spacer(clone($spacer)) . '<br />';
+        echo $OUTPUT->heading($solutionsstr);
         
         unset($admin_table->data);
         if (isset($errors['dir'])) {
@@ -119,6 +121,7 @@ require_once($CFG->dirroot.'/search/lib.php');
         $admin_table->data[] = array($runindexerstr, '<a href="indexersplash.php" target="_blank">indexersplash.php</a>');
         
         print_table($admin_table);
+        echo $OUTPUT->spacer($spacer) . '<br />';
         print_spacer(20);
     } 
     
@@ -157,10 +160,10 @@ require_once($CFG->dirroot.'/search/lib.php');
         
     } 
     
-    print_heading($databasestatestr);
+    echo $OUTPUT->heading($databasestatestr);
     print_table($table);
     
     print_box_end();
     print_box_end();
-    print_footer();
+    echo $OUTPUT->footer();
 ?>

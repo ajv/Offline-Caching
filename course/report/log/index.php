@@ -88,7 +88,7 @@
                     print_header($course->shortname .': '. $strlogs, $course->fullname, $navigation);
                 }
 
-                print_heading(format_string($course->fullname) . ": $userinfo, $dateinfo (".usertimezone().")");
+                echo $OUTPUT->heading(format_string($course->fullname) . ": $userinfo, $dateinfo (".usertimezone().")");
                 print_mnet_log_selector_form($hostid, $course, $user, $date, $modname, $modid, $modaction, $group, $showcourses, $showusers, $logformat);
 
                 if($hostid == $CFG->mnet_localhost_id) {
@@ -103,21 +103,21 @@
                 if (!print_log_csv($course, $user, $date, 'l.time DESC', $modname,
                         $modid, $modaction, $group)) {
                     notify("No logs found!");
-                    print_footer($course);
+                    echo $OUTPUT->footer();
                 }
                 exit;
             case 'downloadasods':
                 if (!print_log_ods($course, $user, $date, 'l.time DESC', $modname,
                         $modid, $modaction, $group)) {
                     notify("No logs found!");
-                    print_footer($course);
+                    echo $OUTPUT->footer();
                 }
                 exit;
             case 'downloadasexcel':
                 if (!print_log_xls($course, $user, $date, 'l.time DESC', $modname,
                         $modid, $modaction, $group)) {
                     notify("No logs found!");
-                    print_footer($course);
+                    echo $OUTPUT->footer();
                 }
                 exit;
         }
@@ -134,12 +134,12 @@
             print_header($course->shortname .': '. $strlogs, $course->fullname, $navigation, '');
         }
 
-        print_heading(get_string('chooselogs') .':');
+        echo $OUTPUT->heading(get_string('chooselogs') .':');
 
         print_log_selector_form($course, $user, $date, $modname, $modid, $modaction, $group, $showcourses, $showusers, $logformat);
     }
 
-    print_footer($course);
+    echo $OUTPUT->footer();
 
     exit;
 ?>

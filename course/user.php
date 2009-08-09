@@ -33,8 +33,8 @@
 
     if ($user->deleted) {
         print_header();
-        print_heading(get_string('userdeleted'));
-        print_footer();
+        echo $OUTPUT->heading(get_string('userdeleted'));
+        echo $OUTPUT->footer();
         die;
     }
 
@@ -330,7 +330,7 @@
     }
 
 
-    print_footer($course);
+    echo $OUTPUT->footer();
 
 
 function print_outline_row($mod, $instance, $result) {

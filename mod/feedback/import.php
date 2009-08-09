@@ -90,7 +90,7 @@
     ///////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
-    print_heading(get_string('import_questions','feedback'));
+    echo $OUTPUT->heading(get_string('import_questions','feedback'));
     
     if(isset($importerror->msg) AND is_array($importerror->msg)) {
         // print_simple_box_start('center', '', '#FFAAAA', 5, 'notifyproblem');
@@ -120,8 +120,14 @@
 
                 <tr>
                      <td>&nbsp;</td>
-                     <td><?php  button_to_popup_window ("/files/index.php?id={$course->id}&amp;choose=form.choosefile", 
-                          "coursefiles", get_string('choosefile', 'feedback'), 500, 750, get_string('choosefile', 'feedback')); ?>
+                     <td><?php  
+                        $form = new html_form();
+                        $form->button->text = get_string('choosefile', 'feedback');
+                        $form->button->title = $form->button->text;
+                        $form->url = "/files/index.php?id={$course->id}&choose=form.choosefile";
+                        $form->button->add_action(new popup_action('click', $form->url, "coursefiles", array('width' => 750, 'height' => 500)));
+                        echo $OUTPUT->button($form);
+                        ?>
                           <input type="submit" name="save" value="<?php print_string('importfromthisfile', 'feedback'); ?>" />
                     </td>
                 </tr>
@@ -135,7 +141,7 @@
     echo '<div class="mdl-align">';
     print_single_button('edit.php', array('id'=>$id, 'do_show'=>'templates'), get_string('cancel'));
     echo '</div>';
-    print_footer($course);
+    echo $OUTPUT->footer();
   
     function feedback_load_xml_data($filename) {
         global $CFG;
