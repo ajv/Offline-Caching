@@ -1,6 +1,145 @@
 <?php
 
 /**
+ * Retrieve all static files for the turbo manifest
+ *
+ * @return string[] The array of static files
+ */
+function offline_get_static_files(){
+	
+	global $CFG, $THEME;
+	
+	// Include static JavaScript files
+	$files = array(
+	    $CFG->wwwroot.'/lib/javascript-static.js',
+	    $CFG->wwwroot.'/lib/javascript-deprecated.js',
+	    $CFG->wwwroot.'/lib/javascript-mod.php',
+	    $CFG->wwwroot.'/lib/overlib/overlib.js',
+	    $CFG->wwwroot.'/lib/overlib/overlib_cssstyle.js',
+	    $CFG->wwwroot.'/lib/cookies.js',
+	    $CFG->wwwroot.'/lib/ufo.js',
+	    $CFG->wwwroot.'/lib/dropdown.js',
+	    $CFG->wwwroot.'/mod/forum/forum.js',
+	  );
+
+	foreach(get_list_of_plugins() as $module){
+	    $files[] = $CFG->wwwroot.'/mod/'.$module.'/icon.gif';
+	}
+
+	$themefiles = offline_get_files_from_dir($CFG->dirroot.'/theme/'.current_theme());
+	$themefiles = str_replace($CFG->dirroot.'/theme',$CFG->themewww,$themefiles);
+	
+	$files = array_merge($files, $THEME->get_stylesheet_urls(), $themefiles);
+	$files[] = $CFG->wwwroot.'/lib/offline/gears_init.js';
+	$files = str_replace('&amp;','&', $files);
+	
+	return $files;
+}
+
+/**
+ * Retrieve all static files for the turbo manifest
+ *
+ * @return string[] The array of static files
+ */
+function offline_get_turbo_files(){
+	
+	global $CFG, $THEME;
+	
+	require_once($CFG->dirroot .'/course/lib.php');
+	require_once($CFG->libdir .'/ajax/ajaxlib.php');
+	
+	$pixfiles = offline_get_files_from_dir($CFG->dirroot.'/pix');
+	$pixfiles = str_replace($CFG->dirroot,$CFG->wwwroot,$pixfiles);
+	$tinymcefiles = offline_get_files_from_dir($CFG->dirroot.'/lib/editor/tinymce');
+	$tinymcefiles = str_replace($CFG->dirroot.'/lib/editor/tinymce', $CFG->wwwroot.'/lib/editor/tinymce', $tinymcefiles);
+	$yuifiles = offline_get_files_from_dir($CFG->dirroot.'/lib/yui');
+	$yuifiles = str_replace($CFG->dirroot.'/lib/yui', $CFG->wwwroot.'/lib/yui', $yuifiles);
+
+	$files = array_merge($pixfiles, $tinymcefiles, $yuifiles);
+	$files = str_replace('&amp;','&', $files);
+	
+    return $files;
+}
+
+/**
+ * Retrieve all dynamic files
+ *
+ * @return string[] The array of dynamic files
+ */
+function offline_get_dynamic_files(){
+	global $CFG, $COURSE, $USER, $DB;
+	
+	require_once($CFG->dirroot .'/course/lib.php');
+	
+	// Include homepage and accessible course pages
+	$files = array(
+	    '.',
+	    $CFG->wwwroot.'/',
+	    $CFG->wwwroot.'/index.php',
+	    $CFG->wwwroot.'/lib/offline/go_offline.js',
+	  );
+
+	// get all accessible courses
+	if (isloggedin() and !has_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM)) 
+	    and !isguest() and empty($CFG->disablemycourses)) {
+
+	    $courses  = get_my_courses($USER->id, 'visible DESC,sortorder ASC', array('summary'));
+
+	} else if ((!has_capability('moodle/site:config', get_context_instance(CONTEXT_SYSTEM)) 
+	    and !isguest()) or ($DB->count_records('course') <= FRONTPAGECOURSELIMIT)) {
+
+	    $categories = get_child_categories(0);  
+	    if (is_array($categories) && count($categories) == 1) {
+	        $category   = array_shift($categories);
+	        $courses    = get_courses_wmanagers($category->id,
+	                                            'c.sortorder ASC',
+	                                            array('password','summary','currency'));
+	    } else {
+	        $courses    = get_courses_wmanagers('all',
+	                                            'c.sortorder ASC',
+	                                            array('password','summary','currency'));
+	    }
+	    unset($categories);
+	} 
+
+	// make sure the course is visible and retrieve other modules and main course pages
+	foreach ($courses as $course) {
+	    if ($course->visible == 1
+	        || has_capability('moodle/course:viewhiddencourses',$course->context)) {
+	        $files[] = $CFG->wwwroot.'/course/view.php?id='.$course->id;
+
+	        //Get all the module main pages
+	        foreach(get_list_of_plugins() as $module){
+	            if($module != 'label') {
+	                $files[] = $CFG->wwwroot.'/mod/'.$module.'/index.php?id='.$course->id;
+	            }
+	        }
+
+	        require_once($CFG->dirroot . '/mod/forum/lib.php');
+	        //Get all the relevant forums
+	        $forums = forum_get_readable_forums($USER->id, $course->id);
+	        foreach ($forums as $forum) {
+	            $files[] = $CFG->wwwroot.'/mod/forum/view.php?f='.$forum->id;
+	        }
+	        $modinfo =& get_fast_modinfo($COURSE);
+	        get_all_mods($course->id, $mods, $modnames, $modnamesplural, $modnamesused);
+	        foreach($mods as $mod) {
+	            if ($mod->modname == 'forum') {
+	                $files[] = $CFG->wwwroot.'/mod/forum/view.php?id='.$mod->id;
+	                $cm = get_coursemodule_from_id('forum', $mod->id);
+	                $discussions = forum_get_discussions($cm);
+	                foreach($discussions as $d){ 
+	                    $files[] = $CFG->wwwroot.'/mod/forum/discuss.php?d='.$d->discussion;
+	                }               
+	            }
+	        }
+	    }
+	}
+	$files = str_replace('&amp;','&', $files);
+    return $files;
+}
+
+/**
  * Retrieve recursively all the files in a directory, except
  * .php and system files
  *
