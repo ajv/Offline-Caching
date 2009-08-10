@@ -231,12 +231,13 @@ function offline_output_menu($menu) {
     $PAGE->requires->string_for_js('mustinstallgears', 'moodle');
     $PAGE->requires->string_for_js('unavailableextlink', 'moodle');
     $PAGE->requires->string_for_js('unavailablefeature', 'moodle');
-
+*/
     $menu = '<div id="content" style="visibility:hidden"></div><div id="pb" style="float:left; margin-top:5px; margin-right:0em;"></div><font size="-1"><span id="pb-percentage"></span></font> <span id="offline-message"></span> <span id="offline-img"></span> <span id="offline-status"></span>'.$menu;
     
-    $PAGE->requires->js('lib/offline/gears_init.js');
-    $PAGE->requires->js('lib/offline/go_offline.js')->in_head();*/
-    $PAGE->requires->js_function_call('alert("hello");')->asap();
+    $PAGE->requires->js('lib/offline/gears_init.js')->in_head();
+    $PAGE->requires->js('lib/offline/go_offline.js')->in_head();
+    $PAGE->requires->js_function_call('init_offline')->asap();
+    $PAGE->requires->js_function_call('alert')->asap();
 
     return $menu;
 }
