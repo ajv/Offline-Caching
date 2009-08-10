@@ -2055,9 +2055,9 @@ class moodle_core_renderer extends moodle_renderer_base {
         // TODO remove $navigation and $menu arguments - replace with $PAGE->navigation
         global $USER, $CFG;
 
-        $gears = TRUE;
-        if($gears && isloggedin()){
-			include($CFG->libdir .'/offline/lib.php');
+        $offline = TRUE;
+        if($offline && isloggedin()){
+            include($CFG->libdir .'/offline/lib.php');
             $menu = offline_output_menu($menu);
         }
 
