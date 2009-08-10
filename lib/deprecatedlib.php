@@ -2675,7 +2675,7 @@ function print_user_picture($user, $courseid, $picture=NULL, $size=0, $return=fa
 
     // debugging('print_user_picture() has been deprecated. Please change your code to use $OUTPUT->user_picture($user, $courseid).');
 
-    $userpic = new user_picture();
+    $userpic = new moodle_user_picture();
     $userpic->user = $user;
     $userpic->courseid = $courseid;
     $userpic->size = $size;
@@ -2809,7 +2809,7 @@ function helpbutton($page, $title, $module='moodle', $image=true, $linktext=fals
         throw new coding_exception('The $imagetext parameter has been deprecated. Please update your code and use $OUTPUT->help_icon() instead.');
     }
 
-    $helpicon = new help_icon();
+    $helpicon = new moodle_help_icon();
     $helpicon->page = $page;
     $helpicon->text = $title;
     $helpicon->module = $module;
@@ -3287,7 +3287,7 @@ function popup_form($baseurl, $options, $formid, $selected='', $nothing='choose'
     $baseurl = new moodle_url($baseurl);
     $select = moodle_select::make_popup_form($baseurl, $name, $options, $formid, $selected);
     $select->disabled = $disabled;
-    
+
     if (!empty($submitvalue)) {
         $select->form->button->text = $submitvalue;
     }
@@ -3459,7 +3459,7 @@ function print_heading_with_help($text, $helppage, $module='moodle', $icon=false
 
     global $OUTPUT;
 
-    $helpicon = new help_icon();
+    $helpicon = new moodle_help_icon();
     $helpicon->page = $helppage;
     $helpicon->text = $text;
     $helpicon->module = $module;

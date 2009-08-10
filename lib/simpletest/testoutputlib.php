@@ -1187,7 +1187,7 @@ class moodle_core_renderer_test extends UnitTestCase {
         $this->assert(new ContainsTagWithContents('option', 'value3'), $html);
         $this->assert(new ContainsTagWithContents('option', 'value4'), $html);
     }
-    
+
     public function test_userpicture() {
         global $CFG;
         // Set up the user with the required fields
@@ -1197,7 +1197,7 @@ class moodle_core_renderer_test extends UnitTestCase {
         $user->picture = false;
         $user->imagealt = false;
         $user->id = 1;
-        $userpic = new user_picture();
+        $userpic = new moodle_user_picture();
         $userpic->user = $user;
         $userpic->courseid = 1;
         $userpic->url = true;
@@ -1208,7 +1208,7 @@ class moodle_core_renderer_test extends UnitTestCase {
     }
 
     public function test_heading_with_help() {
-        $originalicon = new help_icon();
+        $originalicon = new moodle_help_icon();
         $originalicon->page = 'myhelppage';
         $originalicon->text = 'Cool help text';
 
