@@ -171,21 +171,17 @@
     make_categories_list($displaylist, $notused);
 
     echo '<div class="categorypicker">';
-    $popupurl = 'category.php?id=';
-    foreach ($displaylist as $key => $val) {
-        $displaylist[$popupurl.$key] = $val;
-        unset($displaylist[$key]);
-    }
-    $select = moodle_select::make_popup_form($displaylist, 'switchcategory', $popupurl.$category->id);
+    $select = moodle_select::make_popup_form('category.php', 'id', $displaylist, 'switchcategory', $category->id);
     $select->set_label($strcategories.':');
+    $select->nothinglabel = false;
     echo $OUTPUT->select($select);
     echo '</div>';
 
 /// Print current category description
     if (!$editingon && $category->description) {
-        print_box_start();
+        echo $OUTPUT->box_start();
         echo format_text($category->description); // for multilang filter
-        print_box_end();
+        echo $OUTPUT->box_end();
     }
 
     if ($editingon && has_capability('moodle/category:manage', $context)) {
@@ -237,9 +233,9 @@
         }
 
     } else if ($numcourses <= COURSE_MAX_SUMMARIES_PER_PAGE and !$page and !$editingon) {
-        print_box_start('courseboxes');
+        echo $OUTPUT->box_start('courseboxes');
         print_courses($category);
-        print_box_end();
+        echo $OUTPUT->box_end();
 
     } else {
         echo $OUTPUT->paging_bar(moodle_paging_bar::make($totalcount, $page, $perpage, "category.php?id=$category->id&perpage=$perpage"));

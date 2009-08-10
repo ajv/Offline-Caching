@@ -74,8 +74,11 @@
     } else {
         $currlang = current_language();
         $langs = get_list_of_languages();
-        $langlabel = get_accesshide(get_string('language'));
-        $langmenu = popup_form($CFG->wwwroot .'/index.php?lang=', $langs, 'chooselang', $currlang, '', '', '', true, 'self', $langlabel);
+
+        $select = moodle_select::make_popup_form($CFG->wwwroot .'/index.php', 'lang', $langs, 'chooselang', $currlang);
+        $select->nothinglabel = false;
+        $select->set_label(get_accesshide(get_string('language')));
+        $langmenu = $OUTPUT->select($select);
     }
     $PAGE->set_other_editing_capability('moodle/course:manageactivities');
     $PAGE->set_url('');
@@ -100,7 +103,7 @@
         }
 
         if (!empty($section->sequence) or !empty($section->summary) or $editing) {
-            print_box_start('generalbox sitetopic');
+            echo $OUTPUT->box_start('generalbox sitetopic');
 
             /// If currently moving a file then show the current clipboard
             if (ismoving($SITE->id)) {
@@ -130,7 +133,7 @@
             if ($editing) {
                 print_section_add_menus($SITE, $section->section, $modnames);
             }
-            print_box_end();
+            echo $OUTPUT->box_end();
         }
     }
 
@@ -185,18 +188,18 @@
             case FRONTPAGECATEGORYNAMES:
 
                 echo $OUTPUT->heading(get_string('categories'), 2, 'headingblock header');
-                print_box_start('generalbox categorybox');
+                echo $OUTPUT->box_start('generalbox categorybox');
                 print_whole_category_list(NULL, NULL, NULL, -1, false);
-                print_box_end();
+                echo $OUTPUT->box_end();
                 print_course_search('', false, 'short');
             break;
 
             case FRONTPAGECATEGORYCOMBO:
 
                 echo $OUTPUT->heading(get_string('categories'), 2, 'headingblock header');
-                print_box_start('generalbox categorybox');
+                echo $OUTPUT->box_start('generalbox categorybox');
                 print_whole_category_list(NULL, NULL, NULL, -1, true);
-                print_box_end();
+                echo $OUTPUT->box_end();
                 print_course_search('', false, 'short');
             break;
 

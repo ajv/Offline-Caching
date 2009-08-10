@@ -1130,7 +1130,7 @@ class question_bank_view {
     }
 
     protected function get_current_category($categoryandcontext) {
-        global $DB;
+        global $DB, $OUTPUT;
         list($categoryid, $contextid) = explode(',', $categoryandcontext);
         if (!$categoryid) {
             $this->print_choose_category_message($categoryandcontext);
@@ -1139,9 +1139,9 @@ class question_bank_view {
 
         if (!$category = $DB->get_record('question_categories',
                 array('id' => $categoryid, 'contextid' => $contextid))) {
-            print_box_start('generalbox questionbank');
+            echo $OUTPUT->box_start('generalbox questionbank');
             notify('Category not found!');
-            print_box_end();
+            echo $OUTPUT->box_end();
             return false;
         }
 
@@ -1160,14 +1160,15 @@ class question_bank_view {
      * prints a form to choose categories
      */
     protected function display_category_form($contexts, $pageurl, $current) {
-        global $CFG;
+        global $CFG, $OUTPUT;
 
     /// Get all the existing categories now
         echo '<div class="choosecategory">';
         $catmenu = question_category_options($contexts, false, 0, true);
-        popup_form('edit.php?'.$pageurl->get_query_string().'&amp;category=',
-                $catmenu, 'catmenu', $current, '', '', '', false, 'self',
-                get_string('selectacategory', 'question'));
+        $select = moodle_select::make_popup_form('edit.php?'.$pageurl->get_query_string(), 'category', $catmenu, 'catmenu', $current);
+        $select->nothinglabel = false;
+        $select->set_label(get_string('selectacategory', 'question'));
+        echo $OUTPUT->select($select);
         echo "</div>\n";
     }
 
