@@ -8,7 +8,7 @@
 function offline_get_static_files(){
     
     global $CFG, $THEME;
-    
+
     // Include static JavaScript files
     $files = array(
         $CFG->wwwroot.'/lib/javascript-static.js',
@@ -109,6 +109,7 @@ function offline_get_dynamic_files(){
         if ($course->visible == 1
             || has_capability('moodle/course:viewhiddencourses',$course->context)) {
             $files[] = $CFG->wwwroot.'/course/view.php?id='.$course->id;
+            $files[] = $CFG->wwwroot.'/course/edit.php?id='.$course->id;
 
             //Get all the module main pages
             foreach(get_list_of_plugins() as $module){
@@ -135,7 +136,7 @@ function offline_get_dynamic_files(){
                     }               
                 }
             }
-        }
+        } 
     }
     $files = str_replace('&amp;','&', $files);
     return $files;
@@ -218,11 +219,10 @@ function offline_output_menu($menu) {
     $PAGE->requires->yui_lib('animation');
     $PAGE->requires->yui_lib('element');
     $PAGE->requires->yui_lib('connection');
-    //$PAGE->requires->yui_lib('container');
-
+	$PAGE->requires->yui_lib('json');
+	
     $PAGE->requires->js('lib/offline/progressbar-debug.js');
     $PAGE->requires->css('lib/offline/progressbar.css');
-
 
     $PAGE->requires->string_for_js('gooffline', 'moodle');
     $PAGE->requires->string_for_js('goofflinetitle', 'moodle');
