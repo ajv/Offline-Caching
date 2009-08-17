@@ -79,6 +79,7 @@ function offline_get_dynamic_files(){
         $CFG->wwwroot.'/',
         $CFG->wwwroot.'/index.php',
         $CFG->wwwroot.'/lib/offline/go_offline.js',
+        $CFG->wwwroot.'/user/editadvanced.php?id='.$USER->id,
       );
 
     // get all accessible courses
@@ -109,8 +110,7 @@ function offline_get_dynamic_files(){
         if ($course->visible == 1
             || has_capability('moodle/course:viewhiddencourses',$course->context)) {
             $files[] = $CFG->wwwroot.'/course/view.php?id='.$course->id;
-            $files[] = $CFG->wwwroot.'/course/edit.php?id='.$course->id;
-
+            
             //Get all the module main pages
             foreach(get_list_of_plugins() as $module){
                 if($module != 'label') {
@@ -118,13 +118,13 @@ function offline_get_dynamic_files(){
                 }
             }
 
-            require_once($CFG->dirroot . '/mod/forum/lib.php');
             //Get all the relevant forums
+            require_once($CFG->dirroot . '/mod/forum/lib.php');
             $forums = forum_get_readable_forums($USER->id, $course->id);
             foreach ($forums as $forum) {
                 $files[] = $CFG->wwwroot.'/mod/forum/view.php?f='.$forum->id;
             }
-            $modinfo =& get_fast_modinfo($COURSE);
+            $modinfo =& get_fast_modinfo($course);
             get_all_mods($course->id, $mods, $modnames, $modnamesplural, $modnamesused);
             foreach($mods as $mod) {
                 if ($mod->modname == 'forum') {
@@ -136,6 +136,15 @@ function offline_get_dynamic_files(){
                     }               
                 }
             }
+            
+            //Get all the relevant assignments
+            foreach ($modinfo->instances['assignment'] as $cm) {
+                if (!$cm->uservisible) {
+                    continue;
+                }
+                $files[] = $CFG->wwwroot.'/mod/assignment/view.php?id='.$cm->id;
+            }
+
         } 
     }
     $files = str_replace('&amp;','&', $files);
@@ -219,8 +228,8 @@ function offline_output_menu($menu) {
     $PAGE->requires->yui_lib('animation');
     $PAGE->requires->yui_lib('element');
     $PAGE->requires->yui_lib('connection');
-	$PAGE->requires->yui_lib('json');
-	
+    $PAGE->requires->yui_lib('json');
+    
     $PAGE->requires->js('lib/offline/progressbar-debug.js');
     $PAGE->requires->css('lib/offline/progressbar.css');
 
