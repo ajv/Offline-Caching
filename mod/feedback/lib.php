@@ -329,7 +329,7 @@ function feedback_print_recent_mod_activity($activity, $courseid, $detail, $modn
     echo '<table border="0" cellpadding="3" cellspacing="0" class="forum-recent">';
 
     echo "<tr><td class=\"userpicture\" valign=\"top\">";
-    print_user_picture($activity->user->userid, $courseid, $activity->user->picture);
+    echo $OUTPUT->user_picture(moodle_user_picture::make($activity->user, $courseid));
     echo "</td><td>";
 
     if ($detail) {
@@ -2288,7 +2288,6 @@ function feedback_print_errors() {
 		return;
     }
 
-    // print_simple_box_start("center", "60%", "#FFAAAA", 20, "noticebox");
     echo $OUTPUT->box_start('generalbox errorboxcontent boxaligncenter boxwidthnormal');
     echo $OUTPUT->heading(get_string('handling_error', 'feedback'));
 
@@ -2296,7 +2295,6 @@ function feedback_print_errors() {
     print_r($SESSION->feedback->errors) . "\n";
     echo '</pre></font></b></p>';
 
-    // print_simple_box_end();
     echo $OUTPUT->box_end();
     echo '<br /><br />';
     $SESSION->feedback->errors = array(); //remove errors

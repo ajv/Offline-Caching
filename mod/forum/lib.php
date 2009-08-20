@@ -127,7 +127,7 @@ function forum_add_instance($forum) {
  * @return bool success
  */
 function forum_update_instance($forum) {
-    global $DB;
+    global $DB, $OUTPUT;
 
     $forum->timemodified = time();
     $forum->id           = $forum->instance;
@@ -153,7 +153,7 @@ function forum_update_instance($forum) {
     if ($forum->type == 'single') {  // Update related discussion and post.
         if (! $discussion = $DB->get_record('forum_discussions', array('forum'=>$forum->id))) {
             if ($discussions = $DB->get_records('forum_discussions', array('forum'=>$forum->id), 'timemodified ASC')) {
-                notify('Warning! There is more than one discussion in this forum - using the most recent');
+                echo $OUTPUT->notification('Warning! There is more than one discussion in this forum - using the most recent');
                 $discussion = array_pop($discussions);
             } else {
                 // try to recover by creating initial discussion - MDL-16262
@@ -2985,7 +2985,7 @@ function forum_subscribed_users($course, $forum, $groupid=0, $context = NULL) {
  */
 function forum_get_course_forum($courseid, $type) {
 // How to set up special 1-per-course forums
-    global $CFG, $DB;
+    global $CFG, $DB, $OUTPUT;
 
     if ($forums = $DB->get_records_select("forum", "course = ? AND type = ?", array($courseid, $type), "id ASC")) {
         // There should always only be ONE, but with the right combination of
@@ -3016,7 +3016,7 @@ function forum_get_course_forum($courseid, $type) {
             $forum->forcesubscribe = 0;
             break;
         default:
-            notify("That forum type doesn't exist!");
+            echo $OUTPUT->notification("That forum type doesn't exist!");
             return false;
             break;
     }
@@ -3025,7 +3025,7 @@ function forum_get_course_forum($courseid, $type) {
     $forum->id = $DB->insert_record("forum", $forum);
 
     if (! $module = $DB->get_record("modules", array("name" => "forum"))) {
-        notify("Could not find forum module!!");
+        echo $OUTPUT->notification("Could not find forum module!!");
         return false;
     }
     $mod = new object();
@@ -3034,15 +3034,15 @@ function forum_get_course_forum($courseid, $type) {
     $mod->instance = $forum->id;
     $mod->section = 0;
     if (! $mod->coursemodule = add_course_module($mod) ) {   // assumes course/lib.php is loaded
-        notify("Could not add a new course module to the course '" . format_string($course->fullname) . "'");
+        echo $OUTPUT->notification("Could not add a new course module to the course '" . format_string($course->fullname) . "'");
         return false;
     }
     if (! $sectionid = add_mod_to_section($mod) ) {   // assumes course/lib.php is loaded
-        notify("Could not add the new course module to that section");
+        echo $OUTPUT->notification("Could not add the new course module to that section");
         return false;
     }
     if (! $DB->set_field("course_modules", "section", $sectionid, array("id" => $mod->coursemodule))) {
-        notify("Could not update the course module with the correct section");
+        echo $OUTPUT->notification("Could not update the course module with the correct section");
         return false;
     }
     include_once("$CFG->dirroot/course/lib.php");
@@ -3074,7 +3074,7 @@ function forum_get_course_forum($courseid, $type) {
 function forum_make_mail_post($course, $cm, $forum, $discussion, $post, $userfrom, $userto,
                               $ownpost=false, $reply=false, $link=false, $rate=false, $footer="") {
 
-    global $CFG;
+    global $CFG, $OUTPUT;
 
     if (!isset($userto->viewfullnames[$forum->id])) {
         if (!$cm = get_coursemodule_from_instance('forum', $forum->id, $course->id)) {
@@ -3094,7 +3094,7 @@ function forum_make_mail_post($course, $cm, $forum, $discussion, $post, $userfro
     $output = '<table border="0" cellpadding="3" cellspacing="0" class="forumpost">';
 
     $output .= '<tr class="header"><td width="35" valign="top" class="picture left">';
-    $output .= print_user_picture($userfrom, $course->id, $userfrom->picture, false, true);
+    $output .= $OUTPUT->user_picture(moodle_user_picture::make($userfrom, $course->id));
     $output .= '</td>';
 
     if ($post->parent) {
@@ -3312,7 +3312,7 @@ function forum_print_post($post, $discussion, $forum, &$cm, $course, $ownpost=fa
     $postuser->picture   = $post->picture;
 
     echo '<tr class="header"><td class="picture left">';
-    print_user_picture($postuser, $course->id);
+    echo $OUTPUT->user_picture(moodle_user_picture::make($postuser, $course->id));
     echo '</td>';
 
     if ($post->parent) {
@@ -3620,7 +3620,7 @@ function forum_print_discussion_header(&$post, $forum, $group=-1, $datestring=""
     $postuser->picture = $post->picture;
 
     echo '<td class="picture">';
-    print_user_picture($postuser, $forum->course);
+    echo $OUTPUT->user_picture(moodle_user_picture::make($postuser, $forum->course));
     echo "</td>\n";
 
     // User name
@@ -3770,7 +3770,7 @@ function forum_shorten_post($message) {
  * @return string|void
  */
 function forum_print_ratings($postid, $scale, $aggregatetype, $link=true, $ratings=null, $return=false) {
-
+    global $OUTPUT;
     $strratings = '';
 
     switch ($aggregatetype) {
@@ -3805,7 +3805,10 @@ function forum_print_ratings($postid, $scale, $aggregatetype, $link=true, $ratin
         $strratings .= ': ';
 
         if ($link) {
-            $strratings .= link_to_popup_window ("/mod/forum/report.php?id=$postid", "ratings", $agg, 400, 600, null, null, true);
+
+            $link = html_link::make("/mod/forum/report.php?id=$postid", $agg);
+            $link->add_action(new popup_action('click', $link->url, 'ratings', array('height' => 400, 'width' => 600)));
+            $strratings .= $OUTPUT->link($link);                    
         } else {
             $strratings .= "$agg ";
         }
@@ -4107,7 +4110,7 @@ function forum_get_ratings_summary($postid, $scale, $ratings=NULL) {
 function forum_print_rating_menu($postid, $userid, $scale, $myrating=NULL) {
 
     static $strrate;
-    global $DB;
+    global $DB, $OUTPUT;
 
     if (is_null($myrating)) {
         if (!$rating = $DB->get_record("forum_ratings", array("userid" => $userid, "post" => $postid))) {
@@ -4121,7 +4124,7 @@ function forum_print_rating_menu($postid, $userid, $scale, $myrating=NULL) {
         $strrate = get_string("rate", "forum");
     }
     $scale = array(FORUM_UNSET_POST_RATING => $strrate.'...') + $scale;
-    choose_from_menu($scale, $postid, $myrating, '', '', '0', false, false, 0, '', false, false, 'forumpostratingmenu');
+    echo $OUTPUT->select(html_select::make($scale, $postid, $myrating, false)->add_class('forumpostratingmenu'));
 }
 
 /**
@@ -4154,12 +4157,12 @@ function forum_print_mode_form($id, $mode, $forumtype='') {
  * @return string
  */
 function forum_search_form($course, $search='') {
-    global $CFG;
+    global $CFG, $OUTPUT;
 
     $output  = '<div class="forumsearch">';
     $output .= '<form action="'.$CFG->wwwroot.'/mod/forum/search.php" style="display:inline">';
     $output .= '<fieldset class="invisiblefieldset">';
-    $output .= helpbutton('search', get_string('search'), 'moodle', true, false, '', true);
+    $output .= $OUTPUT->help_icon(moodle_help_icon::make('search', get_string('search')));
     $output .= '<input name="search" type="text" size="18" value="'.s($search, true).'" alt="search" />';
     $output .= '<input value="'.get_string('searchforums', 'forum').'" type="submit" />';
     $output .= '<input name="id" type="hidden" value="'.$course->id.'" />';
@@ -4915,7 +4918,7 @@ function forum_post_subscription($post, $forum) {
  * @return string
  */
 function forum_get_subscribe_link($forum, $context, $messages = array(), $cantaccessagroup = false, $fakelink=true, $backtoindex=false, $subscribed_forums=null) {
-    global $CFG, $USER, $PAGE;
+    global $CFG, $USER, $PAGE, $OUTPUT;
     $defaultmessages = array(
         'subscribed' => get_string('unsubscribe', 'forum'),
         'unsubscribed' => get_string('subscribe', 'forum'),
@@ -4960,8 +4963,9 @@ function forum_get_subscribe_link($forum, $context, $messages = array(), $cantac
             $link = "<noscript>";
         }
         $options ['id'] = $forum->id;
-        $link .= print_single_button($CFG->wwwroot . '/mod/forum/subscribe.php',
-                $options, $linktext, 'post', '_self', true, $linktitle);
+        $form = html_form::make_button($CFG->wwwroot.'/mod/forum/subscribe.php', $options, $linktext);
+        $form->button->title = $linktitle;
+        $link .= $OUTPUT->button($form);
         if ($fakelink) {
             $link .= '</noscript>';
         }
@@ -4983,7 +4987,7 @@ function forum_get_subscribe_link($forum, $context, $messages = array(), $cantac
  * @return string
  */
 function forum_get_tracking_link($forum, $messages=array(), $fakelink=true) {
-    global $CFG, $USER, $PAGE;
+    global $CFG, $USER, $PAGE, $OUTPUT;
 
     static $strnotrackforum, $strtrackforum;
 
@@ -5015,8 +5019,10 @@ function forum_get_tracking_link($forum, $messages=array(), $fakelink=true) {
         // use <noscript> to print button in case javascript is not enabled
         $link .= '<noscript>';
     }
-    $link .= print_single_button($CFG->wwwroot . '/mod/forum/settracking.php?id=' . $forum->id,
-            '', $linktext, 'post', '_self', true, $linktitle);
+    $form = html_form::make_button($CFG->wwwroot.'/mod/forum/settracking.php?id=' . $forum->id, $options, $linktext);
+    $form->button->title = $linktitle;
+    $link .= $OUTPUT->button($form);
+
     if ($fakelink) {
         $link .= '</noscript>';
     }
@@ -5502,9 +5508,9 @@ function forum_print_latest_discussions($course, $forum, $maxdiscussions=-1, $di
     } else if ($groupmode and has_capability('mod/forum:startdiscussion', $context)) {
         // inform users why they can not post new discussion
         if ($currentgroup) {
-            notify(get_string('cannotadddiscussion', 'forum'));
+            echo $OUTPUT->notification(get_string('cannotadddiscussion', 'forum'));
         } else {
-            notify(get_string('cannotadddiscussionall', 'forum'));
+            echo $OUTPUT->notification(get_string('cannotadddiscussionall', 'forum'));
         }
     }
 
@@ -6123,7 +6129,7 @@ function forum_print_recent_mod_activity($activity, $courseid, $detail, $modname
     echo '<table border="0" cellpadding="3" cellspacing="0" class="forum-recent">';
 
     echo "<tr><td class=\"userpicture\" valign=\"top\">";
-    print_user_picture($activity->user, $courseid);
+    echo $OUTPUT->user_picture(moodle_user_picture::make($activity->user, $courseid));
     echo "</td><td class=\"$class\">";
 
     echo '<div class="title">';
@@ -7351,7 +7357,7 @@ function forum_get_separate_modules($courseid) {
  * @return bool
  */
 function forum_check_throttling($forum, $cm=null) {
-    global $USER, $CFG, $DB;
+    global $USER, $CFG, $DB, $OUTPUT;
 
     if (is_numeric($forum)) {
         $forum = $DB->get_record('forum',array('id'=>$forum));
@@ -7397,7 +7403,7 @@ function forum_check_throttling($forum, $cm=null) {
         print_error('forumblockingtoomanyposts', 'error', $CFG->wwwroot.'/mod/forum/view.php?f='.$forum->id, $a);
     }
     if ($forum->warnafter <= $numposts) {
-        notify(get_string('forumblockingalmosttoomanyposts','forum',$a));
+        echo $OUTPUT->notification(get_string('forumblockingalmosttoomanyposts','forum',$a));
     }
 
 
@@ -7616,7 +7622,7 @@ function forum_reset_course_form_defaults($course) {
 function forum_convert_to_roles($forum, $forummodid, $teacherroles=array(),
                                 $studentroles=array(), $guestroles=array(), $cmid=NULL) {
 
-    global $CFG, $DB;
+    global $CFG, $DB, $OUTPUT;
 
     if (!isset($forum->open) && !isset($forum->assesspublic)) {
         // We assume that this forum has already been converted to use the
@@ -7712,7 +7718,7 @@ function forum_convert_to_roles($forum, $forummodid, $teacherroles=array(),
         if (empty($cmid)) {
             // We were not given the course_module id. Try to find it.
             if (!$cm = get_coursemodule_from_instance('forum', $forum->id)) {
-                notify('Could not get the course module for the forum');
+                echo $OUTPUT->notification('Could not get the course module for the forum');
                 return false;
             } else {
                 $cmid = $cm->id;

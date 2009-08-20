@@ -92,7 +92,7 @@
 
     $groupingid = $cm->groupingid;
     
-    print_simple_box_start("center");
+    echo $OUTPUT->box_start("generalbox boxaligncenter");
     if ($showscales) {
         echo "<a href=\"report.php?action=summary&amp;id=$id\">$strsummary</a>";
         echo "&nbsp;&nbsp;&nbsp;&nbsp;<a href=\"report.php?action=scales&amp;id=$id\">$strscales</a>";
@@ -114,7 +114,7 @@
             $action = "questions";
         }
     }
-    print_simple_box_end();
+    echo $OUTPUT->box_end();
 
     $spacer = new html_image();
     $spacer->height = 30;
@@ -136,7 +136,7 @@
             survey_print_graph("id=$id&amp;group=$currentgroup&amp;type=overall.png");
             echo "</a></div>";
         } else {
-            notify(get_string("nobodyyet","survey"));
+            echo $OUTPUT->notification(get_string("nobodyyet","survey"));
         }
         break;
 
@@ -144,7 +144,7 @@
         echo $OUTPUT->heading($strscales);
 
         if (! $results = survey_get_responses($survey->id, $currentgroup, $groupingid) ) {
-            notify(get_string("nobodyyet","survey"));
+            echo $OUTPUT->notification(get_string("nobodyyet","survey"));
 
         } else {
 
@@ -195,7 +195,7 @@
         }
 
         if (! $results = survey_get_responses($survey->id, $currentgroup, $groupingid) ) {
-            notify(get_string("nobodyyet","survey"));
+            echo $OUTPUT->notification(get_string("nobodyyet","survey"));
 
         } else {
 
@@ -236,7 +236,7 @@
                     echo "</a></p>";
 
                 } else {
-                    $table = NULL;
+                    $table = new html_table();
                     $table->head = array($question->text);
                     $table->align = array ("left");
 
@@ -254,7 +254,7 @@
 
                     $table->data[] = array($contents);
 
-                    print_table($table);
+                    echo $OUTPUT->table($table);
                     print_spacer(30);
                 }
             }
@@ -279,7 +279,7 @@
         $strpreferred = get_string("preferred", "survey");
         $strdateformat = get_string("strftimedatetime");
 
-        $table = NULL;
+        $table = new html_table();
         $table->head = array("", $strname, $strtime, $stractual, $strpreferred);
         $table->align = array ("left", "left", "left", "left", "right");
         $table->size = array (35, "", "", "", "");
@@ -296,9 +296,10 @@
                 } else {
                     $answer2 = "&nbsp;";
                 }
-
+                $userpic = moodle_user_picture::make($a, $course->id);
+                $userpic->link = true;
                 $table->data[] = array(
-                       print_user_picture($a->userid, $course->id, $a->picture, false, true, true),
+                       $OUTPUT->user_picture($userpic),
                        "<a href=\"report.php?id=$id&amp;action=student&amp;student=$a->userid\">".fullname($a)."</a>",
                        userdate($a->time),
                        $answer1, $answer2);
@@ -306,7 +307,7 @@
             }
         }
 
-        print_table($table);
+        echo $OUTPUT->table($table);
 
         break;
 
@@ -315,7 +316,7 @@
          echo $OUTPUT->heading(get_string("analysisof", "survey", get_string('participants')));
 
          if (! $results = survey_get_responses($survey->id, $currentgroup, $groupingid) ) {
-             notify(get_string("nobodyyet","survey"));
+             echo $OUTPUT->notification(get_string("nobodyyet","survey"));
          } else {
              survey_print_all_responses($cm->id, $results, $course->id);
          }
@@ -332,21 +333,21 @@
          if ($notes != '' and confirm_sesskey()) {
              if (survey_get_analysis($survey->id, $user->id)) {
                  if (! survey_update_analysis($survey->id, $user->id, $notes)) {
-                     notify("An error occurred while saving your notes.  Sorry.");
+                     echo $OUTPUT->notification("An error occurred while saving your notes.  Sorry.");
                  } else {
-                     notify(get_string("savednotes", "survey"));
+                     echo $OUTPUT->notification(get_string("savednotes", "survey"));
                  }
              } else {
                  if (! survey_add_analysis($survey->id, $user->id, $notes)) {
-                     notify("An error occurred while saving your notes.  Sorry.");
+                     echo $OUTPUT->notification("An error occurred while saving your notes.  Sorry.");
                  } else {
-                     notify(get_string("savednotes", "survey"));
+                     echo $OUTPUT->notification(get_string("savednotes", "survey"));
                  }
              }
          }
 
          echo "<p <p class=\"centerpara\">";
-         print_user_picture($user->id, $course->id, $user->picture, true);
+         echo $OUTPUT->user_picture(moodle_user_picture::make($user->id, $course->id));
          echo "</p>";
 
          $questions = $DB->get_records_list("survey_questions", "id", explode(',', $survey->questions));
@@ -388,12 +389,12 @@
              $question = $questions[$val];
              if ($question->type == 0 or $question->type == 1) {
                  if ($answer = survey_get_user_answer($survey->id, $question->id, $user->id)) {
-                     $table = NULL;
+                    $table = new html_table();
                      $table->head = array(get_string($question->text, "survey"));
                      $table->align = array ("left");
                      $table->data[] = array(s($answer->answer1)); // no html here, just plain text
-                     print_table($table);
-                     print_spacer(30);
+                     echo $OUTPUT->table($table);
+                     echo $OUTPUT->spacer(30);
                  }
              }
          }
@@ -430,20 +431,20 @@
 
         echo '<p class="centerpara">'.get_string("downloadinfo", "survey").'</p>';
 
-        echo '<div class="reportbuttons">';
-        $optons = array();
+        echo $OUTPUT->container_start('reportbuttons');
+        $options = array();
         $options["id"] = "$cm->id";
         $options["group"] = $currentgroup;
 
         $options["type"] = "ods";
-        print_single_button("download.php", $options, get_string("downloadods"));
+        echo $OUTPUT->button(html_form::make_button("download.php", $options, get_string("downloadods")));
 
         $options["type"] = "xls";
-        print_single_button("download.php", $options, get_string("downloadexcel"));
+        echo $OUTPUT->button(html_form::make_button("download.php", $options, get_string("downloadexcel")));
 
         $options["type"] = "txt";
-        print_single_button("download.php", $options, get_string("downloadtext"));
-        echo '</div>';
+        echo $OUTPUT->button(html_form::make_button("download.php", $options, get_string("downloadtext")));
+        echo $OUTPUT->container_end();
 
         break;
 

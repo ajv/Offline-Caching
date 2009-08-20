@@ -76,7 +76,7 @@ class assignment_online extends assignment_base {
                 redirect('view.php?id='.$this->cm->id.'&saved=1');
             } else {
                 // TODO: add better error message
-                notify(get_string("error")); //submitting not allowed!
+                echo $OUTPUT->notification(get_string("error")); //submitting not allowed!
             }
         }
 
@@ -92,7 +92,7 @@ class assignment_online extends assignment_base {
         $this->view_dates();
 
         if ($saved) {
-            notify(get_string('submissionsaved', 'assignment'), 'notifysuccess');
+            echo $OUTPUT->notification(get_string('submissionsaved', 'assignment'), 'notifysuccess');
         }
 
         if (has_capability('mod/assignment:submit', $context)) {
@@ -115,8 +115,8 @@ class assignment_online extends assignment_base {
             echo $OUTPUT->box_end();
             if (!$editmode && $editable) {
                 echo "<div style='text-align:center'>";
-                print_single_button('view.php', array('id'=>$this->cm->id,'edit'=>'1'),
-                        get_string('editmysubmission', 'assignment'));
+                echo $OUTPUT->button(html_form::make_button('view.php', array('id'=>$this->cm->id,'edit'=>'1'),
+                        get_string('editmysubmission', 'assignment')));
                 echo "</div>";
             }
 
@@ -131,13 +131,13 @@ class assignment_online extends assignment_base {
      * Display the assignment dates
      */
     function view_dates() {
-        global $USER, $CFG;
+        global $USER, $CFG, $OUTPUT;
 
         if (!$this->assignment->timeavailable && !$this->assignment->timedue) {
             return;
         }
 
-        print_simple_box_start('center', '', '', 0, 'generalbox', 'dates');
+        echo $OUTPUT->box_start('generalbox boxaligncenter', 'dates');
         echo '<table>';
         if ($this->assignment->timeavailable) {
             echo '<tr><td class="c0">'.get_string('availabledate','assignment').':</td>';
@@ -159,7 +159,7 @@ class assignment_online extends assignment_base {
             }
         }
         echo '</table>';
-        print_simple_box_end();
+        echo $OUTPUT->box_end();
     }
 
     function update_submission($data) {
@@ -186,11 +186,15 @@ class assignment_online extends assignment_base {
         if (!$submission = $this->get_submission($userid)) {
             return '';
         }
+        
+        $link = html_link::make("/mod/assignment/type/online/file.php?id=$this->cm->id&userid=$submission->userid", shorten_text(trim(strip_tags(format_text($submission->data1,$submission->data2))), 15));
+        $link->add_action(new popup_action('click', $link->url, 'file'.$userid, array('height' => 450, 'width' => 580)));
+        $link->title = get_string('submission', 'assignment');
+        $popup = $OUTPUT->link($link);                    
+        
         $output = '<div class="files">'.
                   '<img src="'.$OUTPUT->old_icon_url('f/html') . '" class="icon" alt="html" />'.
-                  link_to_popup_window ('/mod/assignment/type/online/file.php?id='.$this->cm->id.'&amp;userid='.
-                  $submission->userid, 'file'.$userid, shorten_text(trim(strip_tags(format_text($submission->data1,$submission->data2))), 15), 450, 580,
-                  get_string('submission', 'assignment'), 'none', true).
+                  $popup .
                   '</div>';
                   return $output;
     }
@@ -201,25 +205,28 @@ class assignment_online extends assignment_base {
         if (!$submission = $this->get_submission($userid)) {
             return '';
         }
+        
+        $link = html_link::make("/mod/assignment/type/online/file.php?id=$this->cm->id&userid=$submission->userid", shorten_text(trim(strip_tags(format_text($submission->data1,$submission->data2))), 15));
+        $link->add_action(new popup_action('click', $link->url, 'file'.$userid, array('height' => 450, 'width' => 580)));
+        $link->title = get_string('submission', 'assignment');
+        $popup = $OUTPUT->link($link);                    
 
         $output = '<div class="files">'.
                   '<img align="middle" src="'.$OUTPUT->old_icon_url('f/html') . '" height="16" width="16" alt="html" />'.
-                  link_to_popup_window ('/mod/assignment/type/online/file.php?id='.$this->cm->id.'&amp;userid='.
-                  $submission->userid, 'file'.$userid, shorten_text(trim(strip_tags(format_text($submission->data1,$submission->data2))), 15), 450, 580,
-                  get_string('submission', 'assignment'), 'none', true).
+                  $popup .
                   '</div>';
 
         ///Stolen code from file.php
 
-        print_simple_box_start('center', '', '', 0, 'generalbox', 'wordcount');
+        echo $OUTPUT->box_start('generalbox boxaligncenter', 'wordcount');
     /// Decide what to count
         if ($CFG->assignment_itemstocount == ASSIGNMENT_COUNT_WORDS) {
             echo ' ('.get_string('numwords', '', count_words(format_text($submission->data1, $submission->data2))).')';
         } else if ($CFG->assignment_itemstocount == ASSIGNMENT_COUNT_LETTERS) {
             echo ' ('.get_string('numletters', '', count_letters(format_text($submission->data1, $submission->data2))).')';
         }
-        print_simple_box_end();
-        print_simple_box(format_text($submission->data1, $submission->data2), 'center', '100%');
+        echo $OUTPUT->box_end();
+        echo $OUTPUT->box(format_text($submission->data1, $submission->data2), 'generalbox boxaligncenter boxwidthwide');
 
         ///End of stolen code from file.php
 

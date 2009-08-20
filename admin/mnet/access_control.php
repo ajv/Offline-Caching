@@ -163,6 +163,7 @@ if (!$acl) {
     echo $OUTPUT->heading(get_string('noaclentries','mnet'));
     $table = NULL;
 } else {
+    $table = new html_table();
     $table->head = $headings;
     $table->align = array('left', 'left', 'center');
     $table->width = "95%";
@@ -183,7 +184,7 @@ if (!$acl) {
 }
 
 if (!empty($table)) {
-    print_table($table);
+    echo $OUTPUT->table($table);
     echo '<p>&nbsp;</p>';
     $baseurl = new moodle_url(null, array('sort' => $sort, 'dir' => $dir, 'perpage' => $perpage));
     $pagingbar = moodle_paging_bar::make($aclcount, $page, $perpage, $baseurl);
@@ -193,7 +194,7 @@ if (!empty($table)) {
 
 
 // output the add form
-print_simple_box_start('center','90%','','20');
+echo $OUTPUT->box_start();
 
 ?>
  <div class="mnetaddtoaclform">
@@ -213,7 +214,7 @@ echo " " . get_string('remotehost', 'mnet') . ":\n";
 if (!empty($formerror['mnet_host_id'])) {
     echo '<span class="error"> * </span>';
 }
-choose_from_menu($mnethosts, 'mnet_host_id');
+echo $OUTPUT->select(html_select::make($mnethosts, 'mnet_host_id'));
 
 // choose an access level
 echo " " . get_string('accesslevel', 'mnet') . ":\n";
@@ -222,7 +223,7 @@ if (!empty($formerror['accessctrl'])) {
 }
 $accessmenu['allow'] = get_string('allow', 'mnet');
 $accessmenu['deny'] = get_string('deny', 'mnet');
-choose_from_menu($accessmenu, 'accessctrl');
+echo $OUTPUT->select(html_select::make($accessmenu, 'accessctrl'));
 
 // submit button
 echo '<input type="submit" value="' . get_string('addtoacl', 'mnet') . '" />';
@@ -233,7 +234,7 @@ foreach ($formerror as $error) {
     echo "<br><span class=\"error\">$error<span>";
 }
 
-print_simple_box_end();
+echo $OUTPUT->box_end();
 echo $OUTPUT->footer();
 
 ?>

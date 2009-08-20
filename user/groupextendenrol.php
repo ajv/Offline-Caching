@@ -109,10 +109,11 @@ if($course->enrollable == 2) {
 }
 
 $title = get_string('groupextendenrol');
-echo $OUTPUT->heading($title . helpbutton('groupextendenrol', $title, 'moodle', true, false, '', true));
+echo $OUTPUT->heading($title . $OUTPUT->help_icon(moodle_help_icon::make('groupextendenrol', $title)));
 echo '<form method="post" action="groupextendenrol.php">';
 echo '<input type="hidden" name="id" value="'.$course->id.'" />';
 echo '<input type="hidden" name="sesskey" value="'.sesskey().'" />';
+$table = new html_table();
 $table->head  = array (get_string('fullnameuser'), get_string('enrolmentstart'), get_string('enrolmentend'));
 $table->align = array ('left', 'center', 'center', 'center');
 $table->width = "600";
@@ -145,12 +146,12 @@ foreach ($_POST as $k => $v) {
         );
     }
 }
-print_table($table);
+echo $OUTPUT->table($table);
 echo '<div style="width:100%;text-align:center;"><strong>';
 echo get_string('extendperiod') . ' ';
-choose_from_menu($periodmenu, "extendperiod");
+echo $OUTPUT->select(html_select::make($periodmenu, 'extendperiod'));
 echo ' ' . get_string('startingfrom') . ' ';
-choose_from_menu($basemenu, "extendbase", "2", "");
+echo $OUTPUT->select(html_select::make($basemenu, 'extendbase', '2', false));
 echo '</strong><br />';
 echo '<input type="submit" value="'.get_string('savechanges').'" />';
 echo '</div></form>';

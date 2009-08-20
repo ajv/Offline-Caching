@@ -229,7 +229,7 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
 /// Acummulator for hidden options and proper XHTML output
     $hidden_options = '';
 
-    choose_from_menu($restore_restoreto_options, "restore_restoreto", $restore_restoreto, "");
+    echo $OUTPUT->select(html_select::make($restore_restoreto_options, "restore_restoreto", $restore_restoreto, false));
     echo "</td></tr>";
     if ($cancreatecourses) {  //display these fields conditionally
 
@@ -255,7 +255,7 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
                 $category_default = $fromcat;
             }
         }
-        choose_from_menu($categories, 'restore_restorecatto', $category_default, "");
+        echo $OUTPUT->select(html_select::make($categories, 'restore_restorecatto', $category_default, false));
         echo "</td>";
         echo "</tr>";
 
@@ -264,8 +264,8 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
         echo '<label for="shortnamefield">'.get_string ('shortname').'</label>';
         echo "</td>";
         echo "<td><input type=\"text\" id=\"shortnamefield\" name=\"shortname\" maxlength=\"100\"  size=\"20\" value=\"".s($form1->shortname)."\" alt=\"".get_string("shortname")."\"  />" ;
-        helpbutton("courseshortname", get_string("shortname")) ;
-        if (isset($err["shortname"])) formerr($err["shortname"]);
+        echo $OUTPUT->help_icon(moodle_help_icon::make("courseshortname", get_string("shortname"))) ;
+        if (isset($err["shortname"])) echo $OUTPUT->error_text($err["shortname"]);
         echo "</td>";
         echo "</tr>";
         echo "<tr valign=\"top\" >";
@@ -273,8 +273,8 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
         echo '<label for="fullnamefield">'.get_string ('fullname').'</label>';
         echo "</td>";
         echo "<td><input type=\"text\" id=\"fullnamefield\" name=\"fullname\" maxlength=\"254\" size=\"50\" value=\"".s($form1->fullname)."\" alt=\" ".get_string("fullname")."\"  />" ;
-        helpbutton("coursefullname", get_string("fullname")) ;
-        if (isset($err["fullname"])) formerr($err["fullname"]);
+        echo $OUTPUT->help_icon(moodle_help_icon::make("coursefullname", get_string("fullname"))) ;
+        if (isset($err["fullname"])) echo $OUTPUT->error_text($err["fullname"]);
         echo"</td></tr>";
         echo "<tr valign=\"top\"> ";
         echo "<td align=\"right\"> ";
@@ -289,7 +289,7 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
             $yearselector = html_select::make_time_selector('years', "startyear", $form1->startdate);
 
             echo $OUTPUT->select($dayselector) . $OUTPUT->select($monthselector) . $OUTPUT->select($yearselector);
-            helpbutton("coursestartdate", get_string("startdate"));
+            echo $OUTPUT->help_icon(moodle_help_icon::make("coursestartdate", get_string("startdate")));
         } else {
             print_string('notavailable');
             echo '<input type="hidden" name="startyear" value="0" />';
@@ -414,7 +414,7 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
             $metacourse_options = array();
             $metacourse_options[0] = get_string("no");
             $metacourse_options[1] = get_string("yes");
-            choose_from_menu($metacourse_options, "restore_metacourse", $restore_metacourse, "");
+            echo $OUTPUT->select(html_select::make($metacourse_options, "restore_metacourse", $restore_metacourse, false));
         } else {
             echo get_string("no");
             echo "<input type=\"hidden\" id=\"menurestore_metacourse\" name=\"restore_metacourse\" value=\"0\" />";
@@ -434,7 +434,7 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
             }
             $user_options[1] = get_string("course");
             $user_options[2] = get_string("none");
-            choose_from_menu($user_options, "restore_users", $restore_users, "");
+            echo $OUTPUT->select(html_select::make($user_options, "restore_users", $restore_users, false));
         } else {
             echo get_string("none");
             echo "<input type=\"hidden\" id=\"menurestore_users\" name=\"restore_users\" value=\"2\" />";
@@ -445,7 +445,7 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
         //Now print the Groups tr (assume there is no $info->backup_groups)
         echo "<tr>";
         echo "<td align=\"right\" colspan=\"2\"><b>";
-        $helplink = helpbutton('grouprestore', get_string('groups'), '', true, false, '', true);
+        $helplink = $OUTPUT->help_icon(moodle_help_icon::make('grouprestore', get_string('groups')));
         if (empty($CFG->enablegroupings)) {
             echo '<label for="menurestore_groups">'.get_string ("groups").'</label>'.$helplink;
             echo "</b></td><td colspan=\"2\">";
@@ -463,7 +463,7 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
             echo get_string('none');
             echo "<input type=\"hidden\" name=\"restore_groups\" value=\"2\" />";
         }*/
-        choose_from_menu($group_options, 'restore_groups', $restore_groups, '');
+        echo $OUTPUT->select(html_select::make($group_options, 'restore_groups', $restore_groups, false));
         echo "</td></tr>";
 
         //Now print the Logs tr
@@ -476,7 +476,7 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
             $log_options = array();
             $log_options[0] = get_string("no");
             $log_options[1] = get_string("yes");
-            choose_from_menu($log_options, "restore_logs", $restore_logs, "");
+            echo $OUTPUT->select(html_select::make($log_options, "restore_logs", $restore_logs, false));
         } else {
             echo get_string("no");
             echo "<input type=\"hidden\" id=\"menurestore_logs\" name=\"restore_logs\" value=\"0\" />";
@@ -493,7 +493,7 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
             $user_file_options = array();
             $user_file_options[0] = get_string("no");
             $user_file_options[1] = get_string("yes");
-            choose_from_menu($user_file_options, "restore_user_files", $restore_user_files, "");
+            echo $OUTPUT->select(html_select::make($user_file_options, "restore_user_files", $restore_user_files, false));
         } else {
             echo get_string("no");
             echo "<input type=\"hidden\" id=\"menurestore_user_files\" name=\"restore_user_files\" value=\"0\" />";
@@ -512,7 +512,7 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
             $course_file_options = array();
             $course_file_options[0] = get_string("no");
             $course_file_options[1] = get_string("yes");
-            choose_from_menu($course_file_options, "restore_course_files", $restore_course_files, "");
+            echo $OUTPUT->select(html_select::make($course_file_options, "restore_course_files", $restore_course_files, false));
         } else {
             echo get_string("no");
             echo "<input type=\"hidden\" id=\"menurestore_course_files\" name=\"restore_course_files\" value=\"0\" />";
@@ -530,7 +530,7 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
             $site_file_options = array();
             $site_file_options[0] = get_string("no");
             $site_file_options[1] = get_string("yes");
-            choose_from_menu($site_file_options, "restore_site_files", $restore_site_files, "");
+            echo $OUTPUT->select(html_select::make($site_file_options, "restore_site_files", $restore_site_files, false));
         } else {
             echo get_string("no");
             echo "<input type=\"hidden\" id=\"menurestore_site_files\" name=\"restore_site_files\" value=\"0\" />";
@@ -547,7 +547,7 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
                 $gradebook_history_options = array();
                 $gradebook_history_options[0] = get_string("no");
                 $gradebook_history_options[1] = get_string("yes");
-                choose_from_menu($gradebook_history_options, "restore_gradebook_history", $restore_gradebook_history, "");
+                echo $OUTPUT->select(html_select::make($gradebook_history_options, "restore_gradebook_history", $restore_gradebook_history, false));
             } else {
                 echo get_string("no");
                 echo "<input type=\"hidden\" id=\"menurestore_gradebook_history\" name=\"restore_gradebook_history\" value=\"0\" />";
@@ -569,7 +569,7 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
             $message_options = array();
             $message_options[0] = get_string("no");
             $message_options[1] = get_string("yes");
-            choose_from_menu($message_options, "restore_messages", $restore_messages, "");
+            echo $OUTPUT->select(html_select::make($message_options, "restore_messages", $restore_messages, false));
             echo "</td></tr>";
         } else {
             $hidden_options .= '<input type="hidden" name="restore_messages" value="0" />';
@@ -587,7 +587,7 @@ function selectItemInCheckboxByName(formId, checkName, checked ) {
             $blog_options = array();
             $blog_options[0] = get_string("no");
             $blog_options[1] = get_string("yes");
-            choose_from_menu($blog_options, "restore_blogs", $restore_blogs, "");
+            echo $OUTPUT->select(html_select::make($blog_options, "restore_blogs", $restore_blogs, false));
             echo "</td></tr>";
         } else {
             $hidden_options .= '<input type="hidden" name="restore_blogs" value="0" />';
@@ -624,7 +624,7 @@ if ($info->backup_moodle_version < 2006092801) {
     $roles = get_roles_with_capability('moodle/legacy:editingteacher', CAP_ALLOW, get_context_instance(CONTEXT_SYSTEM));
 
     $editteacher = reset($roles);
-    choose_from_menu ($siterolesarray, "defaultteacheredit", $editteacher->id, 'new role', '', '0');
+    echo $OUTPUT->select(html_select::make ($siterolesarray, "defaultteacheredit", $editteacher->id, 'new role'));
     echo ('</td></tr>');
 
     /// Non-editting teacher
@@ -637,7 +637,7 @@ if ($info->backup_moodle_version < 2006092801) {
     $roles = get_roles_with_capability('moodle/legacy:teacher', CAP_ALLOW, get_context_instance(CONTEXT_SYSTEM));
     $teacher = reset($roles);
 
-    choose_from_menu ($siterolesarray, "defaultteacher", $teacher->id, 'new role', '', '0');
+    echo $OUTPUT->select(html_select::make ($siterolesarray, "defaultteacher", $teacher->id, 'new role'));
     echo ('</td></tr>');
 
 
@@ -650,7 +650,7 @@ if ($info->backup_moodle_version < 2006092801) {
     $roles = get_roles_with_capability('moodle/legacy:student', CAP_ALLOW, get_context_instance(CONTEXT_SYSTEM));
     $studentrole = array_shift($roles);
 
-    choose_from_menu ($siterolesarray, "defaultstudent", $studentrole->id, 'new role', '', '0');
+    echo $OUTPUT->select(html_select::make ($siterolesarray, "defaultstudent", $studentrole->id, 'new role'));
     echo ('</td></tr>');
 
 } else {
@@ -685,7 +685,7 @@ if ($info->backup_moodle_version < 2006092801) {
                     }
                 }
             }
-            choose_from_menu ($mappableroles, "roles_".$roleid, $matchrole, 'new role', '', '0');
+            echo $OUTPUT->select(html_select::make ($mappableroles, "roles_".$roleid, $matchrole, 'new role'));
             echo ('</td></tr>');
         }
     }

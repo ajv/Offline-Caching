@@ -31,7 +31,7 @@ if ($confirm and confirm_sesskey()) {
             if ($primaryadmin->id != $user->id and $USER->id != $user->id and delete_user($user)) {
                 unset($SESSION->bulk_users[$user->id]);
             } else {
-                notify(get_string('deletednot', '', fullname($user, true)));
+                echo $OUTPUT->notification(get_string('deletednot', '', fullname($user, true)));
             }
         }
         $rs->close;
@@ -43,11 +43,10 @@ if ($confirm and confirm_sesskey()) {
     $in = implode(',', $SESSION->bulk_users);
     $userlist = $DB->get_records_select_menu('user', "id IN ($in)", null, 'fullname', 'id,'.$DB->sql_fullname().' AS fullname');
     $usernames = implode(', ', $userlist);
-    $optionsyes = array();
-    $optionsyes['confirm'] = 1;
-    $optionsyes['sesskey'] = sesskey();
     echo $OUTPUT->heading(get_string('confirmation', 'admin'));
-    notice_yesno(get_string('deletecheckfull', '', $usernames), 'user_bulk_delete.php', 'user_bulk.php', $optionsyes, NULL, 'post', 'get');
+    $formcontinue = html_form::make_button('user_bulk_delete.php', array('confirm' => 1), get_string('yes'));
+    $formcancel = html_form::make_button('user_bulk.php', $optionsno, get_string('no'), 'get');
+    echo $OUTPUT->confirm(get_string('deletecheckfull', '', $usernames), $formcontinue, $formcancel);
 }
 
 echo $OUTPUT->footer();

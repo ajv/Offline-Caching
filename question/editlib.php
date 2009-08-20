@@ -625,9 +625,16 @@ class question_bank_preview_action_column extends question_bank_action_column_ba
     protected function display_content($question, $rowclasses) {
         global $OUTPUT;
         if (question_has_capability_on($question, 'use')) {
-            link_to_popup_window($this->qbank->preview_question_url($question->id), 'questionpreview',
-                    ' <img src="' . $OUTPUT->old_icon_url('t/preview') . '" class="iconsmall" alt="' . $this->strpreview . '" />',
-                    0, 0, $this->strpreview, QUESTION_PREVIEW_POPUP_OPTIONS);
+            parse_str(QUESTION_PREVIEW_POPUP_OPTIONS, $options);
+            $image = new html_image();
+            $image->src = $OUTPUT->old_icon_url('t/preview');
+            $image->add_class('iconsmall');
+            $image->alt = $this->strpreview;
+
+            $link = html_link::make($this->qbank->preview_question_url($question->id), $this->strpreview);
+            $link->add_action(new popup_action('click', $link->url, 'questionpreview', $options));
+            $link->title = $this->strpreview;
+            echo $OUTPUT->link_to_popup($link, $image);
         }
     }
 
@@ -1140,7 +1147,7 @@ class question_bank_view {
         if (!$category = $DB->get_record('question_categories',
                 array('id' => $categoryid, 'contextid' => $contextid))) {
             echo $OUTPUT->box_start('generalbox questionbank');
-            notify('Category not found!');
+            echo $OUTPUT->notification('Category not found!');
             echo $OUTPUT->box_end();
             return false;
         }
@@ -1466,7 +1473,7 @@ class question_bank_view {
     }
 
     public function process_actions_needing_ui() {
-        global $DB;
+        global $DB, $OUTPUT;
         if (optional_param('deleteselected', false, PARAM_BOOL)) {
             // make a list of all the questions that are selected
             $rawquestions = $_REQUEST; // This code is called by both POST forms and GET links, so cannot use data_submitted.
@@ -1495,11 +1502,9 @@ class question_bank_view {
             if ($inuse) {
                 $questionnames .= '<br />'.get_string('questionsinuse', 'quiz');
             }
-            notice_yesno(get_string("deletequestionscheck", "quiz", $questionnames),
-                        $this->baseurl->out_action(),
-                        $this->baseurl->out(true),
-                        array('deleteselected'=>$questionlist, 'confirm'=>md5($questionlist)),
-                        $this->baseurl->params(), 'post', 'get');
+            echo $OUTPUT->confirm(get_string("deletequestionscheck", "quiz", $questionnames),
+                        $this->baseurl->out_action(array('deleteselected'=>$questionlist, 'confirm'=>md5($questionlist))),
+                        $this->baseurl);
 
             return true;
         }
@@ -1910,12 +1915,15 @@ function print_qtype_to_add_option($qtype, $localizedname) {
  * @param boolean $disabled if true, the button will be disabled.
  */
 function create_new_question_button($categoryid, $params, $caption, $tooltip = '', $disabled = false) {
-    global $CFG, $PAGE;
+    global $CFG, $PAGE, $OUTPUT;
     static $choiceformprinted = false;
     $params['category'] = $categoryid;
-    print_single_button($CFG->wwwroot . '/question/addquestion.php', $params,
-            $caption,'get', '', false, $tooltip, $disabled);
-    helpbutton('types', get_string('createnewquestion', 'question'), 'question');
+    $form = html_form::make_button($CFG->wwwroot . '/question/addquestion.php', $params, $caption,'get');
+    $form->button->title = $tooltip;
+    $form->button->disabled = $disabled;
+    echo $OUTPUT->button($form);
+
+    echo $OUTPUT->help_icon(moodle_help_icon::make('types', get_string('createnewquestion', 'question'), 'question'));
     $PAGE->requires->yui_lib('dragdrop');
     $PAGE->requires->yui_lib('container');
     if (!$choiceformprinted) {

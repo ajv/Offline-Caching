@@ -52,7 +52,7 @@
     <input type="hidden" name="sesskey" value="<?php echo sesskey() ?>" />
       <?php
         echo '<b>'.get_string("questiontype", "lesson").":</b> \n";
-        echo helpbutton("questiontypes", get_string("questiontype", "lesson"), "lesson")."<br />";
+        echo $OUTPUT->help_icon(moodle_help_icon::make("questiontypes", get_string("questiontype", "lesson"), "lesson"))."<br />";
         lesson_qtype_menu($LESSON_QUESTION_TYPE, $qtype, 
                           "lesson.php?id=$cm->id&amp;action=addpage&amp;pageid=".$pageid.$linkadd);
 
@@ -64,7 +64,7 @@
                 $qoptionstr = get_string('multianswer', 'lesson');
             }
             echo "<label for=\"qoption\"><strong>$qoptionstr</strong></label><input type=\"checkbox\" id=\"qoption\" name=\"qoption\" value=\"1\"/>";
-            helpbutton("questionoption", get_string("questionoption", "lesson"), "lesson");
+            echo $OUTPUT->help_icon(moodle_help_icon::make("questionoption", get_string("questionoption", "lesson"), "lesson"));
             echo '</p>';
         }
     ?>
@@ -90,12 +90,12 @@
                 echo "<tr><td><b>".get_string("jump", "lesson")." $iplus1:</b> \n";
                 if ($i) {
                     // answers 2, 3, 4... jumpto this page
-                    choose_from_menu($jump, "jumpto[$i]", 0, "");
+                    echo $OUTPUT->select(html_select::make($jump, "jumpto[$i]", 0, false));
                 } else {
                     // answer 1 jumpto next page
-                    choose_from_menu($jump, "jumpto[$i]", LESSON_NEXTPAGE, "");
+                    echo $OUTPUT->select(html_select::make($jump, "jumpto[$i]", LESSON_NEXTPAGE, false));
                 }
-                helpbutton("jumpto", get_string("jump", "lesson"), "lesson");
+                echo $OUTPUT->help_icon(moodle_help_icon::make("jumpto", get_string("jump", "lesson"), "lesson"));
                 if($lesson->custom) {
                     if ($i) {
                         echo get_string("score", "lesson")." $iplus1: <input type=\"text\" name=\"score[$i]\" value=\"0\" size=\"5\" />";
@@ -108,8 +108,8 @@
             break;
         case LESSON_ESSAY :
                 echo "<tr><td><b>".get_string("jump", "lesson").":</b> \n";
-                choose_from_menu($jump, "jumpto[0]", LESSON_NEXTPAGE, "");
-                helpbutton("jumpto", get_string("jump", "lesson"), "lesson");
+                echo $OUTPUT->select(html_select::make($jump, "jumpto[0]", LESSON_NEXTPAGE, false));
+                echo $OUTPUT->help_icon(moodle_help_icon::make("jumpto", get_string("jump", "lesson"), "lesson"));
                 if ($lesson->custom) {
                     echo get_string("score", "lesson").": <input type=\"text\" name=\"score[0]\" value=\"1\" size=\"5\" />";
                 }
@@ -136,16 +136,16 @@
                 }
                 if ($i == 2) {
                     echo "<tr><td><b>".get_string("correctanswerjump", "lesson").":</b> \n";
-                    choose_from_menu($jump, "jumpto[$i]", LESSON_NEXTPAGE, "");
-                    helpbutton("jumpto", get_string("jump", "lesson"), "lesson");
+                    echo $OUTPUT->select(html_select::make($jump, "jumpto[$i]", LESSON_NEXTPAGE, false));
+                    echo $OUTPUT->help_icon(moodle_help_icon::make("jumpto", get_string("jump", "lesson"), "lesson"));
                     if($lesson->custom) {
                         echo get_string("correctanswerscore", "lesson").": <input type=\"text\" name=\"score[$i]\" value=\"1\" size=\"5\" />";
                     }
                     echo "</td></tr>\n";
                 } elseif ($i == 3) {
                     echo "<tr><td><b>".get_string("wronganswerjump", "lesson").":</b> \n";
-                    choose_from_menu($jump, "jumpto[$i]", 0, "");
-                    helpbutton("jumpto", get_string("jump", "lesson"), "lesson");
+                    echo $OUTPUT->select(html_select::make($jump, "jumpto[$i]", 0, false));
+                    echo $OUTPUT->help_icon(moodle_help_icon::make("jumpto", get_string("jump", "lesson"), "lesson"));
                     if($lesson->custom) {
                         echo get_string("wronganswerscore", "lesson").": <input type=\"text\" name=\"score[$i]\" value=\"0\" size=\"5\" />";
                     }
@@ -168,12 +168,12 @@
                 echo "<tr><td><b>".get_string("jump", "lesson")." $iplus1:</b> \n";
                 if ($i) {
                     // answers 2, 3, 4... jumpto this page
-                    choose_from_menu($jump, "jumpto[$i]", 0, "");
+                    echo $OUTPUT->select(html_select::make($jump, "jumpto[$i]", 0, false));
                 } else {
                     // answer 1 jumpto next page
-                    choose_from_menu($jump, "jumpto[$i]", LESSON_NEXTPAGE, "");
+                    echo $OUTPUT->select(html_select::make($jump, "jumpto[$i]", LESSON_NEXTPAGE, false));
                 }
-                helpbutton("jumpto", get_string("jump", "lesson"), "lesson");
+                echo $OUTPUT->help_icon(moodle_help_icon::make("jumpto", get_string("jump", "lesson"), "lesson"));
                 if($lesson->custom) {
                     if ($i) {
                         echo get_string("score", "lesson")." $iplus1: <input type=\"text\" name=\"score[$i]\" value=\"0\" size=\"5\" />";

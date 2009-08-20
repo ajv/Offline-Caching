@@ -43,7 +43,7 @@
     if (empty($firstpage)) {
         // There are no pages; give teacher some options
         if (has_capability('mod/lesson:edit', $context)) {
-            print_simple_box( "<table cellpadding=\"5\" border=\"0\">\n<tr><th scope=\"col\">".get_string("whatdofirst", "lesson")."</th></tr><tr><td>".
+            echo $OUTPUT->box( "<table cellpadding=\"5\" border=\"0\">\n<tr><th scope=\"col\">".get_string("whatdofirst", "lesson")."</th></tr><tr><td>".
                 "<a href=\"import.php?id=$cm->id&amp;pageid=0\">".
                 get_string("importquestions", "lesson")."</a></td></tr><tr><td>".
                 "<a href=\"importppt.php?id=$cm->id&amp;pageid=0\">".
@@ -62,7 +62,7 @@
         
         switch ($mode) {
             case 'collapsed':
-                $table = new stdClass;
+                $table = new html_table();
                 $table->head = array(get_string('pagetitle', 'lesson'), get_string('qtype', 'lesson'), get_string('jumps', 'lesson'), get_string('actions', 'lesson'));
                 $table->align = array('left', 'left', 'left', 'center');
                 $table->wrap = array('', 'nowrap', '', 'nowrap');
@@ -98,7 +98,7 @@
                     $pageid = $page->nextpageid;
                 }
                 
-                print_table($table);
+                echo $OUTPUT->table($table);
                 break;
                 
             case 'single':

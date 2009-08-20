@@ -238,6 +238,7 @@ class explain_capability_table extends capability_table_base {
     }
 
     protected function add_row_cells($capability) {
+        global $OUTPUT;
         if ($this->hascap) {
             $result = $this->stryes;
             $tooltip = 'whydoesuserhavecap';
@@ -251,8 +252,12 @@ class explain_capability_table extends capability_table_base {
         $a->context = $this->contextname;
         echo '<td>' . $result . '</td>';
         echo '<td>';
-        link_to_popup_window($this->baseurl . $capability->name, 'hascapabilityexplanation',
-                $this->strexplanation, 600, 600, get_string($tooltip, 'role', $a));
+
+        $link = html_link::make($this->baseurl . $capability->name, $this->strexplanation);
+        $link->add_action(new popup_action('click', $link->url, 'hascapabilityexplanation', array('height' => 600, 'width' => 600)));
+        $link->title = get_string($tooltip, 'role', $a);
+        echo $OUTPUT->link($link);                    
+
         echo '</td>';
     }
 }
@@ -373,8 +378,9 @@ abstract class capability_table_with_risks extends capability_table_base {
     }
 
     protected function add_header_cells() {
+        global $OUTPUT;
         echo '<th colspan="' . count($this->displaypermissions) . '" scope="col">' .
-                get_string('permission', 'role') . ' ' . helpbutton('permissions', get_string('permissions', 'role'), '', true, false, '', true) . '</th>';
+                get_string('permission', 'role') . ' ' . $OUTPUT->help_icon(moodle_help_icon::make('permissions', get_string('permissions', 'role'))) . '</th>';
         echo '<th class="risk" colspan="' . count($this->allrisks) . '" scope="col">' . get_string('risks','role') . '</th>';
     }
 
@@ -416,9 +422,12 @@ abstract class capability_table_with_risks extends capability_table_base {
         global $OUTPUT;
         if (!isset($this->riskicons[$type])) {
             $iconurl = $OUTPUT->old_icon_url('i/' . str_replace('risk', 'risk_', $type));
-            $this->riskicons[$type] = link_to_popup_window($this->risksurl, 'docspopup', 
-                    '<img src="' . $iconurl . '" alt="' . get_string($type . 'short', 'admin') . '" />',
-                    0, 0, get_string($type, 'admin'), null, true);
+            
+            $link = html_link::make($this->risksurl, 'docspopup', '<img src="' . $iconurl . '" alt="' . get_string($type . 'short', 'admin') . '" />');
+            $link->add_action(new popup_action('click', $link->url, 'docspopup'));
+            $link->title = get_string($type, 'admin');
+            
+            $this->riskicons[$type] = $OUTPUT->link($link);
         }
         return $this->riskicons[$type];
     }
@@ -630,12 +639,13 @@ class define_role_table_advanced extends capability_table_with_risks {
     }
 
     protected function get_legacy_type_field($id) {
+        global $OUTPUT;
         $options = array();
         $options[''] = get_string('none');
         foreach($this->legacyroles as $type => $cap) {
             $options[$type] = get_string('legacy:'.$type, 'role');
         }
-        return choose_from_menu($options, 'legacytype', $this->role->legacytype, '', '', 0, true);
+        return $OUTPUT->select(html_select::make($options, 'legacytype', $this->role->legacytype, false));
     }
 
     protected function get_assignable_levels_control() {
@@ -656,6 +666,7 @@ class define_role_table_advanced extends capability_table_with_risks {
     }
 
     protected function print_field($name, $caption, $field) {
+        global $OUTPUT;
         // Attempt to generate HTML like formslib.
         echo '<div class="fitem">';
         echo '<div class="fitemtitle">';
@@ -674,7 +685,7 @@ class define_role_table_advanced extends capability_table_with_risks {
         }
         echo '<div class="felement' . $extraclass . '">';
         if (isset($this->errors[$name])) {
-            formerr($this->errors[$name]);
+            echo $OUTPUT->error_text($this->errors[$name]);
         }
         echo $field;
         echo '</div>';
@@ -1333,7 +1344,7 @@ abstract class role_allow_role_page {
      * one cell for each checkbox. 
      */
     public function get_table() {
-        $table = new stdClass;
+        $table = new html_table();
         $table->tablealign = 'center';
         $table->cellpadding = 5;
         $table->cellspacing = 0;

@@ -249,9 +249,9 @@
 function forum_print_big_search_form($course) {
     global $CFG, $DB, $words, $subject, $phrase, $user, $userid, $fullwords, $notwords, $datefrom, $dateto, $PAGE, $OUTPUT;
 
-    print_simple_box(get_string('searchforumintro', 'forum'), 'center', '', '', 'searchbox', 'intro');
+    echo $OUTPUT->box(get_string('searchforumintro', 'forum'), 'searchbox boxaligncenter', 'intro');
 
-    print_simple_box_start("center");
+    echo $OUTPUT->box_start('generalbox boxaligncenter');
 
     echo $PAGE->requires->js('mod/forum/forum.js')->asap();
 
@@ -333,7 +333,7 @@ function forum_print_big_search_form($course) {
     echo '<tr>';
     echo '<td class="c0"><label for="menuforumid">'.get_string('searchwhichforums', 'forum').'</label></td>';
     echo '<td class="c1">';
-    choose_from_menu(forum_menu_list($course), 'forumid', '', get_string('allforums', 'forum'), '');
+    echo $OUTPUT->select(html_select::make(forum_menu_list($course), 'forumid', '', get_string('allforums', 'forum')));
     echo '</td>';
     echo '</tr>';
 
@@ -358,7 +358,7 @@ function forum_print_big_search_form($course) {
     echo $PAGE->requires->js_function_call('lockoptions_timetoitems')->asap();
     echo $PAGE->requires->js_function_call('lockoptions_timefromitems')->asap();
 
-    print_simple_box_end();
+    echo $OUTPUT->box_end();
 }
 
 /**

@@ -156,7 +156,7 @@ if (empty($availablefilters)) {
     echo "\n<div>\n";
     echo '<input type="hidden" name="sesskey" value="' . sesskey() . '" />';
 
-    $table = new stdClass;
+    $table = new html_table();
     $table->head  = array(get_string('filter'), get_string('isactive', 'filters'));
     $table->align = array('left', 'left');
     if ($settingscol) {
@@ -179,8 +179,9 @@ if (empty($availablefilters)) {
         } else {
             $activechoices[TEXTFILTER_INHERIT] = $strdefaultoff;
         }
-        $row[] = choose_from_menu($activechoices, str_replace('/', '_', $filter),
-                $filterinfo->localstate, '', '', '', true);
+        $select = html_select::make($activechoices, str_replace('/', '_', $filter), $filterinfo->localstate, false);
+        $select->nothingvalue = '';
+        $row[] = $OUTPUT->select($select);
 
         // Settings link, if required
         if ($settingscol) {
@@ -194,7 +195,7 @@ if (empty($availablefilters)) {
         $table->data[] = $row;
     }
 
-    print_table($table);
+    echo $OUTPUT->table($table);
     echo '<div class="buttons">' . "\n";
     echo '<input type="submit" name="savechanges" value="' . get_string('savechanges') . '" />';
     echo "\n</div>\n";

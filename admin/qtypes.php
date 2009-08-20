@@ -122,9 +122,9 @@
             $qtypename = $QTYPES[$delete]->local_name();
             admin_externalpage_print_header();
             echo $OUTPUT->heading(get_string('deleteqtypeareyousure', 'admin', $qtypename));
-            notice_yesno(get_string('deleteqtypeareyousuremessage', 'admin', $qtypename),
-                    admin_url('qtypes.php?delete=' . $delete . '&amp;confirm=1&amp;sesskey=' . sesskey()),
-                    admin_url('qtypes.php'), NULL, NULL, 'post', 'get');
+            echo $OUTPUT->confirm(get_string('deleteqtypeareyousuremessage', 'admin', $qtypename),
+                    admin_url('qtypes.php?delete=' . $delete . '&confirm=1'),
+                    admin_url('qtypes.php'));
             echo $OUTPUT->footer();
             exit;
         }
@@ -135,7 +135,7 @@
 
         // Delete any configuration records.
         if (!unset_all_config_for_plugin('qtype_' . $delete)) {
-            notify(get_string('errordeletingconfig', 'admin', 'qtype_' . $delete));
+            echo $OUTPUT->notification(get_string('errordeletingconfig', 'admin', 'qtype_' . $delete));
         }
         unset_config($delete . '_disabled', 'question');
         unset_config($delete . '_sortorder', 'question');
@@ -149,7 +149,7 @@
         $a->qtype = $qtypename;
         $a->directory = $QTYPES[$delete]->plugin_dir();
         echo $OUTPUT->box(get_string('qtypedeletefiles', 'admin', $a), 'generalbox', 'notice');
-        print_continue(admin_url('qtypes.php'));
+        echo $OUTPUT->continue_button(admin_url('qtypes.php'));
         echo $OUTPUT->footer();
         exit;
     }

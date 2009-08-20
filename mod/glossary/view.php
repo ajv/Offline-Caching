@@ -441,7 +441,7 @@
                         echo '<th align="left">';
 
                         $user = $DB->get_record("user", array("id"=>$entry->userid));
-                        print_user_picture($user, $course->id, $user->picture);
+                        echo $OUTPUT->user_picture(moodle_user_picture::make($user, $course->id));
                         $pivottoshow = fullname($user, has_capability('moodle/site:viewfullnames', get_context_instance(CONTEXT_COURSE, $course->id)));
                     } else {
                         echo '<th >';
@@ -486,7 +486,7 @@
         }
     }
     if ( !$entriesshown ) {
-        print_simple_box('<div style="text-align:center">' . get_string("noentries","glossary") . '</div>',"center","95%");
+        echo $OUTPUT->box(get_string("noentries","glossary"), "generalbox boxaligncenter boxwidthwide");
     }
 
 

@@ -91,7 +91,7 @@
 
                         }
                     } else {
-                        notify('Had an unspecified error with the component installer, sorry.');
+                        echo $OUTPUT->notification('Had an unspecified error with the component installer, sorry.');
                     }
                 }
             }
@@ -104,8 +104,8 @@
 
             } else if (!$confirm && confirm_sesskey()) {
                 admin_externalpage_print_header();
-                notice_yesno(get_string('uninstallconfirm', 'admin', $uninstalllang),
-                             'langimport.php?mode='.DELETION_OF_SELECTED_LANG.'&amp;uninstalllang='.$uninstalllang.'&amp;confirm=1&amp;sesskey='.sesskey(),
+                echo $OUTPUT->confirm(get_string('uninstallconfirm', 'admin', $uninstalllang),
+                             'langimport.php?mode='.DELETION_OF_SELECTED_LANG.'&uninstalllang='.$uninstalllang.'&confirm=1',
                              'langimport.php');
                 echo $OUTPUT->footer();
                 die;
@@ -282,12 +282,12 @@
 
     if ($notice_ok) {
         $info = implode('<br />', $notice_ok);
-        notify($info, 'notifysuccess');
+        echo $OUTPUT->notification($info, 'notifysuccess');
     }
 
     if ($notice_error) {
         $info = implode('<br />', $notice_error);
-        notify($info, 'notifyproblem');
+        echo $OUTPUT->notification($info, 'notifyproblem');
     }
 
     if ($missingparents) {
@@ -306,7 +306,7 @@
                 }
             }
             $info = get_string('missinglangparent', 'admin', $a);
-            notify($info, 'notifyproblem');
+            echo $OUTPUT->notification($info, 'notifyproblem');
         }
     }
 

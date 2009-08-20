@@ -64,7 +64,12 @@ if (!isset($frm->acceptechecktypes)) {
 
 <tr valign="top">
     <td align="right">enrol_currency:</td>
-    <td><?php choose_from_menu(get_list_of_currencies(), "enrol_currency", $frm->enrol_currency, "","", "") ?><br />
+    <td><?php 
+        $select = html_select::make(get_list_of_currencies(), "enrol_currency", $frm->enrol_currency, false);
+        $select->nothingvalue = '';
+        echo $OUTPUT->select($select);
+        ?>
+        <br />
         <?php print_string("currency") ?>
     </td>
 </tr>
@@ -126,7 +131,7 @@ if (!isset($frm->acceptechecktypes)) {
 <tr valign="top">
     <td align="right">an_authcode:</td>
     <td><?php echo $OUTPUT->checkbox(html_select_option::make_checkbox('1', !empty($frm->an_authcode)), 'an_authcode');  ?>
-        <?php helpbutton('authcode', 'authcode', 'enrol/authorize'); ?><br />
+        <?php echo $OUTPUT->help_icon(moodle_help_icon::make('authcode', 'authcode', 'enrol/authorize')); ?><br />
         <?php print_string("adminauthcode", "enrol_authorize") ?></td>
 </tr>
 
@@ -172,20 +177,20 @@ if (!isset($frm->acceptechecktypes)) {
 </tr>
 
 <tr valign="top"><td colspan="2"><h4><?php print_string("adminauthorizeccapture", "enrol_authorize") ?>
-                                     <?php helpbutton('orderreview', 'orderreview', 'enrol/authorize'); ?>
+                                     <?php echo $OUTPUT->help_icon(moodle_help_icon::make('orderreview', 'orderreview', 'enrol/authorize')); ?>
                                  </h4></td></tr>
 
 <tr valign="top">
     <td align="right">an_review:</td>
     <td><?php echo $OUTPUT->checkbox(html_select_option::make_checkbox('1', !empty($frm->an_review)), 'an_review'); ?>
-        <?php helpbutton('review', get_string('adminhelpreviewtitle', 'enrol_authorize'), 'enrol/authorize'); ?><br />
+        <?php echo $OUTPUT->help_icon(moodle_help_icon::make('review', get_string('adminhelpreviewtitle', 'enrol_authorize'), 'enrol/authorize')); ?><br />
         <?php print_string("adminreview", "enrol_authorize") ?></td>
 </tr>
 
 <tr valign="top">
     <td align="right">an_capture_day:</td>
     <td><input type="text" name="an_capture_day" size="2" maxlength="2" value="<?php p($frm->an_capture_day) ?>" />
-        <?php helpbutton('captureday', get_string('adminhelpcapturetitle', 'enrol_authorize'), 'enrol/authorize'); ?><br />
+        <?php echo $OUTPUT->help_icon(moodle_help_icon::make('captureday', get_string('adminhelpcapturetitle', 'enrol_authorize'), 'enrol/authorize')); ?><br />
         <?php print_string("reviewday", "enrol_authorize", $frm->an_capture_day) ?></td>
 </tr>
 
@@ -209,7 +214,11 @@ if (!isset($frm->acceptechecktypes)) {
     <td><?php
     $sorts = array('ttl' => get_string('adminemailexpiredsortsum', 'enrol_authorize'),
                    'cnt' => get_string('adminemailexpiredsortcount', 'enrol_authorize'));
-    choose_from_menu($sorts, "an_sorttype", $frm->an_sorttype, "","", "") ?><br />
+    $select = html_select::make($sorts, "an_sorttype", $frm->an_sorttype, false);
+    $select->nothingvalue = '';
+    echo $OUTPUT->select($select);
+    ?>
+    <br />
     <?php print_string("adminemailexpiredsort", "enrol_authorize") ?></td>
 </tr>
 

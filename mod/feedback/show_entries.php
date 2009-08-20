@@ -112,7 +112,7 @@
             if($feedback->course == SITEID){
                 echo '<div class="mdl-align"><a href="'.htmlspecialchars('analysis_course.php?id=' . $id . '&courseid='.$courseid).'">';
                 echo get_string('course') .' '. get_string('analysis', 'feedback') . ' ('.get_string('completed_feedbacks', 'feedback').': '.intval($completedFeedbackCount).')</a>';
-                helpbutton('viewcompleted', '', 'feedback', true, true);
+                echo $OUTPUT->help_icon(moodle_help_icon::make('viewcompleted', '', 'feedback', true));
                 echo '</div>';
             }else {
                 echo '<div class="mdl-align"><a href="'.htmlspecialchars('analysis.php?id=' . $id . '&courseid='.$courseid).'">';
@@ -124,14 +124,13 @@
         //####### viewreports-start
         if($capabilities->viewreports) {
             //print the list of students
-            // print_simple_box_start('center', '80%');
             echo $OUTPUT->box_start('generalbox boxaligncenter boxwidthwide');
             echo isset($groupselect) ? $groupselect : '';
             echo '<div class="clearer"></div>';
             echo '<div class="mdl-align"><table><tr><td width="400">';
             if (!$students) {
                 if($courseid != SITEID){
-                    notify(get_string('noexistingstudents'));
+                    echo $OUTPUT->notification(get_string('noexistingstudents'));
                 }
             } else{
                 echo print_string('non_anonymous_entries', 'feedback');
@@ -146,7 +145,7 @@
                         <table width="100%">
                             <tr>
                                 <td align="left">
-                                    <?php echo print_user_picture($student->id, $course->id, $student->picture, false, true);?>
+                                    <?php echo $OUTPUT->user_picture(moodle_user_picture::make($student, $course->id));?>
                                 </td>
                                 <td align="left">
                                     <?php echo fullname($student);?>
@@ -156,7 +155,7 @@
                                     $show_button_link = $ME;
                                     $show_button_options = array('sesskey'=>sesskey(), 'userid'=>$student->id, 'do_show'=>'showoneentry', 'id'=>$id);
                                     $show_button_label = get_string('show_entries', 'feedback');
-                                    print_single_button($show_button_link, $show_button_options, $show_button_label, 'post');
+                                    echo $OUTPUT->button(html_form::make_button($show_button_link, $show_button_options, $show_button_label));
                                 ?>
                                 </td>
                     <?php
@@ -167,7 +166,7 @@
                                     $delete_button_link = 'delete_completed.php';
                                     $delete_button_options = array('sesskey'=>sesskey(), 'completedid'=>$feedbackcompleted->id, 'do_show'=>'showoneentry', 'id'=>$id);
                                     $delete_button_label = get_string('delete_entry', 'feedback');
-                                    print_single_button($delete_button_link, $delete_button_options, $delete_button_label, 'post');
+                                    echo $OUTPUT->button(html_form::make_button($delete_button_link, $delete_button_options, $delete_button_label));
                                 ?>
                                 </td>
                     <?php
@@ -191,14 +190,13 @@
                             $show_anon_button_link = 'show_entries_anonym.php';
                             $show_anon_button_options = array('sesskey'=>sesskey(), 'userid'=>0, 'do_show'=>'showoneentry', 'id'=>$id);
                             $show_anon_button_label = get_string('show_entries', 'feedback');
-                            print_single_button($show_anon_button_link, $show_anon_button_options, $show_anon_button_label, 'post');
+                            echo $OUTPUT->button(html_form::make_button($show_anon_button_link, $show_anon_button_options, $show_anon_button_label));
                         ?>
                     </td>
                 </tr>
             </table>
     <?php
             echo '</td></tr></table></div>';
-            // print_simple_box_end();
             echo $OUTPUT->box_end();
         }
 
@@ -217,7 +215,6 @@
             } else {
                 echo '<p align="center">'.get_string('not_completed_yet','feedback').'</p>';
             }
-            // print_simple_box_start("center", '50%');
             echo $OUTPUT->box_start('generalbox boxaligncenter boxwidthnormal');
             echo '<form>';
             echo '<input type="hidden" name="sesskey" value="'.sesskey().'" />';
@@ -249,10 +246,9 @@
             echo '</td></tr>';
             echo '</table>';
             echo '</form>';
-            // print_simple_box_end();
             echo $OUTPUT->box_end();
         }
-        print_continue(htmlspecialchars('show_entries.php?id='.$id.'&do_show=showentries'));
+        echo $OUTPUT->continue_button(htmlspecialchars('show_entries.php?id='.$id.'&do_show=showentries'));
     }
     /// Finish the page
     ///////////////////////////////////////////////////////////////////////////

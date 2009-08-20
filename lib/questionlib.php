@@ -104,7 +104,7 @@ define("QUESTION_NUMANS_ADD", 3);
 /**
  * The options used when popping up a question preview window in Javascript.
  */
-define('QUESTION_PREVIEW_POPUP_OPTIONS', 'scrollbars=yes,resizable=yes,width=700,height=540');
+define('QUESTION_PREVIEW_POPUP_OPTIONS', 'scrollbars=true&resizable=true&width=700&height=540');
 
 /**#@+
  * Option flags for ->optionflags
@@ -635,7 +635,7 @@ function delete_question($questionid) {
  * @return boolean
  */
 function question_delete_course($course, $feedback=true) {
-    global $DB;
+    global $DB, $OUTPUT;
 
     //To store feedback to be showed at the end of the process
     $feedbackdata   = array();
@@ -669,10 +669,10 @@ function question_delete_course($course, $feedback=true) {
         }
         //Inform about changes performed if feedback is enabled
         if ($feedback) {
-            $table = new stdClass;
+            $table = new html_table();
             $table->head = array(get_string('category','quiz'), get_string('action'));
             $table->data = $feedbackdata;
-            print_table($table);
+            echo $OUTPUT->table($table);
         }
     }
     return true;
@@ -690,7 +690,7 @@ function question_delete_course($course, $feedback=true) {
  * @return boolean
  */
 function question_delete_course_category($category, $newcategory, $feedback=true) {
-    global $DB;
+    global $DB, $OUTPUT;
 
     $context = get_context_instance(CONTEXT_COURSECAT, $category->id);
     if (empty($newcategory)) {
@@ -735,10 +735,10 @@ function question_delete_course_category($category, $newcategory, $feedback=true
 
         // Output feedback if requested.
         if ($feedback and $feedbackdata) {
-            $table = new stdClass;
+            $table = new html_table();
             $table->head = array(get_string('questioncategory','question'), get_string('action'));
             $table->data = $feedbackdata;
-            print_table($table);
+            echo $OUTPUT->table($table);
         }
 
     } else {
@@ -753,7 +753,7 @@ function question_delete_course_category($category, $newcategory, $feedback=true
             $a = new stdClass;
             $a->oldplace = print_context_name($context);
             $a->newplace = print_context_name($newcontext);
-            notify(get_string('movedquestionsandcategories', 'question', $a), 'notifysuccess');
+            echo $OUTPUT->notification(get_string('movedquestionsandcategories', 'question', $a), 'notifysuccess');
         }
     }
 
@@ -801,7 +801,7 @@ function question_save_from_deletion($questionids, $newcontextid, $oldplace, $ne
  * @return boolean
  */
 function question_delete_activity($cm, $feedback=true) {
-    global $DB;
+    global $DB, $OUTPUT;
 
     //To store feedback to be showed at the end of the process
     $feedbackdata   = array();
@@ -832,10 +832,10 @@ function question_delete_activity($cm, $feedback=true) {
         }
         //Inform about changes performed if feedback is enabled
         if ($feedback) {
-            $table = new stdClass;
+            $table = new html_table();
             $table->head = array(get_string('category','quiz'), get_string('action'));
             $table->data = $feedbackdata;
-            print_table($table);
+            echo $OUTPUT->table($table);
         }
     }
     return true;
@@ -1508,7 +1508,7 @@ function question_get_feedback_class($fraction) {
 * or record that changes need to be made for a later regrade.
 */
 function regrade_question_in_attempt($question, $attempt, $cmoptions, $verbose=false, $dryrun=false) {
-    global $DB;
+    global $DB, $OUTPUT;
 
     // load all states for this question in this attempt, ordered in sequence
     if ($states = $DB->get_records('question_states',
@@ -1558,7 +1558,7 @@ function regrade_question_in_attempt($question, $attempt, $cmoptions, $verbose=f
                     $error = question_process_comment($question, $replaystate, $attempt,
                             $replaystate->manualcomment, $states[$j]->grade);
                     if (is_string($error)) {
-                         notify($error);
+                         echo $OUTPUT->notification($error);
                     }
                 } else {
                     $replaystate->grade = $states[$j]->grade;
@@ -1570,7 +1570,7 @@ function regrade_question_in_attempt($question, $attempt, $cmoptions, $verbose=f
                     $a = new stdClass;
                     $a->qid = $question->id;
                     $a->stateid = $states[$j]->id;
-                    notify(get_string('errorduringregrade', 'question', $a));
+                    echo $OUTPUT->notification(get_string('errorduringregrade', 'question', $a));
                 }
                 // We need rounding here because grades in the DB get truncated
                 // e.g. 0.33333 != 0.3333333, but we want them to be equal here
@@ -2928,10 +2928,11 @@ function get_filesdir_from_context($context){
  * error..
  */
 function question_get_real_state($state){
+    global $OUTPUT;
     $realstate = clone($state);
     $matches = array();
     if (!preg_match('|^random([0-9]+)-(.*)|', $state->answer, $matches)){
-        notify(get_string('errorrandom', 'quiz_statistics'));
+        echo $OUTPUT->notification(get_string('errorrandom', 'quiz_statistics'));
         return false;
     } else {
         $realstate->question = $matches[1];

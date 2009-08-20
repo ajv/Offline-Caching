@@ -61,9 +61,10 @@ echo '<fieldset class="invisiblefieldset">';
 echo '<input type="hidden" name="id" value="'.$course->id.'" />';
 echo '<input type="hidden" name="sesskey" value="'.sesskey().'" />';
 echo '</fieldset>';
+$table = new html_table();
 $table->head  = array (get_string('fullname'),
-    get_string('content', 'notes') . helpbutton('writing', get_string('helpwriting'), 'moodle', true, false, '', true),
-    get_string('publishstate', 'notes') . helpbutton('status', get_string('publishstate', 'notes'), 'notes', true, false, '', true),
+    get_string('content', 'notes') . $OUTPUT->help_icon(moodle_help_icon::make('writing', get_string('helpwriting'))),
+    get_string('publishstate', 'notes') . $OUTPUT->help_icon(moodle_help_icon::make('status', get_string('publishstate', 'notes'), 'notes')),
     );
 $table->align = array ('left', 'center', 'center');
 $state_names = note_get_state_names();
@@ -81,14 +82,14 @@ foreach ($users as $k => $v) {
     if(!$user = $DB->get_record('user', array('id'=>$v))) {
         continue;
     }
-    $checkbox = choose_from_menu($state_names, 'states[' . $k . ']', empty($states[$k]) ? NOTES_STATE_PUBLIC : $states[$k], '', '', '0', true);
+    $checkbox = $OUTPUT->select(html_select::make($state_names, 'states[' . $k . ']', empty($states[$k]) ? NOTES_STATE_PUBLIC : $states[$k], false));
     $table->data[] = array(
         '<input type="hidden" name="userid['.$k.']" value="'.$v.'" />'. fullname($user, true),
         '<textarea name="contents['. $k . ']" rows="2" cols="40">' . strip_tags(@$contents[$k]) . '</textarea>',
         $checkbox
     );
 }
-print_table($table);
+echo $OUTPUT->table($table);
 echo '<div style="width:100%;text-align:center;"><input type="submit" value="' . get_string('savechanges'). '" /></div></form>';
 echo $OUTPUT->footer();
 ?>

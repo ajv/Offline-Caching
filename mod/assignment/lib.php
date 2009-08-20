@@ -206,9 +206,10 @@ class assignment_base {
      * The default implementation prints the assignment description in a box
      */
     function view_intro() {
-        print_simple_box_start('center', '', '', 0, 'generalbox', 'intro');
+        global $OUTPUT;
+        echo $OUTPUT->box_start('generalbox boxaligncenter', 'intro');
         echo format_module_intro('assignment', $this->assignment, $this->cm->id);
-        print_simple_box_end();
+        echo $OUTPUT->box_end();
     }
 
     /**
@@ -218,11 +219,12 @@ class assignment_base {
      * This will be suitable for most assignment types
      */
     function view_dates() {
+        global $OUTPUT;
         if (!$this->assignment->timeavailable && !$this->assignment->timedue) {
             return;
         }
 
-        print_simple_box_start('center', '', '', 0, 'generalbox', 'dates');
+        echo $OUTPUT->box_start('generalbox boxaligncenter', 'dates');
         echo '<table>';
         if ($this->assignment->timeavailable) {
             echo '<tr><td class="c0">'.get_string('availabledate','assignment').':</td>';
@@ -233,7 +235,7 @@ class assignment_base {
             echo '    <td class="c1">'.userdate($this->assignment->timedue).'</td></tr>';
         }
         echo '</table>';
-        print_simple_box_end();
+        echo $OUTPUT->box_end();
     }
 
 
@@ -300,7 +302,7 @@ class assignment_base {
         echo '<tr>';
         echo '<td class="left picture">';
         if ($teacher) {
-            print_user_picture($teacher, $this->course->id, $teacher->picture);
+            echo $OUTPUT->user_picture(moodle_user_picture::make($teacher, $this->course->id));
         }
         echo '</td>';
         echo '<td class="topic">';
@@ -674,7 +676,7 @@ class assignment_base {
 
                 }
 
-                $message = notify(get_string('changessaved'), 'notifysuccess', 'center', true);
+                $message = $OUTPUT->notification(get_string('changessaved'), 'notifysuccess');
 
                 $this->display_submissions($message);
                 break;
@@ -714,7 +716,7 @@ class assignment_base {
      * @param $submission object The submission whose data is to be updated on the main page
      */
     function update_main_listing($submission) {
-        global $SESSION, $CFG;
+        global $SESSION, $CFG, $OUTPUT;
 
         $output = '';
 
@@ -760,8 +762,17 @@ class assignment_base {
         if (empty($SESSION->flextable['mod-assignment-submissions']->collapse['status'])) {
             $output.= 'opener.document.getElementById("up'.$submission->userid.'").className="s1";';
             $buttontext = get_string('update');
-            $button = link_to_popup_window ('/mod/assignment/submissions.php?id='.$this->cm->id.'&amp;userid='.$submission->userid.'&amp;mode=single'.'&amp;offset='.(optional_param('offset', '', PARAM_INT)-1),
-                      'grade'.$submission->userid, $buttontext, 450, 700, $buttontext, 'none', true, 'button'.$submission->userid);
+            $url = new moodle_url('/mod/assignment/submissions.php', array(
+                    'id' => $this->cm->id,
+                    'userid' => $submission->userid,
+                    'mode' => 'single', 
+                    'offset' => (optional_param('offset', '', PARAM_INT)-1)));
+                        
+            $link = html_link::make($url, $buttontext);
+            $link->add_action(new popup_action('click', $link->url, 'grade'.$submission->userid, array('height' => 450, 'width' => 700)));
+            $link->title = $buttontext;
+            $button = $OUTPUT->link($link);                    
+            
             $output.= 'opener.document.getElementById("up'.$submission->userid.'").innerHTML="'.addslashes_js($button).'";';
         }
 
@@ -935,7 +946,7 @@ class assignment_base {
             global $USER;
             $teacher = $USER;
         }
-        print_user_picture($teacher, $this->course->id, $teacher->picture);
+        echo $OUTPUT->user_picture(moodle_user_picture::make($teacher, $this->course->id));
         echo '</td>';
         echo '<td class="content">';
         echo '<form id="submitform" action="submissions.php" method="post">';
@@ -956,7 +967,10 @@ class assignment_base {
             echo '</div>';
         }
         echo '<div class="grade"><label for="menugrade">'.get_string('grade').'</label> ';
-        choose_from_menu(make_grades_menu($this->assignment->grade), 'grade', $submission->grade, get_string('nograde'), '', -1, false, $disabled);
+        $select = html_select::make(make_grades_menu($this->assignment->grade), 'grade', $submission->grade, get_string('nograde'));
+        $select->nothingvalue = '-1';
+        $select->disabled = $disabled;
+        echo $OUTPUT->select($select);
         echo '</div>';
 
         echo '<div class="clearer"></div>';
@@ -971,7 +985,9 @@ class assignment_base {
                     $options[0] = get_string('nooutcome', 'grades');
                     echo $options[$outcome->grades[$submission->userid]->grade];
                 } else {
-                    choose_from_menu($options, 'outcome_'.$n.'['.$userid.']', $outcome->grades[$submission->userid]->grade, get_string('nooutcome', 'grades'), '', 0, false, false, 0, 'menuoutcome_'.$n);
+                    $select = html_select::make($options, 'outcome_'.$n.'['.$userid.']', $outcome->grades[$submission->userid]->grade, get_string('nooutcome', 'grades'));
+                    $select->id = 'menuoutcome_'.$n;
+                    echo $OUTPUT->select($select);
                 }
                 echo '</div>';
                 echo '<div class="clearer"></div>';
@@ -990,8 +1006,8 @@ class assignment_base {
                 echo '<input type="hidden" name="format" value="'.FORMAT_HTML.'" />';
             } else {
                 echo '<div class="format">';
-                choose_from_menu(format_text_menu(), "format", $submission->format, "");
-                helpbutton("textformat", get_string("helpformatting"));
+                echo $OUTPUT->select(html_select::make(format_text_menu(), "format", $submission->format, false));
+                echo $OUTPUT->help_icon(moodle_help_icon::make("textformat", get_string("helpformatting")));
                 echo '</div>';
             }
         }
@@ -1022,7 +1038,7 @@ class assignment_base {
         ///End of teacher info row, Start of student info row
         echo '<tr>';
         echo '<td class="picture user">';
-        print_user_picture($user, $this->course->id, $user->picture);
+        echo $OUTPUT->user_picture(moodle_user_picture::make($user, $this->course->id));
         echo '</td>';
         echo '<td class="topic">';
         echo '<div class="from">';
@@ -1241,7 +1257,7 @@ class assignment_base {
 
             /// Calculate user status
                 $auser->status = ($auser->timemarked > 0) && ($auser->timemarked >= $auser->timemodified);
-                $picture = print_user_picture($auser, $course->id, $auser->picture, false, true);
+                $picture = $OUTPUT->user_picture(moodle_user_picture::make($auser, $course->id));
 
                 if (empty($auser->submissionid)) {
                     $auser->grade = -1; //no submission yet
@@ -1264,9 +1280,10 @@ class assignment_base {
                         if ($final_grade->locked or $final_grade->overridden) {
                             $grade = '<div id="g'.$auser->id.'" class="'. $locked_overridden .'">'.$final_grade->formatted_grade.'</div>';
                         } else if ($quickgrade) {
-                            $menu = choose_from_menu(make_grades_menu($this->assignment->grade),
-                                                     'menu['.$auser->id.']', $auser->grade,
-                                                     get_string('nograde'),'',-1,true,false,$tabindex++);
+                            $select = html_select::make(make_grades_menu($this->assignment->grade), 'menu['.$auser->id.']', $auser->grade, get_string('nograde'));
+                            $select->nothingvalue = '-1';
+                            $select->tabindex = $tabindex++;
+                            $menu = $OUTPUT->select($select);
                             $grade = '<div id="g'.$auser->id.'">'. $menu .'</div>';
                         } else {
                             $grade = '<div id="g'.$auser->id.'">'.$this->display_grade($auser->grade).'</div>';
@@ -1277,9 +1294,10 @@ class assignment_base {
                         if ($final_grade->locked or $final_grade->overridden) {
                             $grade = '<div id="g'.$auser->id.'" class="'. $locked_overridden .'">'.$final_grade->formatted_grade.'</div>';
                         } else if ($quickgrade) {
-                            $menu = choose_from_menu(make_grades_menu($this->assignment->grade),
-                                                     'menu['.$auser->id.']', $auser->grade,
-                                                     get_string('nograde'),'',-1,true,false,$tabindex++);
+                            $select = html_select::make(make_grades_menu($this->assignment->grade), 'menu['.$auser->id.']', $auser->grade, get_string('nograde'));
+                            $select->nothingvalue = '-1';
+                            $select->tabindex = $tabindex++;
+                            $menu = $OUTPUT->select($select);
                             $grade = '<div id="g'.$auser->id.'">'.$menu.'</div>';
                         } else {
                             $grade = '<div id="g'.$auser->id.'">'.$this->display_grade($auser->grade).'</div>';
@@ -1304,9 +1322,10 @@ class assignment_base {
                     if ($final_grade->locked or $final_grade->overridden) {
                         $grade = '<div id="g'.$auser->id.'">'.$final_grade->formatted_grade . '</div>';
                     } else if ($quickgrade) {   // allow editing
-                        $menu = choose_from_menu(make_grades_menu($this->assignment->grade),
-                                                 'menu['.$auser->id.']', $auser->grade,
-                                                 get_string('nograde'),'',-1,true,false,$tabindex++);
+                        $select = html_select::make(make_grades_menu($this->assignment->grade), 'menu['.$auser->id.']', $auser->grade, get_string('nograde'));
+                        $select->nothingvalue = '-1';
+                        $select->tabindex = $tabindex++;
+                        $menu = $OUTPUT->select($select);
                         $grade = '<div id="g'.$auser->id.'">'.$menu.'</div>';
                     } else {
                         $grade = '<div id="g'.$auser->id.'">-</div>';
@@ -1333,9 +1352,12 @@ class assignment_base {
 
                 ///No more buttons, we use popups ;-).
                 $popup_url = '/mod/assignment/submissions.php?id='.$this->cm->id
-                           . '&amp;userid='.$auser->id.'&amp;mode=single'.'&amp;offset='.$offset++;
-                $button = link_to_popup_window ($popup_url, 'grade'.$auser->id, $buttontext, 600, 780,
-                                                $buttontext, 'none', true, 'button'.$auser->id);
+                           . '&userid='.$auser->id.'&mode=single'.'&offset='.$offset++;
+
+                $link = html_link::make($popup_url, $buttontext);
+                $link->add_action(new popup_action('click', $link->url, 'grade'.$auser->id, array('height' => 600, 'width' => 700)));
+                $link->title = $buttontext;
+                $button = $OUTPUT->link($link);                    
 
                 $status  = '<div id="up'.$auser->id.'" class="s'.$auser->status.'">'.$button.'</div>';
 
@@ -1354,8 +1376,11 @@ class assignment_base {
                             $outcomes .= ': <span id="outcome_'.$n.'_'.$auser->id.'">'.$options[$outcome->grades[$auser->id]->grade].'</span>';
                         } else {
                             $outcomes .= ' ';
-                            $outcomes .= choose_from_menu($options, 'outcome_'.$n.'['.$auser->id.']',
-                                        $outcome->grades[$auser->id]->grade, get_string('nooutcome', 'grades'), '', 0, true, false, 0, 'outcome_'.$n.'_'.$auser->id);
+                            $select = html_select::make($options, 'outcome_'.$n.'['.$auser->id.']', $outcome->grades[$auser->id]->grade, get_string('nooutcome', 'grades'));
+                            $select->nothingvalue = '0';
+                            $select->tabindex = $tabindex++;
+                            $select->id = 'outcome_'.$n.'_'.$auser->id;
+                            $outcomes .= $OUTPUT->select($select);
                         }
                         $outcomes .= '</div>';
                     }
@@ -1390,7 +1415,7 @@ class assignment_base {
             echo '<label for="mailinfo">'.get_string('enableemailnotification','assignment').'</label>';
             echo '<input type="hidden" name="mailinfo" value="0" />';
             echo '<input type="checkbox" id="mailinfo" name="mailinfo" value="1" '.$lastmailinfo.' />';
-            helpbutton('emailnotification', get_string('enableemailnotification', 'assignment'), 'assignment').'</p></div>';
+            echo $OUTPUT->help_icon(moodle_help_icon::make('emailnotification', get_string('enableemailnotification', 'assignment'), 'assignment')).'</p></div>';
             echo '</div>';
             echo '<div class="fastgbutton"><input type="submit" name="fastg" value="'.get_string('saveallfeedback', 'assignment').'" /></div>';
             echo '</div>';
@@ -1408,7 +1433,7 @@ class assignment_base {
         echo '</td>';
         echo '<td>';
         echo '<input type="text" id="perpage" name="perpage" size="1" value="'.$perpage.'" />';
-        helpbutton('pagesize', get_string('pagesize','assignment'), 'assignment');
+        echo $OUTPUT->help_icon(moodle_help_icon::make('pagesize', get_string('pagesize','assignment'), 'assignment'));
         echo '</td></tr>';
         echo '<tr><td>';
         echo '<label for="quickgrade">'.get_string('quickgrade','assignment').'</label>';
@@ -1416,7 +1441,7 @@ class assignment_base {
         echo '<td>';
         $checked = $quickgrade ? 'checked="checked"' : '';
         echo '<input type="checkbox" id="quickgrade" name="quickgrade" value="1" '.$checked.' />';
-        helpbutton('quickgrade', get_string('quickgrade', 'assignment'), 'assignment').'</p></div>';
+        echo $OUTPUT->help_icon(moodle_help_icon::make('quickgrade', get_string('quickgrade', 'assignment'), 'assignment')).'</p></div>';
         echo '</td></tr>';
         echo '<tr><td colspan="2">';
         echo '<input type="submit" value="'.get_string('savepreferences').'" />';
@@ -1872,6 +1897,7 @@ class assignment_base {
      * @param $user object
      */
     function user_complete($user) {
+        global $OUTPUT;
         if ($submission = $this->get_submission($user->id)) {
 
             $fs = get_file_storage();
@@ -1884,7 +1910,7 @@ class assignment_base {
                 }
             }
 
-            print_simple_box_start();
+            echo $OUTPUT->box_start();
             echo get_string("lastmodified").": ";
             echo userdate($submission->timemodified);
             echo $this->display_lateness($submission->timemodified);
@@ -1899,7 +1925,7 @@ class assignment_base {
                 $this->view_feedback($submission);
             }
 
-            print_simple_box_end();
+            echo $OUTPUT->box_end();
 
         } else {
             print_string("notsubmittedyet", "assignment");
@@ -2846,7 +2872,7 @@ function assignment_print_recent_mod_activity($activity, $courseid, $detail, $mo
     echo '<table border="0" cellpadding="3" cellspacing="0" class="assignment-recent">';
 
     echo "<tr><td class=\"userpicture\" valign=\"top\">";
-    print_user_picture($activity->user->userid, $courseid, $activity->user->picture);
+    echo $OUTPUT->user_picture(moodle_user_picture::make($activity->user, $courseid));
     echo "</td><td>";
 
     if ($detail) {

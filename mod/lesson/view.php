@@ -70,7 +70,7 @@
                 echo '<fieldset class="invisiblefieldset">';
                 echo '<input type="hidden" name="id" value="'. $cm->id .'" />' . "\n";
                 if (optional_param('userpassword', 0, PARAM_CLEAN)) {
-                    notify(get_string('loginfail', 'lesson'));
+                    echo $OUTPUT->notification(get_string('loginfail', 'lesson'));
                 }
 
                 echo get_string('passwordprotectedlesson', 'lesson', format_string($lesson->name))."<br /><br />\n".
@@ -684,10 +684,10 @@
 
                             if (isset($USER->modattempts[$lesson->id])) {
                                 $selected = htmlspecialchars(trim($answers[$useranswers[$t]]->response));  // gets the user's previous answer
-                                choose_from_menu ($responseoptions, "response[$answer->id]", $selected);
+                                echo $OUTPUT->select(html_select::make ($responseoptions, "response[$answer->id]", $selected));
                                 $t++;
                             } else {
-                                choose_from_menu ($responseoptions, "response[$answer->id]");
+                                echo $OUTPUT->select(html_select::make ($responseoptions, "response[$answer->id]"));
                             }
                             echo '</td></tr>';
                             if ($answer != end($answers)) {

@@ -184,8 +184,8 @@
                     // Print confirmation message.
                     $field = data_get_field_from_id($fid, $data);
 
-                    notice_yesno('<strong>'.$field->name().': '.$field->field->name.'</strong><br /><br />'. get_string('confirmdeletefield','data'),
-                                 'field.php?d='.$data->id.'&amp;mode=delete&amp;fid='.$fid.'&amp;sesskey='.sesskey().'&amp;confirm=1',
+                    echo $OUTPUT->confirm('<strong>'.$field->name().': '.$field->field->name.'</strong><br /><br />'. get_string('confirmdeletefield','data'),
+                                 'field.php?d='.$data->id.'&mode=delete&fid='.$fid.'&confirm=1',
                                  'field.php?d='.$data->id);
 
                     echo $OUTPUT->footer();
@@ -241,11 +241,12 @@
         data_print_header($course, $cm, $data,'fields');
 
         if (!$DB->record_exists('data_fields', array('dataid'=>$data->id))) {
-            notify(get_string('nofieldindatabase','data'));  // nothing in database
-            notify(get_string('pleaseaddsome','data', 'preset.php?id='.$cm->id));      // link to presets
+            echo $OUTPUT->notification(get_string('nofieldindatabase','data'));  // nothing in database
+            echo $OUTPUT->notification(get_string('pleaseaddsome','data', 'preset.php?id='.$cm->id));      // link to presets
 
         } else {    //else print quiz style list of fields
 
+            $table = new html_table();
             $table->head = array(get_string('fieldname','data'), get_string('type','data'), get_string('fielddescription', 'data'), get_string('action','data'));
             $table->align = array('left','left','left', 'center');
             $table->wrap = array(false,false,false,false);
@@ -273,7 +274,7 @@
                     );
                 }
             }
-            print_table($table);
+            echo $OUTPUT->table($table);
         }
 
 
@@ -281,7 +282,7 @@
         echo '<label for="fieldform_jump">'.get_string('newfield','data').'</label>';
         $popupurl = $CFG->wwwroot.'/mod/data/field.php?d='.$data->id.'&mode=new&sesskey='.  sesskey();
         echo $OUTPUT->select(html_select::make_popup_form($popupurl, 'newtype', $menufield, "fieldform"));
-        helpbutton('fields', get_string('addafield','data'), 'data');
+        echo $OUTPUT->help_icon(moodle_help_icon::make('fields', get_string('addafield','data'), 'data'));
         echo '</div>';
 
         echo '<div class="sortdefault">';
@@ -325,7 +326,7 @@
 
         $options = array(0 => get_string('ascending', 'data'),
                          1 => get_string('descending', 'data'));
-        choose_from_menu($options, 'defaultsortdir', $data->defaultsortdir, '');
+        echo $OUTPUT->select(html_select::make($options, 'defaultsortdir', $data->defaultsortdir, false));
         echo '<input type="submit" value="'.get_string('save', 'data').'" />';
         echo '</div>';
         echo '</form>';

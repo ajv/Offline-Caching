@@ -602,19 +602,17 @@ function quiz_print_question_list($quiz, $pageurl, $allowdelete = true,
                 echo "</div></div>";
 
                 if (!$reordertool && !$quiz->shufflequestions) {
-                    echo "<div class=\"addpage\">";
-                    print_single_button($pageurl->out(true),
+                    echo $OUTPUT->container_start('addpage');
+                    $form = html_form::make_button($pageurl->out(true),
                             array('cmid' => $quiz->cmid,
                                     'courseid' => $quiz->course,
                                     'addpage' => $count,
                                     'sesskey' => sesskey()),
                             get_string('addpagehere', 'quiz'),
-                             'get',
-                             '_self',
-                            false,
-                            '',
-                            $hasattempts);
-                    echo "</div>";
+                             'get');
+                    $form->button->disabled = $hasattempts;
+                    echo $OUTPUT->button($form);
+                    echo $OUTPUT->container_end();
                 }
                 $pageopen = false;
                 $count++;
@@ -640,7 +638,7 @@ function quiz_print_question_list($quiz, $pageurl, $allowdelete = true,
  * @param unknown_type $hasattempts
  */
 function quiz_print_pagecontrols($quiz, $pageurl, $page, $hasattempts) {
-    global $CFG;
+    global $CFG, $OUTPUT;
     static $randombuttoncount = 0;
     $randombuttoncount++;
     echo '<div class="pagecontrols">';
@@ -678,7 +676,7 @@ function quiz_print_pagecontrols($quiz, $pageurl, $page, $hasattempts) {
             </div>
         </form>
     </div>
-    <?php helpbutton('random', get_string('random', 'quiz'), 'quiz', true, false, ''); ?>
+    <?php echo $OUTPUT->help_icon(moodle_help_icon::make('random', get_string('random', 'quiz'), 'quiz')); ?>
     <?php
     echo "\n</div>";
 }
@@ -750,12 +748,12 @@ function quiz_print_singlequestion($question, $returnurl, $quiz) {
  * @param boolean $quiz_qbanktool Indicate to this function if the question bank window open
  */
 function quiz_print_randomquestion(&$question, &$pageurl, &$quiz, $quiz_qbanktool) {
-    global $DB, $QTYPES, $THEME;
+    global $DB, $QTYPES, $THEME, $OUTPUT;
     check_theme_arrows();
     echo '<div class="quiz_randomquestion">';
 
     if (!$category = $DB->get_record('question_categories', array('id' => $question->category))) {
-        notify('Random question category not found!');
+        echo $OUTPUT->notification('Random question category not found!');
         return;
     }
 
@@ -859,11 +857,11 @@ function quiz_print_singlequestion_reordertool($question, $returnurl, $quiz) {
  * @param object $quiz The quiz in the context of which the question is being displayed
  */
 function quiz_print_randomquestion_reordertool(&$question, &$pageurl, &$quiz) {
-    global $DB, $QTYPES;
+    global $DB, $QTYPES, $OUTPUT;
 
     // Load the category, and the number of available questions in it.
     if (!$category = $DB->get_record('question_categories', array('id' => $question->category))) {
-        notify('Random question category not found!');
+        echo $OUTPUT->notification('Random question category not found!');
         return;
     }
     $questioncount = count($QTYPES['random']->get_usable_questions_from_category(
@@ -1136,7 +1134,7 @@ class quiz_question_bank_view extends question_bank_view {
  *      the last value used +1.
  */
 function quiz_print_grading_form($quiz, $pageurl, $tabindex) {
-    global $USER;
+    global $USER, $OUTPUT;
     $strsave = get_string('save', 'quiz');
     echo "<form method=\"post\" action=\"edit.php\"><div>";
     echo '<fieldset class="invisiblefieldset" style="display: block;">';
@@ -1147,7 +1145,7 @@ function quiz_print_grading_form($quiz, $pageurl, $tabindex) {
     echo '<label for="inputmaxgrade">' . get_string('maximumgradex', '', $a) . "</label>";
     echo '<input type="hidden" name="savechanges" value="save" />';
     echo '<input type="submit" value="' . $strsave . '" />';
-    helpbutton('maxgrade', get_string('maximumgrade'), 'quiz');
+    echo $OUTPUT->help_icon(moodle_help_icon::make('maxgrade', get_string('maximumgrade'), 'quiz'));
     echo '</fieldset>';
     echo "</div></form>\n";
     return $tabindex + 1;

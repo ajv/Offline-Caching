@@ -559,7 +559,7 @@ function quiz_set_grade($newgrade, &$quiz) {
  */
 function quiz_save_best_grade($quiz, $userid = null, $attempts = array()) {
     global $DB;
-    global $USER;
+    global $USER, $OUTPUT;
 
     if (empty($userid)) {
         $userid = $USER->id;
@@ -568,7 +568,7 @@ function quiz_save_best_grade($quiz, $userid = null, $attempts = array()) {
     if (!$attempts){
         // Get all the attempts made by the user
         if (!$attempts = quiz_get_user_attempts($quiz->id, $userid)) {
-            notify('Could not find any user attempts');
+            echo $OUTPUT->notification('Could not find any user attempts');
             return false;
         }
     }
@@ -821,9 +821,16 @@ function quiz_question_preview_button($quiz, $question, $label = false) {
     }
 
     // Build the icon.
-    return link_to_popup_window('/question/preview.php?id=' . $question->id . '&amp;quizid=' . $quiz->id, 'questionpreview',
-            "<img src=\"" . $OUTPUT->old_icon_url('t/preview') . "\" class=\"iconsmall\" alt=\"$strpreviewquestion\" /> $strpreviewlabel",
-            0, 0, $strpreviewquestion, QUESTION_PREVIEW_POPUP_OPTIONS, true);
+    $image = new html_image();
+    $image->src = $OUTPUT->old_icon_url('t/preview');
+    $image->add_class('iconsmall');
+    $image->alt = $strpreviewquestion;
+
+    $link = html_link::make("/question/preview.php?id=$question->id&quizid=$quiz->id", $strpreviewlabel);
+    parse_str(QUESTION_PREVIEW_POPUP_OPTIONS, $options);
+    $link->add_action(new popup_action('click', $link->url, 'questionpreview', $options));
+    $link->title = $strpreviewquestion;
+    return $OUTPUT->link_to_popup($link, $image);
 }
 
 /**

@@ -28,7 +28,7 @@ class question_calculated_qtype extends default_questiontype {
 
     function get_question_options(&$question) {
         // First get the datasets and default options
-         global $CFG, $DB;
+         global $CFG, $DB, $OUTPUT;
         if (!$question->options->answers = $DB->get_records_sql(
                                 "SELECT a.*, c.tolerance, c.tolerancetype, c.correctanswerlength, c.correctanswerformat " .
                                 "FROM {question_answers} a, " .
@@ -36,7 +36,7 @@ class question_calculated_qtype extends default_questiontype {
                                 "WHERE a.question = ? " .
                                 "AND   a.id = c.answer ".
                                 "ORDER BY a.id ASC", array($question->id))) {
-            notify('Error: Missing question answer for calculated question ' . $question->id . '!');
+            echo $OUTPUT->notification('Error: Missing question answer for calculated question ' . $question->id . '!');
             return false;
         }
 
@@ -267,9 +267,10 @@ class question_calculated_qtype extends default_questiontype {
     }
 
     function restore_session_and_responses(&$question, &$state) {
+        global $OUTPUT;
         if (!preg_match('~^dataset([0-9]+)[^-]*-(.*)$~',
                 $state->responses[''], $regs)) {
-            notify ("Wrongly formatted raw response answer " .
+            echo $OUTPUT->notification("Wrongly formatted raw response answer " .
                    "{$state->responses['']}! Could not restore session for " .
                    " question #{$question->id}.");
             $state->options->datasetitem = 1;
@@ -779,6 +780,7 @@ class question_calculated_qtype extends default_questiontype {
     }
 
     function custom_generator_tools($datasetdef) {
+        global $OUTPUT;
         if (preg_match('~^(uniform|loguniform):([^:]*):([^:]*):([0-9]*)$~',
                 $datasetdef->options, $regs)) {
             $defid = "$datasetdef->type-$datasetdef->category-$datasetdef->name";
@@ -787,20 +789,22 @@ class question_calculated_qtype extends default_questiontype {
                                                 ? 'decimals'
                                                 : 'significantfigures'), 'quiz', $i);
             }
+            $select1 = html_select::make($lengthoptions, 'calclength[]', $regs[4], false);
+            $select1->nothingvalue = '';
+            $menu1 = $OUTPUT->select($select1);
+            
+            $select2 = html_select::make(array('uniform' => get_string('uniform', 'quiz'),
+                                             'loguniform' => get_string('loguniform', 'quiz')), 'calcdistribution[]', $regs[1], false);
+            $select2->nothingvalue = '';
+            $menu2 = $OUTPUT->select($select2);
             return '<input type="submit" onclick="'
                     . "getElementById('addform').regenerateddefid.value='$defid'; return true;"
                     .'" value="'. get_string('generatevalue', 'quiz') . '"/><br/>'
                     . '<input type="text" size="3" name="calcmin[]" '
                     . " value=\"$regs[2]\"/> &amp; <input name=\"calcmax[]\" "
                     . ' type="text" size="3" value="' . $regs[3] .'"/> '
-                    . choose_from_menu($lengthoptions, 'calclength[]',
-                                       $regs[4], // Selected
-                                       '', '', '', true) . '<br/>'
-                    . choose_from_menu(array('uniform' => get_string('uniform', 'quiz'),
-                                             'loguniform' => get_string('loguniform', 'quiz')),
-                                       'calcdistribution[]',
-                                       $regs[1], // Selected
-                                       '', '', '', true);
+                    . $menu1 . '<br/>'
+                    . $menu2;
         } else {
             return '';
         }
@@ -831,7 +835,7 @@ class question_calculated_qtype extends default_questiontype {
                                     . $form->calclength[$key+1];
                             break;
                         default:
-                            notify("Unexpected distribution ".$form->calcdistribution[$key+1]);
+                            echo $OUTPUT->notification("Unexpected distribution ".$form->calcdistribution[$key+1]);
                     }
                 }
             }
@@ -1138,22 +1142,21 @@ class question_calculated_qtype extends default_questiontype {
 
     function construct_dataset_menus($form, $mandatorydatasets,
                                      $optionaldatasets) {
+        global $OUTPUT;
         $datasetmenus = array();
         foreach ($mandatorydatasets as $datasetname) {
             if (!isset($datasetmenus[$datasetname])) {
                 list($options, $selected) =
                         $this->dataset_options($form, $datasetname);
                 unset($options['0']); // Mandatory...
-                $datasetmenus[$datasetname] = choose_from_menu ($options,
-                        'dataset[]', $selected, '', '', "0", true);
+                $datasetmenus[$datasetname] = $OUTPUT->select(html_select::make($options, 'dataset[]', $selected, false));
             }
         }
         foreach ($optionaldatasets as $datasetname) {
             if (!isset($datasetmenus[$datasetname])) {
                 list($options, $selected) =
                         $this->dataset_options($form, $datasetname);
-                $datasetmenus[$datasetname] = choose_from_menu ($options,
-                        'dataset[]', $selected, '', '', "0", true);
+                $datasetmenus[$datasetname] = $OUTPUT->select(html_select::make($options, 'dataset[]', $selected, false));
             }
         }
         return $datasetmenus;

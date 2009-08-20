@@ -22,7 +22,7 @@
 
     $contextid    = optional_param('contextid', 0, PARAM_INT);                // one of this or
     $courseid     = optional_param('id', 0, PARAM_INT);                       // this are required
-    
+
     $PAGE->set_url('user/index.php', compact('page', 'perpage', 'mode', 'accesssince', 'search', 'roleid', 'contextid', 'courseid'));
 
     if ($contextid) {
@@ -745,7 +745,8 @@
                     $row = new html_table_row();
                     $row->cells[0] = new html_table_cell();
                     $row->cells[0]->add_class('left side');
-                    $row->cells[0]->text = print_user_picture($user, $course->id, $user->picture, true, true);
+
+                    $row->cells[0]->text = $OUTPUT->user_picture(moodle_user_picture::make($user, $course->id));
                     $row->cells[1] = new html_table_cell();
                     $row->cells[1]->add_class('content');
 
@@ -786,11 +787,11 @@
                     }
 
                     $row->cells[1]->text .= $OUTPUT->container_end();
-                    
+
                     $row->cells[2] = new html_table_cell();
                     $row->cells[2]->add_class('links');
                     $row->cells[2]->text = '';
-                    
+
                     $links = array();
 
                     if ($CFG->bloglevel > 0) {
@@ -815,7 +816,7 @@
                     }
 
                     $links[] = html_link::make(new moodle_url($CFG->wwwroot.'/user/view.php?id='. $user->id .'&course='. $course->id), get_string('fullprofile') . '...');
-                    
+
                     foreach ($links as $link) {
                         $row->cells[2]->text .= $OUTPUT->link($link);
                     }
@@ -892,9 +893,9 @@
                     $profilelink = '<strong>'.fullname($user).'</strong>';
                 }
 
-                $data = array (
-                        print_user_picture($user, $course->id, $user->picture, false, true, $piclink),
-                        $profilelink . $hidden);
+                $userpic = moodle_user_picture::make($user, $course->id);
+                $userpic->link = $piclink;
+                $data = array ($OUTPUT->user_picture($userpic), $profilelink . $hidden);
 
                 if ($mode === MODE_BRIEF && !isset($hiddenfields['city'])) {
                     $data[] = $user->city;
@@ -969,7 +970,7 @@
             $displaylist['groupextendenrol.php'] = get_string('groupextendenrol');
         }
 
-        helpbutton("participantswithselectedusers", get_string("withselectedusers"));
+        echo $OUTPUT->help_icon(moodle_help_icon::make("participantswithselectedusers", get_string("withselectedusers")));
         $select = new html_select();
         $select->options = $displaylist;
         $select->name = "formaction";

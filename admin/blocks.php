@@ -57,9 +57,7 @@
         }
 
         if (!$confirm) {
-            notice_yesno(get_string('blockdeleteconfirm', '', $strblockname),
-                         'blocks.php?delete='.$block->id.'&amp;confirm=1&amp;sesskey='.sesskey(),
-                         'blocks.php');
+            echo $OUTPUT->confirm(get_string('blockdeleteconfirm', '', $strblockname), 'blocks.php?delete='.$block->id.'&confirm=1', 'blocks.php');
             echo $OUTPUT->footer();
             exit;
 
@@ -80,7 +78,7 @@
 
             // Delete block
             if (!$DB->delete_records('block', array('id'=>$block->id))) {
-                notify("Error occurred while deleting the $strblockname record from blocks table");
+                echo $OUTPUT->notification("Error occurred while deleting the $strblockname record from blocks table");
             }
 
             drop_plugin_tables($block->name, "$CFG->dirroot/blocks/$block->name/db/install.xml", false); // old obsoleted table names

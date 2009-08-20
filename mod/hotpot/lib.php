@@ -998,14 +998,14 @@ function hotpot_delete_instance($id) {
  * @param string $strtable
  */
 function hotpot_delete_and_notify($table, $select, $params, $strtable) {
-    global $DB;
+    global $DB, $OUTPUT;
 
     $count = max(0, $DB->count_records_select($table, $select, $params));
     if ($count) {
         $DB->delete_records_select($table, $select, $params);
         $count -= max(0, $DB->count_records_select($table, $select, $params));
         if ($count) {
-            notify(get_string('deleted')." $count x $strtable");
+            echo $OUTPUT->notification(get_string('deleted')." $count x $strtable");
         }
     }
 }
@@ -1262,7 +1262,7 @@ function hotpot_print_recent_mod_activity($activity, $course, $detail=false) {
     print '<table border="0" cellpadding="3" cellspacing="0">';
 
     print '<tr><td'.$bgcolor.' class="forumpostpicture" width="35" valign="top">';
-    print_user_picture($activity->user->userid, $course, $activity->user->picture);
+    echo $OUTPUT->user_picture(moodle_user_picture::make($activity->user, $course));
     print '</td><td width="100%"><font size="2">';
 
     if ($detail) {

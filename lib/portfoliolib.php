@@ -737,6 +737,7 @@ function portfolio_instance_sanity_check($instances=null) {
 *
 */
 function portfolio_report_insane($insane, $instances=false, $return=false) {
+    global $OUTPUT;
     if (empty($insane)) {
         return;
     }
@@ -751,8 +752,8 @@ function portfolio_report_insane($insane, $instances=false, $return=false) {
         $headerstr = get_string('somepluginsdisabled', 'portfolio');
     }
 
-    $output = notify($headerstr, 'notifyproblem', 'center', true);
-    $table = new StdClass;
+    $output = $OUTPUT->notification($headerstr, 'notifyproblem');
+    $table = new html_table();
     $table->head = array($pluginstr, '');
     $table->data = array();
     foreach ($insane as $plugin => $reason) {
@@ -765,7 +766,7 @@ function portfolio_report_insane($insane, $instances=false, $return=false) {
         }
         $table->data[] = array($name, get_string($reason, 'portfolio_' . $plugin));
     }
-    $output .= print_table($table, true);
+    $output .= $OUTPUT->table($table);
     $output .= '<br /><br /><br />';
 
     if ($return) {

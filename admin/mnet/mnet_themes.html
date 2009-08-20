@@ -47,7 +47,7 @@ print_tabs(array($tabs), 'mnetthemes');
     $options['choose'] = $unlikely_name;// Something unlikely to ever be a theme name... initially $unlikely_name = 'ZoqZoqZ';
     $options['sesskey'] = $sesskey;
     $options['hostid'] = $mnet_peer->id;
-    print_single_button('mnet_themes.php', $options, $strchoose);
+    echo $OUTPUT->button(html_form::make_button('mnet_themes.php', $options, $strchoose));
     echo '</td>';
     echo "</tr>";
 
@@ -67,10 +67,14 @@ print_tabs(array($tabs), 'mnetthemes');
 
         if (file_exists($CFG->themedir.'/'.$theme.'/README.html')) {
             $readme =  '<li>'.
-            link_to_popup_window($CFG->themewww .'/'. $theme .'/README.html', $theme, $strinfo, 400, 500, '', 'none', true).'</li>';
+            $link = html_link::make($CFG->themewww .'/'. $theme .'/README.html', $strinfo);
+            $link->add_action(new popup_action('click', $link->url, $theme, array('height' => 400, 'width' => 500)));
+            echo $OUTPUT->link($link);                    
         } else if (file_exists($CFG->themedir.'/'.$theme.'/README.txt')) {
             $readme =  '<li>'.
-            link_to_popup_window($CFG->themewww .'/'. $theme .'/README.txt', $theme, $strinfo, 400, 500, '', 'none', true).'</li>';
+            $link = html_link::make($CFG->themewww .'/'. $theme .'/README.txt', $strinfo);
+            $link->add_action(new popup_action('click', $link->url, $theme, array('height' => 400, 'width' => 500)));
+            echo $OUTPUT->link($link);                    
         }
         if (file_exists("$theme/screenshot.png")) {
             $screenshotpath = "$theme/screenshot.png";
@@ -116,7 +120,7 @@ print_tabs(array($tabs), 'mnetthemes');
         $options['choose'] = $theme;
         $options['sesskey'] = $sesskey;
         $options['hostid'] = $mnet_peer->id;
-        print_single_button('mnet_themes.php', $options, $strchoose);
+        echo $OUTPUT->button(html_form::make_button('mnet_themes.php', $options, $strchoose));
         echo '</td>';
         echo "</tr>";
     }

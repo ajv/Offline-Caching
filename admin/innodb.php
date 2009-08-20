@@ -20,7 +20,7 @@
 
     if (data_submitted() and $confirm and confirm_sesskey()) {
 
-        notify('Please be patient and wait for this to complete...', 'notifysuccess');
+        echo $OUTPUT->notification('Please be patient and wait for this to complete...', 'notifysuccess');
 
         if ($tables = $DB->get_tables()) {
             $DB->set_debug(true);
@@ -30,14 +30,15 @@
             }
             $DB->set_debug(false);
         }
-        notify('... done.', 'notifysuccess');
-        print_continue('index.php');
+        echo $OUTPUT->notification('... done.', 'notifysuccess');
+        echo $OUTPUT->continue_button('index.php');
         echo $OUTPUT->footer();
 
     } else {
         $optionsyes = array('confirm'=>'1', 'sesskey'=>sesskey());
-        notice_yesno('Are you sure you want convert all your tables to the InnoDB format?',
-                     'innodb.php', 'index.php', $optionsyes, NULL, 'post', 'get');
+        $formcontinue = html_form::make_button('innodb.php', $optionsyes, get_string('yes'));
+        $formcancel = html_form::make_button('index.php', null, get_string('no'), 'get');
+        echo $OUTPUT->confirm('Are you sure you want convert all your tables to the InnoDB format?', $formcontinue, $formcancel);
         echo $OUTPUT->footer();
     }
 

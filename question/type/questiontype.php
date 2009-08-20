@@ -366,8 +366,8 @@ class default_questiontype {
         }
 
         if (!empty($result->noticeyesno)) {
-            notice_yesno($result->noticeyesno, "question.php?id=$question->id&amp;courseid={$course->id}",
-                "edit.php?courseid={$course->id}");
+            echo $OUTPUT->confirm($result->noticeyesno, "question.php?id=$question->id&courseid={$course->id}",
+                    "edit.php?courseid={$course->id}");
             echo $OUTPUT->footer();
             exit;
         }
@@ -438,7 +438,7 @@ class default_questiontype {
     *                         specific information (it is passed by reference).
     */
     function get_question_options(&$question) {
-        global $CFG, $DB;
+        global $CFG, $DB, $OUTPUT;
 
         if (!isset($question->options)) {
             $question->options = new object;
@@ -453,7 +453,7 @@ class default_questiontype {
                     $question->options->$field = $extra_data->$field;
                 }
             } else {
-                notify("Failed to load question options from the table $question_extension_table for questionid " .
+                echo $OUTPUT->notification("Failed to load question options from the table $question_extension_table for questionid " .
                         $question->id);
                 return false;
             }
@@ -467,7 +467,7 @@ class default_questiontype {
                     FROM {question_answers} qa, {$answer_extension_table} qax
                     WHERE qa.questionid = ? AND qax.answerid = qa.id", array($question->id));
             if (!$question->options->answers) {
-                notify("Failed to load question answers from the table $answer_extension_table for questionid " .
+                echo $OUTPUT->notification("Failed to load question answers from the table $answer_extension_table for questionid " .
                         $question->id);
                 return false;
             }
@@ -910,7 +910,7 @@ class default_questiontype {
         provided the member functions it calls are overridden where required.
         The layout is determined by the template question.html */
 
-        global $CFG;
+        global $CFG, $OUTPUT;
         $isgraded = question_state_is_graded($state->last_graded);
 
         if (isset($question->randomquestionid)) {
@@ -945,10 +945,11 @@ class default_questiontype {
 
         if (!empty($options->questioncommentlink)) {
             $strcomment = get_string('commentorgrade', 'quiz');
-            $commentlink = link_to_popup_window($options->questioncommentlink .
-                    '?attempt=' . $state->attempt . '&amp;question=' . $actualquestionid,
-                    'commentquestion', $strcomment, 480, 750, $strcomment, 'none', true);
-            $commentlink = '<div class="commentlink">'. $commentlink .'</div>';
+
+            $link = html_link::make("$options->questioncommentlink?attempt=$state->attempt&question=$actualquestionid", $strcomment);
+            $link->add_action(new popup_action('click', $link->url, 'commentquestion', array('height' => 480, 'width' => 750)));
+            $link->title = $strcomment;
+            $commentlink = $OUTPUT->container($OUTPUT->link($link), 'commentlink');
         }
 
         $history = $this->history($question, $state, $number, $cmoptions, $options);
@@ -1055,8 +1056,10 @@ class default_questiontype {
                     '" title="' . $stredit . '">' . $linktext . '</a>';
         } else {
         /// We have to edit in a pop-up.
-            return link_to_popup_window($linkurl . '&amp;inpopup=1', 'editquestion',
-                    $linktext, false, false, $stredit, '', true);
+            $link = html_link::make($linkurl . '&inpopup=1', $linktext);
+            $link->add_action(new popup_action('click', $link->url, 'editquestion'));
+            $link->title = $stredit;
+            return $OUTPUT->link($link);                    
         }
     }
 
@@ -1066,7 +1069,7 @@ class default_questiontype {
      * Used by print_question()
      */
     function history($question, $state, $number, $cmoptions, $options) {
-        global $DB;
+        global $DB, $OUTPUT;
         $history = '';
         if(isset($options->history) and $options->history) {
             if ($options->history == 'all') {
@@ -1078,7 +1081,7 @@ class default_questiontype {
             }
             if (count($states) > 1) {
                 $strreviewquestion = get_string('reviewresponse', 'quiz');
-                $table = new stdClass;
+                $table = new html_table();
                 $table->width = '100%';
                 if ($options->scores) {
                     $table->head  = array (
@@ -1108,10 +1111,11 @@ class default_questiontype {
                         $link = '<b>'.$st->seq_number.'</b>';
                     } else {
                         if(isset($options->questionreviewlink)) {
-                            $link = link_to_popup_window($options->questionreviewlink .
-                                    '&amp;question=' . $question->id . '&amp;state=' . $st->id,
-                                    'reviewquestion', $st->seq_number, 450, 650, $strreviewquestion,
-                                    'none', true);
+                            $link = html_link::make("$options->questionreviewlink?state=$st->id&question=$question->id", $st->seq_number);
+                            $link->add_action(new popup_action('click', $link->url, 'reviewquestion', array('height' => 450, 'width' => 650)));
+                            $link->title = $strreviewquestion;
+                            $link = $OUTPUT->link($link);
+                            
                         } else {
                             $link = $st->seq_number;
                         }
@@ -1134,7 +1138,7 @@ class default_questiontype {
                                                 );
                     }
                 }
-                $history = print_table($table, true);
+                $history = $OUTPUT->table($table);
             }
         }
         return $history;
@@ -1244,8 +1248,8 @@ class default_questiontype {
         /* This default implementation prints an error and must be overridden
         by all question type implementations, unless the default implementation
         of print_question has been overridden. */
-
-        notify('Error: Question formulation and input controls has not'
+        global $OUTPUT;
+        echo $OUTPUT->notification('Error: Question formulation and input controls has not'
                .'  been implemented for question type '.$this->name());
     }
 

@@ -21,6 +21,7 @@
         print_error('nostatstodisplay', '', $CFG->wwwroot.'/course/view.php?id='.$course->id);
     }
 
+    $table = new html_table();
     $table->width = 'auto';
 
     if ($mode == STATS_MODE_DETAILED) {
@@ -44,21 +45,21 @@
         }
 
         $table->align = array('left','left','left','left','left','left','left','left');
-        $table->data[] = array(get_string('course'),choose_from_menu($courseoptions,'course',$course->id,'','','',true),
-                               get_string('users'),choose_from_menu($users,'userid',$userid,'','','',true),
-                               get_string('statsreporttype'),choose_from_menu($reportoptions,'report',($report == 5) ? $report.$roleid : $report,'','','',true),
-                               get_string('statstimeperiod'),choose_from_menu($timeoptions,'time',$time,'','','',true),
+        $table->data[] = array(get_string('course'),$OUTPUT->select(html_select::make($courseoptions,'course',$course->id,false)),
+                               get_string('users'),$OUTPUT->select(html_select::make($users,'userid',$userid,false)),
+                               get_string('statsreporttype'),$OUTPUT->select(html_select::make($reportoptions,'report',($report == 5) ? $report.$roleid : $report,false)),
+                               get_string('statstimeperiod'),$OUTPUT->select(html_select::make($timeoptions,'time',$time,false)),
                                '<input type="submit" value="'.get_string('view').'" />') ;
     } else if ($mode == STATS_MODE_RANKED) {
         $table->align = array('left','left','left','left','left','left');
-        $table->data[] = array(get_string('statsreporttype'),choose_from_menu($reportoptions,'report',($report == 5) ? $report.$roleid : $report,'','','',true),
-                               get_string('statstimeperiod'),choose_from_menu($timeoptions,'time',$time,'','','',true),
+        $table->data[] = array(get_string('statsreporttype'),$OUTPUT->select(html_select::make($reportoptions,'report',($report == 5) ? $report.$roleid : $report,false)),
+                               get_string('statstimeperiod'),$OUTPUT->select(html_select::make($timeoptions,'time',$time,false)),
                                '<input type="submit" value="'.get_string('view').'" />') ;
     } else if ($mode == STATS_MODE_GENERAL) {
         $table->align = array('left','left','left','left','left','left','left');
-        $table->data[] = array(get_string('course'),choose_from_menu($courseoptions,'course',$course->id,'','','',true),
-                               get_string('statsreporttype'),choose_from_menu($reportoptions,'report',($report == 5) ? $report.$roleid : $report,'','','',true),
-                               get_string('statstimeperiod'),choose_from_menu($timeoptions,'time',$time,'','','',true),
+        $table->data[] = array(get_string('course'),$OUTPUT->select(html_select::make($courseoptions,'course',$course->id,false)),
+                               get_string('statsreporttype'),$OUTPUT->select(html_select::make($reportoptions,'report',($report == 5) ? $report.$roleid : $report,false)),
+                               get_string('statstimeperiod'),$OUTPUT->select(html_select::make($timeoptions,'time',$time,false)),
                                '<input type="submit" value="'.get_string('view').'" />') ;
     }
 
@@ -66,7 +67,7 @@
         .'<div>'."\n"
         .'<input type="hidden" name="mode" value="'.$mode.'" />'."\n";
 
-    print_table($table);
+    echo $OUTPUT->table($table);
 
     echo '</div>';
     echo '</form>';
@@ -100,7 +101,7 @@
         $stats = $DB->get_records_sql($sql, $params);
 
         if (empty($stats)) {
-            notify(get_string('statsnodata'));
+            echo $OUTPUT->notification(get_string('statsnodata'));
 
         } else {
 
@@ -121,7 +122,7 @@
                 }
             }
 
-            $table = new StdClass;
+            $table = new html_table();
             $table->align = array('left','center','center','center');
             $param->table = str_replace('user_','',$param->table);
             switch ($param->table) {
@@ -220,7 +221,7 @@
                 $lastrecord[] = $lastlink;
                 $table->data[] = $lastrecord;
             }
-            print_table($table);
+            echo $OUTPUT->table($table);
         }
     }
 

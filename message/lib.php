@@ -19,7 +19,7 @@ if (!isset($CFG->message_offline_time)) {
 
 
 function message_print_contacts() {
-    global $USER, $CFG, $DB, $PAGE;
+    global $USER, $CFG, $DB, $PAGE, $OUTPUT;
 
     $timetoshowusers = 300; //Seconds default
     if (isset($CFG->block_online_users_timetosee)) {
@@ -152,13 +152,13 @@ function message_print_contacts() {
     $PAGE->requires->js('message/message.js');
     $PAGE->requires->js_function_call('refresh_page', Array(60*1000, $PAGE->url->out()));
 
-    echo '<div class="messagejsautorefresh note center">';
+    echo $OUTPUT->container_start('messagejsautorefresh note center');
     echo get_string('pagerefreshes', 'message', $CFG->message_contacts_refresh);
-    echo '</div>';
+    echo $OUTPUT->container_end();
 
-    echo '<div class="messagejsmanualrefresh aligncenter">';
-    echo print_single_button('index.php', false, get_string('refresh'));
-    echo '</div>';
+    echo $OUTPUT->container_start('messagejsmanualrefresh aligncenter');
+    echo $OUTPUT->button(html_form::make_button('index.php', false, get_string('refresh')));
+    echo $OUTPUT->container_end();
 }
 
 
@@ -204,7 +204,7 @@ function message_print_search() {
 }
 
 function message_print_settings() {
-    global $USER;
+    global $USER, $OUTPUT;
 
     if ($frm = data_submitted() and confirm_sesskey()) {
 
@@ -232,11 +232,10 @@ function message_print_settings() {
     $cbemailmessages = (get_user_preferences('message_emailmessages', 1) == '1') ? 'checked="checked"' : '';
     $txemailaddress = get_user_preferences('message_emailaddress', $USER->email);
     $txemailtimenosee = get_user_preferences('message_emailtimenosee', 10);
-    $format_select = choose_from_menu( array(FORMAT_PLAIN => get_string('formatplain'),
+    $format_select = $OUTPUT->select(html_select::make( array(FORMAT_PLAIN => get_string('formatplain'),
                                              FORMAT_HTML  => get_string('formathtml')),
                                        'emailformat',
-                                       get_user_preferences('message_emailformat', FORMAT_PLAIN),
-                                       false, '', '0', true );
+                                       get_user_preferences('message_emailformat', FORMAT_PLAIN)));
 
     include('settings.html');
 }
@@ -294,7 +293,7 @@ function message_get_contact($contactid) {
 
 
 function message_print_search_results($frm) {
-    global $USER, $CFG, $DB;
+    global $USER, $CFG, $DB, $OUTPUT;
 
     echo '<div class="mdl-align">';
 
@@ -333,12 +332,25 @@ function message_print_search_results($frm) {
                 $strhistory = message_history_link($user->id, 0, true, '', '', 'icon');
 
                 echo '<tr><td class="pix">';
-                print_user_picture($user, SITEID, $user->picture, 20, false, true, 'userwindow');
+                $userpic = moodle_user_picture::make($user, SITEID);
+                $userpic->size = 20;
+                $userpic->link = true;
+                echo $OUTPUT->user_picture($userpic);
                 echo '</td>';
                 echo '<td class="contact">';
-                link_to_popup_window("/message/discussion.php?id=$user->id", "message_$user->id", fullname($user),
-                                     500, 500, get_string('sendmessageto', 'message', fullname($user)),
-                                     'menubar=0,location=0,status,scrollbars,resizable,width=500,height=500');
+                $popupoptions = array(
+                        'height' => 500,
+                        'width' => 500,
+                        'menubar' => false,
+                        'location' => false,
+                        'status' => true,
+                        'scrollbars' => true,
+                        'resizable' => true);
+
+                $link = html_link::make("/message/discussion.php?id=$user->id", fullname($user));
+                $link->add_action(new popup_action('click', $link->url, "message_$user->id", $popupoptions));
+                $link->title = get_string('sendmessageto', 'message', fullname($user));
+                echo $OUTPUT->link($link);
 
                 echo '</td>';
 
@@ -350,7 +362,7 @@ function message_print_search_results($frm) {
             echo '</table>';
 
         } else {
-            notify(get_string('nosearchresults', 'message'));
+            echo $OUTPUT->notification(get_string('nosearchresults', 'message'));
         }
 
 
@@ -477,28 +489,32 @@ function message_print_search_results($frm) {
             echo '</table>';
 
         } else {
-            notify(get_string('nosearchresults', 'message'));
+            echo $OUTPUT->notification(get_string('nosearchresults', 'message'));
         }
 
 
     /// what the ????, probably an empty search string, duh!
     } else {
-        notify(get_string('emptysearchstring', 'message'));
+        echo $OUTPUT->notification(get_string('emptysearchstring', 'message'));
     }
 
     echo '<br />';
-    print_single_button('index.php', array( 'tab' => 'search'), get_string('newsearch', 'message') );
+    echo $OUTPUT->button(html_form::make_button('index.php', array( 'tab' => 'search'), get_string('newsearch', 'message')));
 
     echo '</div>';
 }
 
 
 function message_print_user ($user=false, $iscontact=false, $isblocked=false) {
-    global $USER;
+    global $USER, $OUTPUT;
+    $userpic = moodle_user_picture::make($USER, SITEID);
+    $userpic->size = 20;
+    $userpic->link = true;
+    
     if ($user === false) {
-        print_user_picture($USER, SITEID, $USER->picture, 20, false, true, 'userwindow');
+        echo $OUTPUT->user_picture($userpic);
     } else {
-        print_user_picture($user, SITEID, $user->picture, 20, false, true, 'userwindow');
+        echo $OUTPUT->user_picture($userpic);
         echo '&nbsp;';
         if ($iscontact) {
             message_contact_link($user->id, 'remove');
@@ -513,9 +529,20 @@ function message_print_user ($user=false, $iscontact=false, $isblocked=false) {
         }
         echo '<br />';
 
-        link_to_popup_window("/message/discussion.php?id=$user->id", "message_$user->id",
-                             fullname($user), 400, 400, get_string('sendmessageto', 'message', fullname($user)),
-                             'menubar=0,location=0,status,scrollbars,resizable,width=500,height=500');
+        $popupoptions = array(
+                'height' => 500,
+                'width' => 500,
+                'menubar' => false,
+                'location' => false,
+                'status' => true,
+                'scrollbars' => true,
+                'resizable' => true);
+
+        $link = html_link::make("/message/discussion.php?id=$user->id", fullname($user));
+        $link->add_action(new popup_action('click', $link->url, "message_$user->id", $popupoptions));
+        $link->title = get_string('sendmessageto', 'message', fullname($user));
+        echo $OUTPUT->link($link);
+
     }
 }
 
@@ -597,9 +624,19 @@ function message_history_link($userid1, $userid2=0, $returnstr=false, $keywords=
         $fulllink = $strmessagehistory;
     }
 
-    $str = link_to_popup_window("/message/history.php?user1=$userid1&amp;user2=$userid2$keywords$position",
-                    "message_history_$userid1", $fulllink, 500, 500, $strmessagehistory,
-                    'menubar=0,location=0,status,scrollbars,resizable,width=500,height=500', true);
+    $popupoptions = array(
+            'height' => 500,
+            'width' => 500,
+            'menubar' => false,
+            'location' => false,
+            'status' => true,
+            'scrollbars' => true,
+            'resizable' => true);
+
+    $link = html_link::make("/message/history.php?user1=$userid1&user2=$userid2$keywords$position", $fulllink);
+    $link->add_action(new popup_action('click', $link->url, "message_history_$userid1", $popupoptions));
+    $link->title = $strmessagehistory;
+    echo $OUTPUT->link($link);
 
     $str = '<span class="history">'.$str.'</span>';
 
@@ -988,10 +1025,11 @@ function message_get_participants() {
 /**
  * Print a row of contactlist displaying user picture, messages waiting and 
  * block links etc
- * @param $contact contact object containing all fields required for print_user_picture()
+ * @param $contact contact object containing all fields required for $OUTPUT->user_picture()
  * @param $incontactlist is the user a contact of ours?
  */
 function message_print_contactlist_user($contact, $incontactlist = true){
+    global $OUTPUT;
     $fullname  = fullname($contact);
     $fullnamelink  = $fullname;
 
@@ -1012,13 +1050,26 @@ function message_print_contactlist_user($contact, $incontactlist = true){
     $strhistory = message_history_link($contact->id, 0, true, '', '', 'icon');
 
     echo '<tr><td class="pix">';
-    print_user_picture($contact, SITEID, $contact->picture, 20, false, true, 'userwindow');
+    $userpic = moodle_user_picture::make($contact, SITEID);
+    $userpic->size = 20;
+    $userpic->link = true;
+    echo $OUTPUT->user_picture($userpic);
     echo '</td>';
     echo '<td class="contact">';
+    
+    $popupoptions = array(
+            'height' => 500,
+            'width' => 500,
+            'menubar' => false,
+            'location' => false,
+            'status' => true,
+            'scrollbars' => true,
+            'resizable' => true);
 
-    link_to_popup_window("/message/discussion.php?id=$contact->id", "message_$contact->id",
-        $fullnamelink, 500, 500, get_string('sendmessageto', 'message', $fullname),
-        'menubar=0,location=0,status,scrollbars,resizable,width=500,height=500');
+    $link = html_link::make("/message/discussion.php?id=$contact->id", $fullnamelink);
+    $link->add_action(new popup_action('click', $link->url, "message_$contact->id", $popupoptions));
+    $link->title = get_string('sendmessageto', 'message', $fullname);
+    echo $OUTPUT->link($link);
 
     echo '</td>';
     echo '<td class="link">&nbsp;'.$strcontact.$strblock.'&nbsp;'.$strhistory.'</td>';

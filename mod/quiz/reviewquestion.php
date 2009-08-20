@@ -25,18 +25,18 @@
     if (!$attemptobj->has_capability('mod/quiz:viewreports')) {
     /// Can't review during the attempt - send them back to the attempt page.
         if (!$attemptobj->is_finished()) {
-            notify(get_string('cannotreviewopen', 'quiz'));
+            echo $OUTPUT->notification(get_string('cannotreviewopen', 'quiz'));
             echo $OUTPUT->close_window_button();
         }
     /// Can't review other users' attempts.
         if (!$attemptobj->is_own_attempt()) {
-            notify(get_string('notyourattempt', 'quiz'));
+            echo $OUTPUT->notification(get_string('notyourattempt', 'quiz'));
             echo $OUTPUT->close_window_button();
         }
     /// Can't review unless Students may review -> Responses option is turned on.
         if (!$options->responses) {
             $accessmanager = $attemptobj->get_access_manager(time());
-            notify($accessmanager->cannot_review_message($attemptobj->get_review_options()));
+            echo $OUTPUT->notification($accessmanager->cannot_review_message($attemptobj->get_review_options()));
             echo $OUTPUT->close_window_button();
         }
     }
@@ -74,7 +74,7 @@
     if ($attemptobj->get_userid() <> $USER->id) {
         // Print user picture and name
         $student = $DB->get_record('user', array('id' => $attemptobj->get_userid()));
-        $picture = print_user_picture($student, $attemptobj->get_courseid(), $student->picture, false, true);
+        $picture = $OUTPUT->user_picture(moodle_user_picture::make($student, $attemptobj->get_courseid()));
         $rows[] = '<tr><th scope="row" class="cell">' . $picture . '</th><td class="cell"><a href="' .
                 $CFG->wwwroot . '/user/view.php?id=' . $student->id . '&amp;course=' . $attemptobj->get_courseid() . '">' .
                 fullname($student, true) . '</a></td></tr>';

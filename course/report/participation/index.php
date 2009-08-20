@@ -121,12 +121,12 @@
     $select->nested = true;
     echo $OUTPUT->select($select);
     echo '<label for="menutimefrom">'.get_string('lookback').'</label>'."\n";
-    choose_from_menu($timeoptions,'timefrom',$timefrom);
+    echo $OUTPUT->select(html_select::make($timeoptions,'timefrom',$timefrom));
     echo '<label for="menuroleid">'.get_string('showonly').'</label>'."\n";
-    choose_from_menu($roleoptions,'roleid',$roleid,'');
+    echo $OUTPUT->select(html_select::make($roleoptions,'roleid',$roleid,false));
     echo '<label for="menuaction">'.get_string('showactions').'</label>'."\n";
-    choose_from_menu($actionoptions,'action',$action,'');
-    helpbutton('participationreport',get_string('participationreport'));
+    echo $OUTPUT->select(html_select::make($actionoptions,'action',$action,false));
+    echo $OUTPUT->help_icon(moodle_help_icon::make('participationreport',get_string('participationreport')));
     echo '<input type="submit" value="'.get_string('go').'" />'."\n</div></form>\n";
 
     $baseurl =  $CFG->wwwroot.'/course/report/participation/index.php?id='.$course->id.'&amp;roleid='
@@ -281,7 +281,7 @@
         $select->label = get_string("withselectedusers");
         $select->add_action('change', 'conditionalsubmit', array('formid' => 'studentsform'));
         echo $OUTPUT->select($select);
-        helpbutton("participantswithselectedusers", get_string("withselectedusers"));
+        echo $OUTPUT->help_icon(moodle_help_icon::make("participantswithselectedusers", get_string("withselectedusers")));
         echo '<input type="submit" value="' . get_string('ok') . '" />'."\n";
         echo '</div>'."\n";
         echo '</form>'."\n";

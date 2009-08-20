@@ -64,14 +64,14 @@ echo "<input type=\"hidden\" name=\"sesskey\" value=\"".sesskey()."\" />\n";
 echo "<input type=\"hidden\" name=\"auth\" value=\"".$auth."\" />\n";
 
 // auth plugin description
-print_simple_box_start('center', '80%');
+echo $OUTPUT->box_start();
 echo $OUTPUT->heading($authtitle);
-print_simple_box_start('center', '80%', '', 5, 'informationbox');
+echo $OUTPUT->box_start('informationbox');
 echo $authdescription;
-print_simple_box_end();
+echo $OUTPUT->box_end();
 echo "<hr />\n";
 $authplugin->config_form($frm, $err, $user_fields);
-print_simple_box_end();
+echo $OUTPUT->box_end();
 echo '<p style="text-align: center"><input type="submit" value="' . get_string("savechanges") . "\" /></p>\n";
 echo "</div>\n";
 echo "</form>\n";
@@ -86,7 +86,7 @@ exit;
 // other options
 // Note: lockconfig_ fields have special handling.
 function print_auth_lock_options ($auth, $user_fields, $helptext, $retrieveopts, $updateopts) {
-
+    global $OUTPUT;
     echo '<tr><td colspan="3">';
     if ($retrieveopts) {
         echo $OUTPUT->heading(get_string('auth_data_mapping', 'auth'));
@@ -147,23 +147,23 @@ function print_auth_lock_options ($auth, $user_fields, $helptext, $retrieveopts,
             echo "<input id=\"lockconfig_{$varname}\" name=\"lockconfig_{$varname}\" type=\"text\" size=\"30\" value=\"{$pluginconfig->$varname}\" />";
             echo '<div style="text-align: right">';
             echo '<label for="menulockconfig_field_updatelocal_'.$field.'">'.get_string('auth_updatelocal', 'auth') . '</label>&nbsp;';
-            choose_from_menu($updatelocaloptions, "lockconfig_field_updatelocal_{$field}", $pluginconfig->{"field_updatelocal_$field"}, "");
+            echo $OUTPUT->select(html_select::make($updatelocaloptions, "lockconfig_field_updatelocal_{$field}", $pluginconfig->{"field_updatelocal_$field"}, false));
             echo '<br />';
             if ($updateopts) {
                 echo '<label for="menulockconfig_field_updateremote_'.$field.'">'.get_string('auth_updateremote', 'auth') . '</label>&nbsp;';
-                choose_from_menu($updateextoptions, "lockconfig_field_updateremote_{$field}", $pluginconfig->{"field_updateremote_$field"}, "");
+                echo $OUTPUT->select(html_select::make($updateextoptions, "lockconfig_field_updateremote_{$field}", $pluginconfig->{"field_updateremote_$field"}, false));
                 echo '<br />';
 
 
             }
             echo '<label for="menulockconfig_field_lock_'.$field.'">'.get_string('auth_fieldlock', 'auth') . '</label>&nbsp;';
-            choose_from_menu($lockoptions, "lockconfig_field_lock_{$field}", $pluginconfig->{"field_lock_$field"}, "");
+            echo $OUTPUT->select(html_select::make($lockoptions, "lockconfig_field_lock_{$field}", $pluginconfig->{"field_lock_$field"}, false));
             echo '</div>';
         } else {
             echo '<tr valign="top"><td align="right">';
             echo '<label for="menulockconfig_field_lock_'.$field.'">'.$fieldname.'</label>';
             echo '</td><td>';
-            choose_from_menu($lockoptions, "lockconfig_field_lock_{$field}", $pluginconfig->{"field_lock_$field"}, "");
+            echo $OUTPUT->select(html_select::make($lockoptions, "lockconfig_field_lock_{$field}", $pluginconfig->{"field_lock_$field"}, false));
         }
         echo '</td>';
         if (!empty($helptext)) {

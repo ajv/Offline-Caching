@@ -334,14 +334,14 @@
               if ($hidden) { echo 'checked="checked" '; } ?>/>
               <label for="hidden" title="<?php print_string('createhiddenassign', 'role'); ?>">
                   <?php print_string('hidden', 'role'); ?>
-                  <?php helpbutton('hiddenassign', get_string('createhiddenassign', 'role')); ?>
+                  <?php echo $OUTPUT->help_icon(moodle_help_icon::make('hiddenassign', get_string('createhiddenassign', 'role'))); ?>
               </label></p>
 
               <p><label for="extendperiod"><?php print_string('enrolperiod') ?></label><br />
-              <?php choose_from_menu($periodmenu, 'extendperiod', $defaultperiod, $unlimitedperiod); ?></p>
+              <?php echo $OUTPUT->select(html_select::make($periodmenu, 'extendperiod', $defaultperiod, $unlimitedperiod)); ?></p>
 
               <p><label for="extendbase"><?php print_string('startingfrom') ?></label><br />
-              <?php choose_from_menu($basemenu, 'extendbase', $extendbase, ''); ?></p>
+              <?php echo $OUTPUT->select(html_select::make($basemenu, 'extendbase', $extendbase, false)); ?></p>
               <?php print_collapsible_region_end(); ?>
           </div>
 
@@ -366,9 +366,9 @@
                 $msg .= $e.'<br />';
             }
             $msg .= '</p>';
-            print_simple_box_start('center');
-            notify($msg);
-            print_simple_box_end();
+            echo $OUTPUT->box_start();
+            echo $OUTPUT->notification($msg);
+            echo $OUTPUT->box_end();
         }
 
     /// Print a form to swap roles, and a link back to the all roles list.
@@ -402,7 +402,7 @@
 
         // Get the names of role holders for roles with between 1 and MAX_USERS_TO_LIST_PER_ROLE users,
         // and so determine whether to show the extra column.
-        $rolehodlernames = array();
+        $roleholdernames = array();
         $strmorethanmax = get_string('morethan', 'role', MAX_USERS_TO_LIST_PER_ROLE);
         $showroleholders = false;
         foreach ($assignableroles as $roleid => $notused) {
@@ -414,17 +414,18 @@
                     foreach ($roleusers as $user) {
                         $strroleusers[] = '<a href="' . $CFG->wwwroot . '/user/view.php?id=' . $user->id . '" >' . fullname($user) . '</a>';
                     }
-                    $rolehodlernames[$roleid] = implode('<br />', $strroleusers);
+                    $roleholdernames[$roleid] = implode('<br />', $strroleusers);
                     $showroleholders = true;
                 }
             } else if ($assigncounts[$roleid] > MAX_USERS_TO_LIST_PER_ROLE) {
-                $rolehodlernames[$roleid] = '<a href="'.$baseurl.'&amp;roleid='.$roleid.'">'.$strmorethanmax.'</a>';
+                $roleholdernames[$roleid] = '<a href="'.$baseurl.'&amp;roleid='.$roleid.'">'.$strmorethanmax.'</a>';
             } else {
-                $rolehodlernames[$roleid] = '';
+                $roleholdernames[$roleid] = '';
             }
         }
 
         // Print overview table
+        $table = new html_table();
         $table->tablealign = 'center';
         $table->width = '60%';
         $table->head = array(get_string('role'), get_string('description'), get_string('userswiththisrole', 'role'));
@@ -441,12 +442,12 @@
             $row = array('<a href="'.$baseurl.'&amp;roleid='.$roleid.'">'.$rolename.'</a>',
                     $description, $assigncounts[$roleid]);
             if ($showroleholders) {
-                $row[] = $rolehodlernames[$roleid];
+                $row[] = $roleholdernames[$roleid];
             }
             $table->data[] = $row;
         }
 
-        print_table($table);
+        echo $OUTPUT->table($table);
 
         if (!$isfrontpage && ($url = get_context_url($context))) {
             echo '<div class="backlink"><a href="' . $url . '">' .

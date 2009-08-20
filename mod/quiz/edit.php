@@ -76,7 +76,7 @@ function module_specific_buttons($cmid, $cmoptions) {
  * (which is called from showbank())
  */
 function module_specific_controls($totalnumber, $recurse, $category, $cmid, $cmoptions) {
-    global $QTYPES;
+    global $QTYPES, $OUTPUT;
     $out = '';
     $catcontext = get_context_instance_by_id($category->contextid);
     if (has_capability('moodle/question:useall', $catcontext)) {
@@ -98,14 +98,15 @@ function module_specific_controls($totalnumber, $recurse, $category, $cmid, $cmo
             $straddtoquiz = get_string('addtoquiz', 'quiz');
             $out = '<strong><label for="menurandomcount">'.get_string('addrandomfromcategory', 'quiz').
                     '</label></strong><br />';
-            $out .= get_string('addrandom', 'quiz', choose_from_menu($randomcount,
-                    'randomcount', '1', '', '', '', true, $cmoptions->hasattempts));
+            $select = html_select::make($randomcount, 'randomcount', '1', false);
+            $select->nothingvalue = '';
+            $select->disabled = $cmoptions->hasattempts;
+            $out .= get_string('addrandom', 'quiz', $OUTPUT->select($select));
             $out .= '<input type="hidden" name="recurse" value="'.$recurse.'" />';
             $out .= '<input type="hidden" name="categoryid" value="' . $category->id . '" />';
             $out .= ' <input type="submit" name="addrandom" value="'.
                     $straddtoquiz.'" '.$disabled.' />';
-            $out .= helpbutton('random', get_string('random', 'quiz'), 'quiz',
-                    true, false, '', true);
+            $out .= $OUTPUT->help_icon(moodle_help_icon::make('random', get_string('random', 'quiz'), 'quiz'));
         }
     }
     return $out;
@@ -519,8 +520,7 @@ if ($quiz_reordertool) {
     echo '</div>';
 }
 echo $OUTPUT->heading($pagetitle.": ".$quiz->name, 2);
-helpbutton('editconcepts', get_string('basicideasofquiz', 'quiz'), 'quiz',
-        true, get_string('basicideasofquiz', 'quiz'));
+echo $OUTPUT->help_icon(moodle_help_icon::make('editconcepts', get_string('basicideasofquiz', 'quiz'), 'quiz', get_string('basicideasofquiz', 'quiz')));
 quiz_print_status_bar($quiz);
 
 $tabindex = 0;
@@ -562,9 +562,10 @@ if ($quiz_reordertool) {
     //YUI does not submit the value of the submit button so
             //we need to add the value:
     echo '<input type="hidden" name="repaginate" value="'.$gostring.'" />';
-    print_string('repaginate', 'quiz',
-            choose_from_menu($perpage, 'questionsperpage',
-            $quiz->questionsperpage, '', '', '', true, $repaginatingdisabled));
+    $select = html_select::make($perpage, 'questionsperpage', $quiz->questionsperpage, false);
+    $select->nothingvalue = '';
+    $select->disabled = $repaginatingdisabledhtml;
+    print_string('repaginate', 'quiz', $OUTPUT->select($select));
     echo '<div class="quizquestionlistcontrols">';
     echo ' <input type="submit" name="repaginate" value="'. $gostring .'" '.$repaginatingdisabledhtml.' />';
     echo '</div></fieldset></form></div></div>';

@@ -33,7 +33,9 @@ echo '<form method="get" action="." id="settingsform"><div>';
 echo $OUTPUT->heading(get_string('reportsettings', 'report_questioninstances'));
 echo '<p id="intro">', get_string('intro', 'report_questioninstances') , '</p>';
 echo '<p><label for="menuqtype"> ' . get_string('questiontype', 'admin') . '</label> ';
-choose_from_menu($qtypechoices, 'qtype', $requestedqtype, get_string('all'), '', '_all_');
+$select = html_select::make($qtypechoices, 'qtype', $requestedqtype, get_string('all'));
+$select->nothingvalue = '_all_';
+echo $OUTPUT->select($select);
 echo '</p>';
 echo '<p><input type="submit" id="settingssubmit" value="' .
         get_string('getreport', 'report_questioninstances') . '" /></p>';
@@ -76,7 +78,7 @@ if ($requestedqtype) {
     echo $OUTPUT->heading($title);
 
     // Initialise the table.
-    $table = new stdClass;
+    $table = new html_table();
     $table->head = array(
             get_string('context', 'role'),
             get_string('totalquestions', 'report_questioninstances'),
@@ -122,7 +124,7 @@ if ($requestedqtype) {
             $totalhidden);
 
     // Print it.
-    print_table($table);
+    echo $OUTPUT->table($table);
 }
 
 // Footer.

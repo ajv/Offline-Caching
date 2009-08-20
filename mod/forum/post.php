@@ -53,8 +53,7 @@
         $navigation = build_navigation('', $cm);
         print_header($course->shortname, $course->fullname, $navigation, '' , '', true, "", navmenu($course, $cm));
 
-        notice_yesno(get_string('noguestpost', 'forum').'<br /><br />'.get_string('liketologin'),
-                     get_login_url(), get_referer(false));
+        echo $OUTPUT->confirm(get_string('noguestpost', 'forum').'<br /><br />'.get_string('liketologin'), get_login_url(), get_referer(false));
         echo $OUTPUT->footer();
         exit;
     }
@@ -316,8 +315,8 @@
                           forum_go_back_to("discuss.php?d=$post->discussion"));
                 }
                 print_header();
-                notice_yesno(get_string("deletesureplural", "forum", $replycount+1),
-                             "post.php?delete=$delete&amp;confirm=$delete&amp;sesskey=".sesskey(),
+                echo $OUTPUT->confirm(get_string("deletesureplural", "forum", $replycount+1),
+                             "post.php?delete=$delete&confirm=$delete",
                              $CFG->wwwroot.'/mod/forum/discuss.php?d='.$post->discussion.'#p'.$post->id);
 
                 forum_print_post($post, $discussion, $forum, $cm, $course, false, false, false);
@@ -329,8 +328,8 @@
                 }
             } else {
                 print_header();
-                notice_yesno(get_string("deletesure", "forum", $replycount),
-                             "post.php?delete=$delete&amp;confirm=$delete&amp;sesskey=".sesskey(),
+                echo $OUTPUT->confirm(get_string("deletesure", "forum", $replycount),
+                             "post.php?delete=$delete&confirm=$delete",
                              $CFG->wwwroot.'/mod/forum/discuss.php?d='.$post->discussion.'#p'.$post->id);
                 forum_print_post($post, $discussion, $forum, $cm, $course, false, false, false);
             }
@@ -775,7 +774,7 @@
                 && !has_capability('mod/forum:viewqandawithoutposting', $modcontext)
                 && !empty($discussion->id)
                 && !forum_user_has_posted($forum->id, $discussion->id, $USER->id)) {
-        notify(get_string('qandanotify','forum'));
+        echo $OUTPUT->notification(get_string('qandanotify','forum'));
     }
 
     forum_check_throttling($forum, $cm);

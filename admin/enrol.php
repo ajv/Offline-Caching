@@ -58,13 +58,13 @@
     }
     asort($options);
 
-    print_simple_box(get_string('configenrolmentplugins', 'admin'), 'center', '700');
+    echo $OUTPUT->box(get_string('configenrolmentplugins', 'admin'));
 
     echo "<form $CFG->frametarget id=\"enrolmenu\" method=\"post\" action=\"enrol.php\">";
     echo "<div>";
     echo "<input type=\"hidden\" name=\"sesskey\" value=\"".sesskey()."\" />";
 
-    $table = new stdClass();
+    $table = new html_table();
     $table->head = array(get_string('name'), get_string('enable'), get_string('default'), $str->settings);
     $table->align = array('left', 'center', 'center', 'center');
     $table->size = array('60%', '', '', '15%');
@@ -103,7 +103,7 @@
     }
     asort($table->data);
 
-    print_table($table);
+    echo $OUTPUT->table($table);
 
     echo "<div style=\"text-align:center\"><input type=\"submit\" value=\"".get_string("savechanges")."\" /></div>\n";
     echo "</div>";
@@ -125,7 +125,7 @@
     echo '<span class="form-shortname">sendcoursewelcomemessage</span>';
     echo '</label></div>';
     echo '<div class="form-setting"><div class="form-checkbox defaultsnext">';
-    choose_from_menu($yesnooptions, 'sendcoursewelcomemessage', $CFG->sendcoursewelcomemessage, '');
+    echo $OUTPUT->select(html_select::make($yesnooptions, 'sendcoursewelcomemessage', $CFG->sendcoursewelcomemessage, false));
     echo '</div><div class="form-defaultinfo">'.get_string('defaultsettinginfo', 'admin', get_string('yes')).'</div></div>';
     echo '<div class="form-description">' . get_string('configsendcoursewelcomemessage', 'admin') . '</div>';
     echo '</div>';

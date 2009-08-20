@@ -48,14 +48,24 @@
     echo '<form action="index.php" method="post">'."\n";
     echo '<div>';
 
+    $table = new html_table();
     $table->width = '*';
     $table->align = array('left','left','left','left','left','left');
-    $table->data[] = array(get_string('statsreporttype'),choose_from_menu($reportoptions,'report',$report,'','','',true),
-                           get_string('statstimeperiod'),choose_from_menu($timeoptions,'time',$time,'','','',true),
+    
+    $select = html_select::make($reportoptions,'report',$report, false);
+    $select->nothingvalue = '';
+    $reporttypemenu = $OUTPUT->select($select);
+    
+    $select = html_select::make($timeoptions,'time',$time, false);
+    $select->nothingvalue = '';
+    $timeoptionsmenu = $OUTPUT->select($select);
+    
+    $table->data[] = array(get_string('statsreporttype'),$reporttypemenu,
+                           get_string('statstimeperiod'),$timeoptionsmenu,
                            '<input type="text" name="numcourses" size="3" maxlength="2" value="'.$numcourses.'" />',
                            '<input type="submit" value="'.get_string('view').'" />') ;
 
-    print_table($table);
+    echo $OUTPUT->table($table);
     echo '</div>';
     echo '</form>';
 
@@ -79,7 +89,8 @@
         $courses = $DB->get_records_sql($sql, $param->params, 0, $numcourses);
 
         if (empty($courses)) {
-            notify(get_string('statsnodata'));echo '</td></tr></table>';echo '<p>after notify</p>';
+            echo $OUTPUT->notification(get_string('statsnodata'));
+            echo '</td></tr></table>';echo '<p>after notify</p>';
 
         } else {
             if (empty($CFG->gdversion)) {
@@ -88,7 +99,7 @@
                 echo '<div class="graph"><img alt="'.get_string('courseoverviewgraph').'" src="'.$CFG->wwwroot.'/'.$CFG->admin.'/report/courseoverview/reportsgraph.php?time='.$time.'&report='.$report.'&numcourses='.$numcourses.'" /></div>';
             }
 
-            $table = new StdClass;
+            $table = new html_table();
             $table->align = array('left','center','center','center');
             $table->head = array(get_string('course'),$param->line1);
             if (!empty($param->line2)) {
@@ -111,7 +122,7 @@
                 }
                 $table->data[] = $a;
             }
-            print_table($table);
+            echo $OUTPUT->table($table);
         }
     }
     echo $OUTPUT->footer();

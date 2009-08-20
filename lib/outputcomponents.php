@@ -74,7 +74,9 @@ class moodle_html_component {
      * @return array the class names as an array.
      */
     public static function clean_classes($classes) {
-        if (is_array($classes)) {
+        if (empty($classes)) {
+            return array();
+        } else if (is_array($classes)) {
             return $classes;
         } else {
             return explode(' ', trim($classes));
@@ -414,9 +416,10 @@ class html_select extends labelled_html_component {
      * @param array $options used to initialise {@link $options}.
      * @param string $name used to initialise {@link $name}.
      * @param string $selected  used to initialise {@link $selected}.
+     * @param string $nothinglabel The label for the 'nothing is selected' option. Defaults to "Choose..."
      * @return html_select A html_select object with the three common fields initialised.
      */
-    public static function make($options, $name, $selected = '') {
+    public static function make($options, $name, $selected = '', $nothinglabel='choosedots') {
         $menu = new html_select();
         $menu->options = $options;
         $menu->name = $name;
@@ -1423,6 +1426,14 @@ class html_form extends moodle_html_component {
 
         parent::prepare();
     }
+
+    public static function make_button($url, $options, $label='OK', $method='post') {
+        $form = new html_form();
+        $form->url = new moodle_url($url, $options);
+        $form->button->text = $label;
+        $form->method = $method;
+        return $form;
+    }
 }
 
 /**
@@ -1844,6 +1855,13 @@ class moodle_user_picture extends moodle_html_component {
 
         parent::prepare();
     }
+
+    public static function make($user, $courseid) {
+        $userpic = new moodle_user_picture();
+        $userpic->user = $user;
+        $userpic->courseid = $courseid;
+        return $userpic;
+    }
 }
 
 /**
@@ -1960,6 +1978,21 @@ class moodle_help_icon extends labelled_html_component {
         }
 
         parent::prepare();
+    }
+
+    /**
+     * This is a shortcut for creating a help_icon with only the 2 required params
+     * @param string $page  The keyword that defines a help page
+     * @param string $text A descriptive text
+     * @return moodle_help_icon A moodle_help_icon object with the two common fields initialised.
+     */
+    public static function make($page, $text, $module='moodle', $linktext=false) {
+        $helpicon = new moodle_help_icon();
+        $helpicon->page = $page;
+        $helpicon->text = $text;
+        $helpicon->module = $module;
+        $helpicon->linktext = $linktext;
+        return $helpicon;
     }
 
     public static function make_scale_menu($courseid, $scale) {

@@ -47,7 +47,7 @@
     }
 
     if (empty($options) && empty($creator)) {
-        notify(get_string('courseimportnotaught'));
+        echo $OUTPUT->notification(get_string('courseimportnotaught'));
         return; // yay , this will pass control back to the file that included or required us.
     }
 
@@ -80,6 +80,7 @@
     if (!empty($fromcoursesearch) && !empty($creator)) {
         $totalcount = 0;
         $courses = get_courses_search(explode(" ",$fromcoursesearch),"fullname ASC",$page,50,$totalcount);
+        $table = new html_table();
         if (is_array($courses) and count($courses) > 0) {
             $table->data[] = array('<b>'.get_string('searchresults').'</b>','','');
             foreach ($courses as $scourse) {
@@ -94,6 +95,6 @@
         }
     }
     if (!empty($table)) {
-        print_table($table);
+        echo $OUTPUT->table($table);
     }
 ?>

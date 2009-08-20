@@ -55,7 +55,7 @@ if ($choose and confirm_sesskey()) {
         echo $OUTPUT->box_end();
     }
 
-    print_continue($CFG->wwwroot . '/' . $CFG->admin . '/index.php');
+    echo $OUTPUT->continue_button($CFG->wwwroot . '/' . $CFG->admin . '/index.php');
 
     echo $OUTPUT->footer();
     exit;
@@ -65,7 +65,7 @@ if ($choose and confirm_sesskey()) {
 admin_externalpage_print_header('themeselector');
 echo $OUTPUT->heading(get_string('themes'));
 
-$table = new stdClass;
+$table = new html_table();
 $table->id = 'adminthemeselector';
 $table->head = array(get_string('theme'), get_string('info'));
 
@@ -108,7 +108,9 @@ foreach ($themes as $themename => $themedir) {
         $readmeurl = $CFG->themewww .'/'. $themename .'/README.txt';
     }
     if ($readmeurl) {
-        $infoitems['readme'] = link_to_popup_window($readmeurl, $themename, get_string('info'), 400, 500, '', 'none', true);
+        $link = html_link::make($readmeurl, get_string('info'));
+        $link->add_action(new popup_action('click', $link->url, $themename));
+        $infoitems['readme'] = $OUTPUT->link($link);                    
     }
 
     // Contents of the first screenshot/preview cell.
@@ -126,8 +128,8 @@ foreach ($themes as $themename => $themedir) {
         $infocell .= "<ul>\n<li>" . implode("</li>\n<li>", $infoitems) . "</li>\n</ul>\n";
     }
     if ($themename != $CFG->theme) {
-        $infocell .= print_single_button('index.php', array('choose' => $themename, 'sesskey' => $sesskey),
-                get_string('choose'), 'get', null, true);
+        $infocell .= $OUTPUT->button(html_form::make_button('index.php', array('choose' => $themename, 'sesskey' => $sesskey),
+                get_string('choose'), 'get'));
 
     }
     $row[] = $infocell;
@@ -138,7 +140,7 @@ foreach ($themes as $themename => $themedir) {
     }
 }
 
-print_table($table);
+echo $OUTPUT->table($table);
 
 echo $OUTPUT->footer();
 ?>

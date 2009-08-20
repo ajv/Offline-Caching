@@ -1478,7 +1478,7 @@ function glossary_print_categories_menu($cm, $glossary, $hook, $category) {
              $options['id'] = $cm->id;
              $options['mode'] = 'cat';
              $options['hook'] = $hook;
-             echo print_single_button("editcategories.php", $options, get_string("editcategories","glossary"), "get");
+             echo $OUTPUT->button(html_form::make_button("editcategories.php", $options, get_string("editcategories","glossary"), "get"));
      }
      echo '</td>';
 
@@ -1743,7 +1743,7 @@ function glossary_print_comment($course, $cm, $glossary, $entry, $comment) {
     echo '<table class="glossarycomment" cellspacing="0">';
     echo '<tr valign="top">';
     echo '<td class="left picture">';
-    print_user_picture($user, $course->id, $user->picture);
+    echo $OUTPUT->user_picture(moodle_user_picture::make($user, $course->id));
     echo '</td>';
     echo '<td class="entryheader">';
 
@@ -2179,7 +2179,7 @@ function glossary_count_unrated_entries($glossaryid, $userid) {
  * @param array $scale
  */
 function glossary_print_ratings_mean($entryid, $scale) { 
-
+    global $OUTPUT;
     static $strrate;
 
     $mean = glossary_get_ratings_mean($entryid, $scale);
@@ -2191,7 +2191,9 @@ function glossary_print_ratings_mean($entryid, $scale) {
         }
 
         echo "$strratings: ";
-        link_to_popup_window ("/mod/glossary/report.php?id=$entryid", "ratings", $mean, 400, 600);
+        $link = html_link::make("/mod/glossary/report.php?id=$entryid", $mean);
+        $link->add_action(new popup_action('click', $link->url, "ratings"));
+        echo $OUTPUT->link($link);                    
     }
 }
 
@@ -2299,7 +2301,7 @@ function glossary_get_ratings_summary($entryid, $scale, $ratings=NULL) {
  * @param array $scale
  */
 function glossary_print_rating_menu($entryid, $userid, $scale) {
-    global $DB;
+    global $DB, $OUTPUT;
 
     static $strrate;
 
@@ -2310,8 +2312,10 @@ function glossary_print_rating_menu($entryid, $userid, $scale) {
     if (empty($strrate)) {
         $strrate = get_string("rate", "glossary");
     }
+    $select = html_select::make($scale, $entryid, $rating->rating, "$strrate...");
+    $select->nothingvalue = '-999';
 
-    choose_from_menu($scale, $entryid, $rating->rating, "$strrate...",'',-999);
+    echo $OUTPUT->select($select);
 }
 
 /**

@@ -15,14 +15,14 @@ if ($show_instructions) {
             if (empty($CFG->usesid)) {
                 echo '<br/>';
                 echo '('.get_string("cookiesenabled").')';
-                helpbutton("cookies", get_string("cookiesenabled"));
+                echo $OUTPUT->help_icon(moodle_help_icon::make("cookies", get_string("cookiesenabled")));
             }
            ?>
         </div>
         <?php
           if (!empty($errormsg)) {
               echo '<div class="loginerrors">';
-              formerr($errormsg);
+              echo $OUTPUT->error_text($errormsg);
               echo '</div>';
           }
         ?>

@@ -74,7 +74,7 @@ $url = "$CFG->wwwroot/$CFG->admin/report/security/index.php";
 if ($issue and ($result = $issue(true))) {
     report_security_hide_timearning();
 
-    $table = new object();
+    $table = new html_table();
     $table->head  = array($strissue, $strstatus, $strdesc, $strconfig);
     $table->size  = array('30%', '10%', '50%', '10%' );
     $table->align = array('left', 'left', 'left', 'left');
@@ -92,16 +92,16 @@ if ($issue and ($result = $issue(true))) {
 
     $table->data[] = $row;
 
-    print_table($table);
+    echo $OUTPUT->table($table);
 
     echo $OUTPUT->box($result->details, 'generalbox boxwidthnormal boxaligncenter'); // TODO: add proper css
 
-    print_continue($url);
+    echo $OUTPUT->continue_button($url);
 
 } else {
     report_security_hide_timearning();
 
-    $table = new object();
+    $table = new html_table();
     $table->head  = array($strissue, $strstatus, $strdesc);
     $table->size  = array('30%', '10%', '60%' );
     $table->align = array('left', 'left', 'left');
@@ -121,7 +121,7 @@ if ($issue and ($result = $issue(true))) {
 
         $table->data[] = $row;
     }
-    print_table($table);
+    echo $OUTPUT->table($table);
 }
 
 echo $OUTPUT->footer();

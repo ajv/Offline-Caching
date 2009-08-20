@@ -129,7 +129,7 @@
             if (empty($user->confirmed)) {       // This account was never confirmed
                 print_header(get_string("mustconfirm"), get_string("mustconfirm") );
                 echo $OUTPUT->heading(get_string("mustconfirm"));
-                print_simple_box(get_string("emailconfirmsent", "", $user->email), "center");
+                echo $OUTPUT->box(get_string("emailconfirmsent", "", $user->email), "generalbox boxaligncenter");
                 echo $OUTPUT->footer();
                 die;
             }
@@ -182,12 +182,12 @@
                 $days2expire = $userauth->password_expire($USER->username);
                 if (intval($days2expire) > 0 && intval($days2expire) < intval($userauth->config->expiration_warning)) {
                     print_header("$site->fullname: $loginsite", "$site->fullname", $navigation, '', '', true, "<div class=\"langmenu\">$langmenu</div>");
-                    notice_yesno(get_string('auth_passwordwillexpire', 'auth', $days2expire), $passwordchangeurl, $urltogo);
+                    echo $OUTPUT->confirm(get_string('auth_passwordwillexpire', 'auth', $days2expire), $passwordchangeurl, $urltogo);
                     echo $OUTPUT->footer();
                     exit;
                 } elseif (intval($days2expire) < 0 ) {
                     print_header("$site->fullname: $loginsite", "$site->fullname", $navigation, '', '', true, "<div class=\"langmenu\">$langmenu</div>");
-                    notice_yesno(get_string('auth_passwordisexpired', 'auth'), $passwordchangeurl, $urltogo);
+                    echo $OUTPUT->confirm(get_string('auth_passwordisexpired', 'auth'), $passwordchangeurl, $urltogo);
                     echo $OUTPUT->footer();
                     exit;
                 }

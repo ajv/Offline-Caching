@@ -143,7 +143,7 @@ if ($editform->is_cancelled()) {
     }
 
     if (isset($data->preview)) {
-        $table = new object();
+        $table = new html_table();
         if ($data->allocateby == 'no') {
             $table->head  = array(get_string('groupscount', 'group', $numgrps));
             $table->size  = array('100%');
@@ -176,7 +176,7 @@ if ($editform->is_cancelled()) {
             $table->data[] = $line;
         }
 
-        $preview .= print_table($table, true);
+        $preview .= $OUTPUT->table($table);
 
     } else {
         $grouping = null;
@@ -236,7 +236,7 @@ print_header_simple($strgroups, ': '.$strgroups, $navigation, '', '', true, '', 
 echo $OUTPUT->heading($strautocreategroups);
 
 if ($error != '') {
-    notify($error);
+    echo $OUTPUT->notification($error);
 }
 
 /// Display the form

@@ -41,7 +41,7 @@ $ewiki_t["c"]["EWIKIDUMPCSS"] = '
   
 
 function moodle_ewiki_page_wiki_dump($id=0, $data=0, $action=0) {
-  global $userid, $groupid, $cm, $wikipage, $wiki, $course, $CFG;
+  global $userid, $groupid, $cm, $wikipage, $wiki, $course, $CFG, $OUTPUT;
   #-- return legacy page
   $cont = true;
   $wikiexport = optional_param('wikiexport', '');
@@ -109,7 +109,9 @@ function moodle_ewiki_page_wiki_dump($id=0, $data=0, $action=0) {
         '    <TD align="right">'.get_string("exportformats","wiki").":</TD>\n".
         "    <TD>\n";
   if($wiki->htmlmode!=2) {
-    $ret.= choose_from_menu($exportformats, "exportformats", $exportformatval, "", "", "", true)."\n";
+      $select = html_select::make($exportformats, "exportformats", $exportformatval, false);
+      $select->nothingvalue = '';
+    $ret.= $OUTPUT->select($select)."\n";
   } else {
     $ret.= '<INPUT type="hidden" name="exportformats" value="1" />'.
            get_string("html","wiki");
@@ -133,7 +135,9 @@ function moodle_ewiki_page_wiki_dump($id=0, $data=0, $action=0) {
   if(count($exportdestinations)==1) {
     $ret.='<INPUT type="hidden" name="exportdestinations" value="0" />'.$exportdestinations[0]."\n";
   } else {
-    $ret.=choose_from_menu($exportdestinations, "exportdestinations", $exportdestinationsval, "", "", "", true)."\n";
+      $select = html_select::make($exportdestinations, "exportdestinations", $exportdestinationsval, false);
+      $select->nothingvalue = '';
+    $ret.= $OUTPUT->select($select)."\n";
   }
   $ret.="    </TD>\n".
       "  </TR>\n".      
@@ -145,7 +149,7 @@ function moodle_ewiki_page_wiki_dump($id=0, $data=0, $action=0) {
 }
 
 function ewiki_page_wiki_dump_send($exportbinaries=0, $exportformats=0, $withvirtualpages=0, $exportdestinations=0) {
-  global $ewiki_config, $wiki, $ewiki_plugins, $wiki_entry, $course, $CFG, $ewiki_t, $userid, $groupid;
+  global $ewiki_config, $wiki, $ewiki_plugins, $wiki_entry, $course, $CFG, $ewiki_t, $userid, $groupid, $OUTPUT;
   
   $filestozip=array();
   #-- disable protected email
@@ -313,7 +317,7 @@ function ewiki_page_wiki_dump_send($exportbinaries=0, $exportformats=0, $withvir
               $destfn=clean_filename(substr($id,strlen(EWIKI_IDF_INTERNAL)));
               $dest="$exportdir/".$destfn;
               if(!copy($fn,$dest)) {
-                notify("Cannot copy $fn to $dest.");
+                echo $OUTPUT->notification("Cannot copy $fn to $dest.");
               }
                           
               #$fn = urlencode(preg_replace(EWIKI_DUMP_FILENAME_REGEX, "", $id));

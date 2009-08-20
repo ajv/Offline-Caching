@@ -72,7 +72,6 @@
 
 
     //print analysed items
-    // print_simple_box_start("center", '80%');
     echo $OUTPUT->box_start('generalbox boxaligncenter boxwidthwide');
 
     //get the groupid
@@ -87,12 +86,12 @@
         //button "export to excel"
         //echo '<div class="mdl-align">';
         // echo '<div class="feedback_centered_button">';
-        echo '<div class="form-buttons">';
+        echo $OUTPUT->container_start('form-buttons');
         $export_button_link = 'analysis_to_excel.php';
         $export_button_options = array('sesskey'=>sesskey(), 'id'=>$id);
         $export_button_label = get_string('export_to_excel', 'feedback');
-        print_single_button($export_button_link, $export_button_options, $export_button_label, 'post');
-        echo '</div>';
+        echo $OUTPUT->button(html_form::make_button($export_button_link, $export_button_options, $export_button_label));
+        echo $OUTPUT->container_end();
     }
 
     //get completed feedbacks
@@ -145,7 +144,6 @@
         print_heading_with_help(get_string('insufficient_responses_for_this_group', 'feedback'), 'insufficient_responses', 'feedback');
     }
     echo '</td></tr></table></div>';
-    // print_simple_box_end();
     echo $OUTPUT->box_end();
 
     echo $OUTPUT->footer();

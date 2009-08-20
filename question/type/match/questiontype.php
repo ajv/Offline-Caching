@@ -106,9 +106,9 @@ class question_match_qtype extends default_questiontype {
     }
 
     function create_session_and_responses(&$question, &$state, $cmoptions, $attempt) {
-        global $DB;
+        global $DB, $OUTPUT;
         if (!$state->options->subquestions = $DB->get_records('question_match_sub', array('question' => $question->id), 'id ASC')) {
-            notify('Error: Missing subquestions!');
+            echo $OUTPUT->notification('Error: Missing subquestions!');
             return false;
         }
 
@@ -135,11 +135,11 @@ class question_match_qtype extends default_questiontype {
     }
 
     function restore_session_and_responses(&$question, &$state) {
-        global $DB;
+        global $DB, $OUTPUT;
         static $subquestions = array();
         if (!isset($subquestions[$question->id])){
             if (!$subquestions[$question->id] = $DB->get_records('question_match_sub', array('question' => $question->id), 'id ASC')) {
-               notify('Error: Missing subquestions!');
+               echo $OUTPUT->notification('Error: Missing subquestions!');
                return false;
             }
         }
@@ -227,7 +227,7 @@ class question_match_qtype extends default_questiontype {
     }
 
     function print_question_formulation_and_controls(&$question, &$state, $cmoptions, $options) {
-        global $CFG;
+        global $CFG, $OUTPUT;
         $subquestions   = $state->options->subquestions;
         $correctanswers = $this->get_correct_responses($question, $state);
         $nameprefix     = $question->name_prefix;
@@ -294,9 +294,10 @@ class question_match_qtype extends default_questiontype {
                         $a->feedbackimg = question_get_feedback_image($correctresponse);
                     }
                 }
-
-                $a->control = choose_from_menu($answers, $menuname, $response, 'choose',
-                                               '', 0, true, $options->readonly);
+                
+                $select = html_select::make($answers, $menuname, $response);
+                $select->disabled = $options->readonly;
+                $a->control = $OUTPUT->select($select);
 
                 // Neither the editing interface or the database allow to provide
                 // fedback for this question type.

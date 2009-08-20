@@ -911,13 +911,16 @@ class flexible_table {
      * This function is not part of the public api.
      */
     function download_buttons(){
+        global $OUTPUT;
         if ($this->is_downloadable() && !$this->is_downloading()){
             $downloadoptions = $this->get_download_menu();
             $html = '<form action="'. $this->baseurl .'" method="post">';
             $html .= '<div class="mdl-align">';
             $html .= '<input type="submit" value="'.get_string('downloadas', 'table').'"/>';
-            $html .= choose_from_menu ($downloadoptions, 'download', $this->defaultdownloadformat, '', '', '', true);
-            $html .= helpbutton('tableexportformats', get_string('tableexportformats', 'table'), 'moodle', true, false, '', true);
+            $select = html_select::make($downloadoptions, 'download', $this->defaultdownloadformat, false);
+            $select->nothingvalue = '';
+            $html .= $OUTPUT->select($select);
+            $html .= $OUTPUT->help_icon(moodle_help_icon::make('tableexportformats', get_string('tableexportformats', 'table')));
             $html .= '</div></form>';
 
             return $html;

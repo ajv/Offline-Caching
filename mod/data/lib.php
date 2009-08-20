@@ -51,7 +51,7 @@ class data_field_base {     // Base class for Database Field Types (see field/*/
     /** @var object The database object that this field belongs to */
     var $data = NULL;
     /** @var object The field object itself, if we know it */
-    var $field = NULL;   
+    var $field = NULL;
     /** @var int Width of the icon for this fieldtype */
     var $iconwidth = 16;
     /** @var int Width of the icon for this fieldtype */
@@ -122,8 +122,9 @@ class data_field_base {     // Base class for Database Field Types (see field/*/
      * @return bool
      */
     function define_default_field() {
+        global $OUTPUT;
         if (empty($this->data->id)) {
-            notify('Programmer error: dataid not defined in field class');
+            echo $OUTPUT->notification('Programmer error: dataid not defined in field class');
         }
         $this->field = new object;
         $this->field->id = 0;
@@ -177,10 +178,10 @@ class data_field_base {     // Base class for Database Field Types (see field/*/
      * @return bool
      */
     function insert_field() {
-        global $DB;
+        global $DB, $OUTPUT;
 
         if (empty($this->field)) {
-            notify('Programmer error: Field has not been defined yet!  See define_field()');
+            echo $OUTPUT->notification('Programmer error: Field has not been defined yet!  See define_field()');
             return false;
         }
 
@@ -260,7 +261,7 @@ class data_field_base {     // Base class for Database Field Types (see field/*/
         if (empty($this->field)) {   // No field has been defined yet, try and make one
             $this->define_default_field();
         }
-        print_simple_box_start('center','80%');
+        echo $OUTPUT->box_start('generalbox boxaligncenter boxwidthwide');
 
         echo '<form id="editfield" action="'.$CFG->wwwroot.'/mod/data/field.php" method="post">'."\n";
         echo '<input type="hidden" name="d" value="'.$this->data->id.'" />'."\n";
@@ -286,7 +287,7 @@ class data_field_base {     // Base class for Database Field Types (see field/*/
 
         echo '</form>';
 
-        print_simple_box_end();
+        echo $OUTPUT->box_end();
     }
 
     /**
@@ -554,8 +555,8 @@ function data_generate_default_template(&$data, $template, $recordid=0, $form=fa
 
 
 /**
- * Search for a field name and replaces it with another one in all the 
- * form templates. Set $newfieldname as '' if you want to delete the   
+ * Search for a field name and replaces it with another one in all the
+ * form templates. Set $newfieldname as '' if you want to delete the
  * field from the form.
  *
  * @global object
@@ -755,10 +756,10 @@ function data_atmaxentries($data){
 
 /**
  * returns the number of entries already made by this user
- * 
+ *
  * @global object
  * @global object
- * @param object $data                                                
+ * @param object $data
  * @return int
  */
 function data_numentries($data){
@@ -768,7 +769,7 @@ function data_numentries($data){
 }
 
 /**
- * function that takes in a dataid and adds a record            
+ * function that takes in a dataid and adds a record
  * this is used everytime an add template is submitted
  *
  * @global object
@@ -803,11 +804,11 @@ function data_add_record($data, $groupid=0){
  *
  * @global object
  * @param int $dataid,
- * @param string $template                                   
+ * @param string $template
  * @return bool
  */
 function data_tags_check($dataid, $template) {
-    global $DB;
+    global $DB, $OUTPUT;
 
     // first get all the possible tags
     $fields = $DB->get_records('data_fields', array('dataid'=>$dataid));
@@ -817,7 +818,7 @@ function data_tags_check($dataid, $template) {
         $pattern="/\[\[".$field->name."\]\]/i";
         if (preg_match_all($pattern, $template, $dummy)>1){
             $tagsok = false;
-            notify ('[['.$field->name.']] - '.get_string('multipletags','data'));
+            echo $OUTPUT->notification('[['.$field->name.']] - '.get_string('multipletags','data'));
         }
     }
     // else return true
@@ -855,7 +856,7 @@ function data_add_instance($data) {
  * @return bool
  */
 function data_update_instance($data) {
-    global $DB;
+    global $DB, $OUTPUT;
 
     $data->timemodified = time();
     $data->id           = $data->instance;
@@ -1141,15 +1142,15 @@ function data_get_participants($dataid) {
 
 // junk functions
 /**
- * takes a list of records, the current data, a search string,          
+ * takes a list of records, the current data, a search string,
  * and mode to display prints the translated template
  *
  * @global object
  * @global object
  * @param string $template
- * @param array $records                                          
+ * @param array $records
  * @param object $data
- * @param string $search                                          
+ * @param string $search
  * @param int $page
  * @param bool $return
  * @return mixed
@@ -1285,17 +1286,17 @@ function data_print_template($template, $records, $data, $search='', $page=0, $r
 
 
 /**
- * function that takes in the current data, number of items per page,   
- * a search string and prints a preference box in view.php              
- *                                                                      
- * This preference box prints a searchable advanced search template if  
- *     a) A template is defined                                         
- *  b) The advanced search checkbox is checked.                         
+ * function that takes in the current data, number of items per page,
+ * a search string and prints a preference box in view.php
+ *
+ * This preference box prints a searchable advanced search template if
+ *     a) A template is defined
+ *  b) The advanced search checkbox is checked.
  *
  * @global object
  * @global object
- * @param object $data                                            
- * @param int $perpage                                            
+ * @param object $data
+ * @param int $perpage
  * @param string $search
  * @param string $sort
  * @param string $order
@@ -1305,7 +1306,7 @@ function data_print_template($template, $records, $data, $search='', $page=0, $r
  * @return void
  */
 function data_print_preference_form($data, $perpage, $search, $sort='', $order='ASC', $search_array = '', $advanced = 0, $mode= ''){
-    global $CFG, $DB, $PAGE;
+    global $CFG, $DB, $PAGE, $OUTPUT;
 
     $cm = get_coursemodule_from_instance('data', $data->id);
     $context = get_context_instance(CONTEXT_MODULE, $cm->id);
@@ -1320,7 +1321,9 @@ function data_print_preference_form($data, $perpage, $search, $sort='', $order='
     echo '<label for="pref_perpage">'.get_string('pagesize','data').'</label> ';
     $pagesizes = array(2=>2,3=>3,4=>4,5=>5,6=>6,7=>7,8=>8,9=>9,10=>10,15=>15,
                        20=>20,30=>30,40=>40,50=>50,100=>100,200=>200,300=>300,400=>400,500=>500,1000=>1000);
-    choose_from_menu($pagesizes, 'perpage', $perpage, '', '', '0', false, false, 0, 'pref_perpage');
+    $select = html_select::make($pagesizes, 'perpage', $perpage, false);
+    $select->id = 'pref_perpage';
+    echo $OUTPUT->select($select);
      echo '<div id="reg_search" style="display: ';
     if ($advanced) {
         echo 'none';
@@ -1502,7 +1505,7 @@ function data_print_ratings($data, $record) {
 
             if ($data->scale < 0) {
                 if ($scale = $DB->get_record('scale', array('id'=>abs($data->scale)))) {
-                    echo $OUTPUT->help_button(helpbutton::make_scale_menu($data->course, $scale));
+                    echo $OUTPUT->help_button(moodle_help_icon::make_scale_menu($data->course, $scale));
                 }
             }
 
@@ -1526,6 +1529,7 @@ function data_print_ratings($data, $record) {
  * @param bool $link
  */
 function data_print_ratings_mean($recordid, $scale, $link=true) {
+    global $OUTPUT;
     static $strrate;
 
     $mean = data_get_ratings_mean($recordid, $scale);
@@ -1538,7 +1542,9 @@ function data_print_ratings_mean($recordid, $scale, $link=true) {
 
         echo "$strratings: ";
         if ($link) {
-            link_to_popup_window ("/mod/data/report.php?id=$recordid", "ratings", $mean, 400, 600);
+            $link = html_link::make("/mod/data/report.php?id=$recordid", $mean);
+            $link->add_action(new popup_action('click', $link->url, 'ratings', array('height' => 400, 'width' => 600)));
+            echo $OUTPUT->link($link);
         } else {
             echo "$mean ";
         }
@@ -1602,7 +1608,7 @@ function data_get_ratings_mean($recordid, $scale, $ratings=NULL) {
  * @param array $scale
  */
 function data_print_rating_menu($recordid, $userid, $scale) {
-    global $DB;
+    global $DB, $OUTPUT;
 
     static $strrate;
 
@@ -1613,8 +1619,9 @@ function data_print_rating_menu($recordid, $userid, $scale) {
     if (empty($strrate)) {
         $strrate = get_string("rate", "data");
     }
-
-    choose_from_menu($scale, $recordid, $rating->rating, "$strrate...", '', -999);
+    $select = html_select::make($scale, $recordid, $rating->rating, "$strrate...");
+    $select->nothingvalue = -999;
+    echo $OUTPUT->select($select);
 }
 
 /**
@@ -1695,7 +1702,7 @@ function data_print_comments($data, $record, $page=0, $mform=false) {
  * @return void Output is echo'd
  */
 function data_print_comment($data, $comment, $page=0) {
-    global $USER, $CFG, $DB;
+    global $USER, $CFG, $DB, $OUTPUT;
 
     $cm = get_coursemodule_from_instance('data', $data->id);
     $context = get_context_instance(CONTEXT_MODULE, $cm->id);
@@ -1708,7 +1715,7 @@ function data_print_comment($data, $comment, $page=0) {
     echo '<table cellspacing="0" align="center" width="50%" class="datacomment forumpost">';
 
     echo '<tr class="header"><td class="picture left">';
-    print_user_picture($user, $data->course, $user->picture);
+    echo $OUTPUT->user_picture(moodle_user_picture::make($user, $data->course));
     echo '</td>';
 
     echo '<td class="topic starter" align="left"><div class="author">';
@@ -1822,7 +1829,7 @@ function data_convert_arrays_to_strings(&$fieldinput) {
  * @return boolean data module was converted or not
  */
 function data_convert_to_roles($data, $teacherroles=array(), $studentroles=array(), $cmid=NULL) {
-    global $CFG, $DB;
+    global $CFG, $DB, $OUTPUT;
 
     if (!isset($data->participants) && !isset($data->assesspublic)
             && !isset($data->groupmode)) {
@@ -1835,7 +1842,7 @@ function data_convert_to_roles($data, $teacherroles=array(), $studentroles=array
     if (empty($cmid)) {
         // We were not given the course_module id. Try to find it.
         if (!$cm = get_coursemodule_from_instance('data', $data->id)) {
-            notify('Could not get the course module for the data');
+            echo $OUTPUT->notification('Could not get the course module for the data');
             return false;
         } else {
             $cmid = $cm->id;
@@ -2066,9 +2073,9 @@ function data_print_header($course, $cm, $data, $currenttab='') {
     // Print any notices
 
     if (!empty($displaynoticegood)) {
-        notify($displaynoticegood, 'notifysuccess');    // good (usually green)
+        echo $OUTPUT->notification($displaynoticegood, 'notifysuccess');    // good (usually green)
     } else if (!empty($displaynoticebad)) {
-        notify($displaynoticebad);                     // bad (usuually red)
+        echo $OUTPUT->notification($displaynoticebad);                     // bad (usuually red)
     }
 }
 
@@ -2256,6 +2263,7 @@ class PresetImporter {
      *
      */
     function import_options() {
+        global $OUTPUT;
         if (!confirm_sesskey()) {
             print_error('invalidsesskey');
         }
@@ -2279,7 +2287,7 @@ class PresetImporter {
 
         if (!empty($currentfields) && !empty($newfields)) {
             echo "<h3>$strfieldmappings ";
-            helpbutton('fieldmappings', $strfieldmappings, 'data');
+            echo $OUTPUT->help_icon(moodle_help_icon::make('fieldmappings', $strfieldmappings, 'data'));
             echo '</h3><table>';
 
             foreach ($newfields as $nid => $newfield) {
@@ -2842,9 +2850,9 @@ function data_pluginfile($course, $cminfo, $context, $filearea, $args, $forcedow
         if (!$cm = get_coursemodule_from_instance('data', $cminfo->instance, $course->id)) {
             return false;
         }
-        
+
         require_course_login($course, true, $cm);
-        
+
         if (!$content = $DB->get_record('data_content', array('id'=>$contentid))) {
             return false;
         }

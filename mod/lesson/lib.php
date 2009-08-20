@@ -151,14 +151,14 @@ function lesson_delete_instance($id) {
  * @return boolean
  */
 function lesson_delete_course($course, $feedback=true) {
-    global $DB;
+    global $DB, $OUTPUT;
 
     $count = $DB->count_records('lesson_default', array('course'=>$course->id));
     $DB->delete_records('lesson_default', array('course' => $course->id));
 
     //Inform about changes performed if feedback is enabled
     if ($feedback) {
-        notify(get_string('deletedefaults', 'lesson', $count));
+        echo $OUTPUT->notification(get_string('deletedefaults', 'lesson', $count));
     }
 
     return true;
@@ -213,12 +213,13 @@ function lesson_user_outline($course, $user, $mod, $lesson) {
  * @return bool
  */
 function lesson_user_complete($course, $user, $mod, $lesson) {
-    global $DB;
+    global $DB, $OUTPUT;
 
     $params = array ("lessonid" => $lesson->id, "userid" => $user->id);
     if ($attempts = $DB->get_records_select("lesson_attempts", "lessonid = :lessonid AND userid = :userid", $params,
                 "retry, timeseen")) {
-        print_simple_box_start();
+        echo $OUTPUT->box_start();
+        $table = new html_table();
         $table->head = array (get_string("attempt", "lesson"),  get_string("numberofpagesviewed", "lesson"),
             get_string("numberofcorrectanswers", "lesson"), get_string("time"));
         $table->width = "100%";
@@ -252,8 +253,8 @@ function lesson_user_complete($course, $user, $mod, $lesson) {
         if ($npages) {
                 $table->data[] = array($retry + 1, $npages, $ncorrect, userdate($timeseen));
         }
-        print_table($table);
-        print_simple_box_end();
+        echo $OUTPUT->table($table);
+        echo $OUTPUT->box_end();
         // also print grade summary
         $params = array ("lessonid" => $lesson->id, "userid" => $user->id);
         if ($grades = $DB->get_records_select("lesson_grades", "lessonid = :lessonid AND userid = :userid", $params,

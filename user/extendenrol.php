@@ -112,10 +112,11 @@ if($course->enrollable == 2) {
 }
 
 $title = get_string('extendenrol');
-echo $OUTPUT->heading($title . helpbutton('extendenrol', $title, 'moodle', true, false, '', true));
+echo $OUTPUT->heading($title . $OUTPUT->help_icon(moodle_help_icon::make('extendenrol', $title)));
 echo "<form method=\"post\" action=\"extendenrol.php\">\n";
 echo '<input type="hidden" name="id" value="'.$course->id.'" />';
 echo '<input type="hidden" name="sesskey" value="'.sesskey().'" />';
+$table = new html_table();
 $table->head  = array (get_string('fullnameuser'), get_string('enrolmentstart'), get_string('enrolmentend'), get_string('extendperiod'), get_string('startingfrom'));
 $table->align = array ('left', 'center', 'center', 'center');
 $table->width = "600";
@@ -143,18 +144,18 @@ foreach ($_POST as $k => $v) {
             $timeend = $unlimited;
             unset($userbasemenu[2]);
         }
-        $checkbox = choose_from_menu($periodmenu, "extendperiod[{$m[1]}]", "0", $nochange, '', '0', true);
-        $checkbox2 = choose_from_menu($userbasemenu, "extendbase[{$m[1]}]", "2", "", '', '0', true);
+        
+        $checkbox = $OUTPUT->select(html_select::make($periodmenu, "extendperiod[{$m[1]}]", "0", $nochange));
+        $checkbox2 = $OUTPUT->select(html_select::make($userbasemenu, "extendbase[{$m[1]}]", "2", false));
         $table->data[] = array(
-        fullname($user, true),
-        $timestart,
-        $timeend,
-        '<input type="hidden" name="userid['.$m[1].']" value="'.$m[1].'" />'.$checkbox,
-        $checkbox2
-        );
+                fullname($user, true),
+                $timestart,
+                $timeend,
+                '<input type="hidden" name="userid['.$m[1].']" value="'.$m[1].'" />'.$checkbox,
+                $checkbox2);
     }
 }
-print_table($table);
+echo $OUTPUT->table($table);
 echo "\n<div style=\"width:100%;text-align:center;\"><input type=\"submit\" value=\"".get_string('savechanges')."\" /></div>\n</form>\n";
 
 echo $OUTPUT->footer();

@@ -109,7 +109,7 @@ if ($file_info and $file_info->is_directory() and $file_info->is_writable() and 
 if ($file_info and $delete) {
     if (!data_submitted() or !confirm_sesskey()) {
         print_header();
-        notify(get_string('deletecheckwarning').': '.$file_info->get_visible_name());
+        echo $OUTPUT->notification(get_string('deletecheckwarning').': '.$file_info->get_visible_name());
         $parent_info = $file_info->get_parent();
 
         $optionsno  = $parent_info->get_params();
@@ -117,7 +117,7 @@ if ($file_info and $delete) {
         $optionsyes['delete'] = 1;
         $optionsyes['sesskey'] = sesskey();
 
-        notice_yesno (get_string('deletecheckfiles'), 'index.php', 'index.php', $optionsyes, $optionsno, 'post', 'get');
+        echo $OUTPUT->confirm(get_string('deletecheckfiles'), new moodle_url( 'index.php', $optionsyes),  new moodle_url('index.php', $optionsno));
         echo $OUTPUT->footer();
         die;
     }
@@ -136,7 +136,7 @@ if ($file_info and $delete) {
 html_header($context, $file_info);
 
 if ($error !== '') {
-    notify($error);
+    echo $OUTPUT->notification($error);
 }
 
 displaydir($file_info);
@@ -300,9 +300,9 @@ function displaydir($file_info) {
                 }
 
                 if ($viewurl = $child_info->get_url()) {
-                    $viewurl = "&nbsp;".link_to_popup_window ($viewurl, "display",
-                                                     "<img src=\"" . $OUTPUT->old_icon_url('t/preview') . "\" class=\"iconsmall\" alt=\"$strfile\" />&nbsp;",
-                                                     480, 640, get_string('viewfileinpopup'), null, true);
+                    $link = html_link::make($viewurl, "display", "<img src=\"" . $OUTPUT->old_icon_url('t/preview') . "\" class=\"iconsmall\" alt=\"$strfile\" />&nbsp;");
+                    $link->add_action(new popup_action('click', $link->url, 'display', array('height' => 480, 'width' => 640)));
+                    $viewurl = "&nbsp;".$OUTPUT->link($link);
                 } else {
                     $viewurl = '';
                 }

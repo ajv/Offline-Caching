@@ -2657,8 +2657,7 @@ function switchroles_form($courseid) {
         $options['sesskey'] = sesskey();
         $options['switchrole'] = 0;
 
-        return print_single_button($CFG->wwwroot.'/course/view.php', $options,
-                                   get_string('switchrolereturn'), 'post', '_self', true);
+        return $OUTPUT->button(html_form::make_button($CFG->wwwroot.'/course/view.php', $options, get_string('switchrolereturn')));
     }
 
     if (has_capability('moodle/role:switchroles', $context)) {
@@ -2969,11 +2968,13 @@ function print_grade_menu($courseid, $name, $current, $includenograde=true, $ret
     for ($i=100; $i>=1; $i--) {
         $grades[$i] = $i;
     }
-    $output .= choose_from_menu($grades, $name, $current, '', '', 0, true);
+    $output .= $OUTPUT->select(html_select::make($grades, $name, $current, false));
 
     $linkobject = '<span class="helplink"><img class="iconhelp" alt="'.$strscales.'" src="'.$OUTPUT->old_icon_url('help') . '" /></span>';
-    $output .= link_to_popup_window ('/course/scales.php?id='. $courseid .'&amp;list=true', 'ratingscales',
-                                     $linkobject, 400, 500, $strscales, 'none', true);
+    $link = html_link::make('/course/scales.php?id='. $courseid .'&list=true', $linkobject);
+    $link->add_action(new popup_action('click', $link->url, 'ratingscales', array('height' => 400, 'width' => 500)));
+    $link->title = $strscales;
+    $output .= $OUTPUT->link($link);
 
     if ($return) {
         return $output;
@@ -3061,7 +3062,10 @@ function editorhelpbutton(){
 
     $paramstring = join('&', $urlparams);
     $linkobject = '<img alt="'.$alttag.'" class="iconhelp" src="'.$OUTPUT->old_icon_url('help') . '" />';
-    return link_to_popup_window(s('/lib/form/editorhelp.php?'.$paramstring), 'popup', $linkobject, 400, 500, $alttag, 'none', true);
+    $link = html_link::make(s('/lib/form/editorhelp.php?'.$paramstring), $linkobject);
+    $link->add_action(new popup_action('click', $link->url, 'popup', array('height' => 400, 'width' => 500)));
+    $link->title = $alttag;
+    return $OUTPUT->link($link);
 }
 
 /**
@@ -3084,8 +3088,11 @@ function emoticonhelpbutton($form, $field, $return = false) {
 
     $SESSION->inserttextform = $form;
     $SESSION->inserttextfield = $field;
-    $imagetext = '<img src="' . $OUTPUT->old_icon_url('s/smiley') . '" alt="" class="emoticon" style="margin-left:3px; padding-right:1px;width:15px;height:15px;" />';
-    $help = helpbutton('emoticons2', get_string('helpemoticons'), 'moodle', true, true, '', true, $imagetext);
+    $helpicon = moodle_help_icon::make('emoticons2', get_string('helpemoticons'), 'moodle', true);
+    $helpicon->image->src = $OUTPUT->old_icon_url('s/smiley');
+    $helpicon->image->add_class('emoticon');
+    $helpicon->style = "margin-left:3px; padding-right:1px;width:15px;height:15px;";
+    $help = $OUTPUT->help_icon($helpicon);
     if (!$return){
         echo $help;
     } else {
@@ -3139,7 +3146,7 @@ function notice ($message, $link='', $course=NULL) {
     }
 
     echo $OUTPUT->box($message, 'generalbox', 'notice');
-    print_continue($link);
+    echo $OUTPUT->continue_button($link);
 
     echo $OUTPUT->footer();
     exit(1); // general error code

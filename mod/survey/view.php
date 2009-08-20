@@ -59,7 +59,7 @@
     }
 
     if (isguest()) {
-        notify(get_string("guestsnotallowed", "survey"));
+        echo $OUTPUT->notification(get_string("guestsnotallowed", "survey"));
     }
 
 
@@ -90,11 +90,11 @@
                 $question = $questions[$val];
                 if ($question->type == 0 or $question->type == 1) {
                     if ($answer = survey_get_user_answer($survey->id, $question->id, $USER->id)) {
-                        $table = NULL;
+                        $table = new html_table();
                         $table->head = array(get_string($question->text, "survey"));
                         $table->align = array ("left");
                         $table->data[] = array(s($answer->answer1));//no html here, just plain text
-                        print_table($table);
+                        echo $OUTPUT->table($table);
                         echo $OUTPUT->spacer(clone($spacer)) . '<br />';
                     }
                 }
@@ -112,7 +112,7 @@
     echo '<div>';
     echo "<input type=\"hidden\" name=\"id\" value=\"$id\" />";
 
-    print_simple_box(format_module_intro('survey', $survey, $cm->id), 'center', '70%', '', 5, 'generalbox', 'intro');
+    echo $OUTPUT->box(format_module_intro('survey', $survey, $cm->id), 'generalbox boxaligncenter bowidthnormal', 'intro');
 
 // Get all the major questions and their proper order
     if (! $questions = $DB->get_records_list("survey_questions", "id", explode(',', $survey->questions))) {
