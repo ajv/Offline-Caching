@@ -7,7 +7,7 @@ header('Content-type: text/plain');
 
 $version = offline_get_manifest_version(0);
 
-$files   = array_merge(offline_get_dynamic_files(), offline_get_turbo_files(), offline_get_static_files());
+$files   = array_merge(offline_get_dynamic_files(), offline_get_turbo_files());
 
 $entries = array();
 foreach ($files as $file) { 

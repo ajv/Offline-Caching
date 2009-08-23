@@ -19,6 +19,7 @@ function offline_get_static_files(){
         $CFG->wwwroot.'/lib/cookies.js',
         $CFG->wwwroot.'/lib/ufo.js',
         $CFG->wwwroot.'/lib/dropdown.js',
+        $CFG->wwwroot.'/blocks/admin_tree/admintree.js',
         $CFG->wwwroot.'/mod/forum/forum.js',
         $CFG->wwwroot.'/pix/t/stop.gif',
         $CFG->wwwroot.'/pix/t/go.gif',
